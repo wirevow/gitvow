@@ -29,6 +29,9 @@ Commit `.gitvow/` and `.claude/settings.json` to share. Each teammate runs once:
 ## Precedence
 Policy lookup: `<repo>/.gitvow/policy.json`, then `~/.gitvow/policy.json`, then the package default. Hooks in both user and repository settings run; gitvow's entries are idempotent, so installing twice never duplicates them and never disturbs hooks you added yourself.
 
+## Upgrading
+`pip install --upgrade gitvow` replaces the package but not the git hook file written by `install`, nor the hook commands in settings. After upgrading, re-run the same install command you used (`gitvow install --user` or `gitvow install <repo>`). It is idempotent and refreshes both. Repositories that committed `.gitvow/` refresh it in a pull request like any other change. The changelog says when a release changes the hook.
+
 ## Uninstall
 
 ```sh
