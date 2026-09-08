@@ -216,3 +216,20 @@ def test_invalid_rules_fail_closed_nothing_written(repo, home, payload, transcri
     log = (repo / ".git" / "gitvow-hooks.log").read_text()
     assert '"kind": "redaction_unavailable"' in log
     assert "detail" not in [k for ln in log.splitlines() for k in json.loads(ln) if json.loads(ln)["kind"] == "allowed"]
+
+
+def test_new_session_resets_steps_and_blobs_but_resume_keeps_them(repo, home, payload):
+    session_start(payload("SessionStart"), str(home))
+    pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}), str(home))
+    (repo / "a.txt").write_text("b\n")
+    post_tool_use(payload("PostToolUse", "Edit", {"file_path": "a.txt"}), str(home))
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert st["steps"] == 1 and st["agent_blobs"] and "pending_commit" in st
+    session_start(payload("SessionStart"), str(home))  # same id: resume
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert st["steps"] == 1 and st["agent_blobs"] and "pending_commit" not in st
+    p = payload("SessionStart")
+    p["session_id"] = "sess-2"
+    session_start(p, str(home))  # a new session in the same repo starts from zero
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert st["session_id"] == "sess-2" and st["steps"] == 0 and st["agent_blobs"] == {}

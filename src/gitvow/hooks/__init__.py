@@ -29,15 +29,17 @@ def notes_ref(session_id: str | None) -> str:
 def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     cwd = h.get("cwd") or os.getcwd()
     st = load_state(cwd)
+    same_session = st.get("session_id") == h.get("session_id")  # a resumed session keeps its counters
     st.update(
         {
             "session_id": h.get("session_id"),
             "transcript_path": h.get("transcript_path"),
-            "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
-            "steps": st.get("steps", 0),
-            "agent_blobs": st.get("agent_blobs", {}) if st.get("session_id") == h.get("session_id") else {},
+            "started": st.get("started") if same_session and st.get("started") else time.strftime("%Y-%m-%dT%H:%M:%S"),
+            "steps": st.get("steps", 0) if same_session else 0,
+            "agent_blobs": st.get("agent_blobs", {}) if same_session else {},
         }
     )
+    st.pop("pending_commit", None)
     save_state(cwd, st)
     log_event(cwd, "session_start", {"session_id": h.get("session_id")})
     return 0, ""

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.2.3 — 2026-09-09
+- Fix: the step counter and recorded agent blobs carried over from earlier sessions in the same repository, so a fresh session's first commit could read `Gitvow-Step: 3`. A new session id now starts from zero; a resumed session keeps its counters. Found in an end-to-end run.
+
 ## 0.2.2 — 2026-09-09
 - Fix: a commit made by a person in a terminal after (or alongside) a session received the session's trailer, because the session state outlived the session. Trailers are now added only while a `pending_commit` mark set by the gate on the agent's own `git commit` is fresh, and a note is written only when HEAD carries the trailer. Found in an end-to-end run with a real Claude Code session. **The git hook changed: re-run `gitvow install` after upgrading.**
 
