@@ -1,0 +1,82 @@
+{
+  "_doc": "Default provkit policy. Regex (Python re) on Bash command text, edited file paths, or MCP tool names. Order: deny \u2192 confirm \u2192 allow; unmatched calls are allowed and logged. Copy to <repo>/.provkit/policy.json or ~/.provkit/policy.json to customise.",
+  "bash_deny": [
+    {
+      "pattern": "\\brm\\s+-rf?\\s+(/|~|\\$HOME)(\\s|$)",
+      "reason": "recursive delete of root/home"
+    },
+    {
+      "pattern": "\\bgit\\s+push\\b.*(--force|-f\\b|\\+refs)",
+      "reason": "force push"
+    },
+    {
+      "pattern": "\\bgit\\s+(reset\\s+--hard|clean\\s+-fd|branch\\s+-D)\\b",
+      "reason": "destructive git history/worktree operation"
+    },
+    {
+      "pattern": "\\bkubectl\\s+(delete|drain|cordon)\\b",
+      "reason": "destructive kubectl"
+    },
+    {
+      "pattern": "\\b(terraform|pulumi)\\s+(destroy|apply)\\b",
+      "reason": "infrastructure mutation"
+    },
+    {
+      "pattern": "\\bDROP\\s+(TABLE|DATABASE|SCHEMA)\\b",
+      "reason": "destructive SQL"
+    },
+    {
+      "pattern": "\\baws\\s+\\S+\\s+(delete|terminate|deregister)\\S*",
+      "reason": "destructive AWS CLI"
+    },
+    {
+      "pattern": "curl[^|]*\\|\\s*(ba)?sh\\b",
+      "reason": "pipe remote script to shell"
+    }
+  ],
+  "bash_confirm": [
+    {
+      "pattern": "\\bgit\\s+push\\b",
+      "reason": "pushing to a remote"
+    },
+    {
+      "pattern": "\\bkubectl\\s+(apply|rollout|set|scale|exec)\\b",
+      "reason": "cluster mutation"
+    },
+    {
+      "pattern": "\\bhelm\\s+(install|upgrade|uninstall)\\b",
+      "reason": "helm release change"
+    },
+    {
+      "pattern": "\\bgh\\s+(pr\\s+merge|release\\s+create|repo\\s+delete)\\b",
+      "reason": "GitHub mutation"
+    }
+  ],
+  "path_confirm": [
+    {
+      "pattern": "(^|/)values/production-[a-z]+/.*\\.ya?ml$",
+      "reason": "edits production GitOps values"
+    },
+    {
+      "pattern": "(^|/)\\.github/workflows/|Jenkinsfile",
+      "reason": "edits CI definitions"
+    },
+    {
+      "pattern": "(^|/)\\.provkit/(policy\\.json|hooks/)|(^|/)\\.claude/settings.*\\.json",
+      "reason": "edits the gate policy or the hook configuration"
+    },
+    {
+      "pattern": "(^|/)(auth|authz|authorization|gate|whitelist|allowlist)[^/]*\\.(java|go|py|ts|js|ya?ml)$",
+      "reason": "edits an authorization or gate-bearing file"
+    }
+  ],
+  "mcp_allow": [],
+  "mcp_deny": [
+    "mcp__.*__(delete|remove|destroy|drop)_.*"
+  ],
+  "llm_classifier": {
+    "enabled": false,
+    "command": "",
+    "_doc": "Optional: a command that reads the hook JSON on stdin and prints ALLOW|CONFIRM|DENY <reason>. Used only for calls not matched above."
+  }
+}

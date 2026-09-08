@@ -1,0 +1,158 @@
+"""Install/uninstall into Claude Code settings and git hooks, per user or per repo. Idempotent; removes only what it added."""
+
+from __future__ import annotations
+
+import json
+import os
+import shutil
+from typing import Any
+
+from .state import git
+
+GIT_HOOK = """#!/bin/sh
+# provkit: append session trailers when a session is active in this repo; chain to the repo's own hook if present.
+GD="$(git rev-parse --git-dir)"; STATE="$GD/provkit-session.json"
+if [ -f "$STATE" ]; then
+  SID=$(python3 -c "import json;print(json.load(open('$STATE')).get('session_id') or '')" 2>/dev/null)
+  STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
+  if [ -n "$SID" ] && ! grep -q "^Provkit-Session:" "$1"; then printf "\\nProvkit-Session: %s\\nProvkit-Step: %s\\n" "$SID" "$STEP" >> "$1"; fi
+fi
+SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/prepare-commit-msg" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/prepare-commit-msg" "$@"
+exit 0
+"""
+MARKER = "provkit hook "
+
+
+def _hook_entries(cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
+    def entry(event: str, matcher: str | None) -> dict[str, Any]:
+        e: dict[str, Any] = {"hooks": [{"type": "command", "command": f"{cmd_prefix} hook {event}"}]}
+        if matcher:
+            e["matcher"] = matcher
+        return e
+
+    return {
+        "SessionStart": [entry("SessionStart", None)],
+        "PreToolUse": [entry("PreToolUse", "Bash|Edit|Write|MultiEdit|NotebookEdit|mcp__.*")],
+        "PostToolUse": [entry("PostToolUse", "Bash")],
+        "Stop": [entry("Stop", None)],
+    }
+
+
+def merge_settings(path: str, cmd_prefix: str) -> None:
+    cur: dict[str, Any] = {}
+    if os.path.exists(path):
+        with open(path) as fh:
+            cur = json.load(fh)
+    hooks = cur.setdefault("hooks", {})
+    for ev, entries in _hook_entries(cmd_prefix).items():
+        kept = [x for x in hooks.get(ev, []) if not any(MARKER in (h.get("command") or "") for h in x.get("hooks", []))]
+        hooks[ev] = kept + entries
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(cur, fh, indent=2)
+
+
+def unmerge_settings(path: str) -> None:
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        cur = json.load(fh)
+    hooks = cur.get("hooks", {})
+    for ev in list(hooks):
+        hooks[ev] = [x for x in hooks[ev] if not any(MARKER in (h.get("command") or "") for h in x.get("hooks", []))]
+        if not hooks[ev]:
+            del hooks[ev]
+    if not hooks:
+        cur.pop("hooks", None)
+    if cur:
+        with open(path, "w") as fh:
+            json.dump(cur, fh, indent=2)
+    else:
+        os.remove(path)
+
+
+def _write_git_hook(dirpath: str) -> str:
+    os.makedirs(dirpath, exist_ok=True)
+    p = os.path.join(dirpath, "prepare-commit-msg")
+    with open(p, "w") as fh:
+        fh.write(GIT_HOOK)
+    os.chmod(p, 0o755)  # noqa: S103  # nosec B103 - git runs hooks as the invoking user; must be executable
+    return p
+
+
+def install_user(home: str, cmd_prefix: str = "provkit") -> list[str]:
+    base = os.path.join(home, ".provkit")
+    os.makedirs(base, exist_ok=True)
+    done = []
+    pol = os.path.join(base, "policy.json")
+    if not os.path.exists(pol):
+        from .policy import DEFAULT_POLICY_PATH
+
+        shutil.copy(DEFAULT_POLICY_PATH, pol)
+        done.append(f"default policy → {pol}")
+    _write_git_hook(os.path.join(base, "git-hooks"))
+    merge_settings(os.path.join(home, ".claude", "settings.json"), cmd_prefix)
+    git(["config", "--global", "core.hooksPath", os.path.join(base, "git-hooks")], home)
+    done += ["hooks merged into ~/.claude/settings.json", "global core.hooksPath → ~/.provkit/git-hooks"]
+    return done
+
+
+def uninstall_user(home: str, purge_policy: bool = False, purge_ledger: bool = False) -> list[str]:
+    base = os.path.join(home, ".provkit")
+    done = []
+    unmerge_settings(os.path.join(home, ".claude", "settings.json"))
+    rc, cur, _ = git(["config", "--global", "--get", "core.hooksPath"], home)
+    if rc == 0 and cur == os.path.join(base, "git-hooks"):
+        git(["config", "--global", "--unset", "core.hooksPath"], home)
+        done.append("global core.hooksPath unset")
+    shutil.rmtree(os.path.join(base, "git-hooks"), ignore_errors=True)
+    if purge_policy and os.path.exists(os.path.join(base, "policy.json")):
+        os.remove(os.path.join(base, "policy.json"))
+        done.append("policy removed")
+    if purge_ledger:
+        shutil.rmtree(os.path.join(base, "ledger"), ignore_errors=True)
+        done.append("ledger removed")
+    done.append("hook entries removed from ~/.claude/settings.json")
+    return done
+
+
+def install_repo(repo: str, cmd_prefix: str = "provkit") -> list[str]:
+    base = os.path.join(repo, ".provkit")
+    os.makedirs(base, exist_ok=True)
+    from .policy import DEFAULT_POLICY_PATH
+
+    pol = os.path.join(base, "policy.json")
+    if not os.path.exists(pol):
+        shutil.copy(DEFAULT_POLICY_PATH, pol)
+    _write_git_hook(os.path.join(base, "git-hooks"))
+    merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix)
+    git(["config", "core.hooksPath", ".provkit/git-hooks"], repo)
+    return [
+        f"policy → {pol}",
+        "hooks merged into .claude/settings.json",
+        "core.hooksPath → .provkit/git-hooks",
+        "commit .provkit/ and .claude/settings.json to share; teammates run: git config core.hooksPath .provkit/git-hooks",
+    ]
+
+
+def uninstall_repo(repo: str, purge_notes: bool = False) -> list[str]:
+    done = []
+    unmerge_settings(os.path.join(repo, ".claude", "settings.json"))
+    rc, cur, _ = git(["config", "--get", "core.hooksPath"], repo)
+    if rc == 0 and cur == ".provkit/git-hooks":
+        git(["config", "--unset", "core.hooksPath"], repo)
+        done.append("core.hooksPath unset")
+    shutil.rmtree(os.path.join(repo, ".provkit"), ignore_errors=True)
+    rc, gd, _ = git(["rev-parse", "--git-dir"], repo)
+    if rc == 0:
+        gd = gd if os.path.isabs(gd) else os.path.join(repo, gd)
+        for f in ("provkit-session.json", "provkit-hooks.log"):
+            p = os.path.join(gd, f)
+            if os.path.exists(p):
+                os.remove(p)
+    if purge_notes:
+        git(["update-ref", "-d", "refs/notes/sessions"], repo)
+        done.append("local refs/notes/sessions deleted (remote copies untouched)")
+    done.append(".provkit removed; commit trailers already in history remain")
+    return done

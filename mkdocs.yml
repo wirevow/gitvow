@@ -1,0 +1,34 @@
+site_name: provkit
+site_description: Provenance and a policy gate for AI-agent coding sessions, stored in git you already have.
+repo_url: https://github.com/wirevow/provkit
+site_url: https://wirevow.dev/provkit/
+theme:
+  name: material
+  features: [navigation.sections, navigation.expand, content.code.copy, search.suggest]
+  palette:
+    - scheme: default
+      primary: indigo
+markdown_extensions: [admonition, tables, toc, pymdownx.superfences, pymdownx.details]
+nav:
+  - Home: index.md
+  - Quick start: quickstart.md
+  - Concepts:
+      - Sessions, steps and notes: concepts/sessions.md
+      - The gate: concepts/gate.md
+      - What stays out of git: concepts/storage.md
+  - Guides:
+      - Install per user or per repo: guides/install.md
+      - Write a policy: guides/policy.md
+      - Read a commit's session: guides/reading.md
+      - Run a trial and collect results: guides/trial.md
+      - Redaction and custom rules: guides/redaction.md
+  - Reference:
+      - CLI: reference/cli.md
+      - Hook payloads: reference/hooks.md
+      - Session note schema: reference/note.md
+      - Policy schema: reference/policy.md
+  - Security: security.md
+  - Roadmap: roadmap.md
+  - FAQ: faq.md
+  - Architecture: ARCHITECTURE.md
+  - Contributing: contributing.md
