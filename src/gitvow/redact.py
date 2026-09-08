@@ -5,6 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 import math
+import os
 import re
 from collections import Counter
 from collections.abc import Callable, Iterable
@@ -69,3 +70,53 @@ def redact(value: object, custom: Iterable[tuple[str, str]] = ()) -> str:
     for rx, rep in PATTERNS:
         s = rx.sub(rep, s)
     return redact_high_entropy(s)
+
+
+class RedactionError(Exception):
+    """A rules file is unreadable or a pattern does not compile. Callers must write nothing."""
+
+
+RULES_FILENAME = "redact-rules.json"
+
+
+def _read_rules(path: str) -> list[tuple[str, str]]:
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except OSError as e:
+        raise RedactionError(f"{path}: {e.strerror or e}") from e
+    except json.JSONDecodeError as e:
+        raise RedactionError(f"{path}: invalid JSON ({e.msg} at line {e.lineno})") from e
+    if isinstance(data, dict):
+        data = data.get("rules", [])
+    if not isinstance(data, list):
+        raise RedactionError(f"{path}: expected a list of rules")
+    out: list[tuple[str, str]] = []
+    for i, r in enumerate(data):
+        if (
+            not isinstance(r, dict)
+            or not isinstance(r.get("pattern"), str)
+            or not isinstance(r.get("replacement"), str)
+        ):
+            raise RedactionError(f"{path}: rule {i} needs string 'pattern' and 'replacement'")
+        try:
+            re.compile(r["pattern"])
+        except re.error as e:
+            raise RedactionError(f"{path}: rule {i} pattern does not compile ({e})") from e
+        out.append((r["pattern"], r["replacement"]))
+    return out
+
+
+def load_rules(cwd: str | None = None, home: str | None = None) -> list[tuple[str, str]]:
+    """Custom rules from <repo>/.gitvow/redact-rules.json then ~/.gitvow/redact-rules.json. Both apply.
+
+    Raises RedactionError on any unreadable or invalid file: callers must then write nothing.
+    """
+    rules: list[tuple[str, str]] = []
+    for base in (cwd, home or os.path.expanduser("~")):
+        if not base:
+            continue
+        path = os.path.join(base, ".gitvow", RULES_FILENAME)
+        if os.path.exists(path):
+            rules += _read_rules(path)
+    return rules

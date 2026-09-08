@@ -1,6 +1,6 @@
 # Session note schema
 
-Stored under `refs/notes/sessions`. First line `gitvow-session`, then JSON:
+Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `refs/notes/sessions`). First line `gitvow-session`, then JSON:
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -13,9 +13,21 @@ Stored under `refs/notes/sessions`. First line `gitvow-session`, then JSON:
 | `last_stated_plan` | string | last assistant text before the commit, redacted, at most 600 characters |
 | `files_in_commit` | string[] | `git show --stat` lines, at most 50 |
 | `files_written_by_agent_this_session` | string[] | files in the commit that the agent edited or wrote via tools in this session |
-| `attribution` | object | `files_in_commit`, `touched_by_agent` counts |
+| `attribution` | object | see below |
+| `schema` | int | note schema version, currently 2 |
 | `transcript` | string | always "kept local; see ledger" |
 | `redaction` | string | statement of what redaction ran |
+
+### `attribution`
+
+| Field | Type | Meaning |
+|---|---|---|
+| `files_in_commit` | int | files changed by the commit |
+| `touched_by_agent` | int | of those, files the agent wrote or edited this session |
+| `lines_added_in_commit` | int | sum of added lines over all files |
+| `lines_changed_by_human_after_agent` | int | lines added or removed by a person after the agent's last write, over agent-touched files |
+| `agent_share` | float or null | share of added lines that match the agent's version; null when the commit adds no lines or no agent-written blob was recorded |
+| `files[]` | object[] | per file: `path`, `agent_wrote`, `lines_added_in_commit`, `human_lines_added`, `human_lines_removed`, `agent_blob`, `committed_blob` |
 
 The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields.
 

@@ -43,7 +43,17 @@ def collect(home: str, out_dir: str) -> str:
             shutil.copy(lp, os.path.join(d, "gitvow-hooks.log"))
         for name, args in (
             ("commits-with-trailers.txt", ["log", "--format=%H %ad %s", "--date=short", "--grep=Gitvow-Session:"]),
-            ("notes.txt", ["log", "--show-notes=sessions", "--format=%H%n%N%n----", "--grep=Gitvow-Session:"]),
+            (
+                "notes.txt",
+                [
+                    "-c",
+                    "notes.displayRef=refs/notes/gitvow/*",
+                    "log",
+                    "--show-notes=sessions",
+                    "--format=%H%n%N%n----",
+                    "--grep=Gitvow-Session:",
+                ],
+            ),
             ("remote.txt", ["remote", "get-url", "origin"]),
         ):
             _, out, _ = git(args, r)

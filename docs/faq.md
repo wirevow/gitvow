@@ -12,6 +12,8 @@
 
 **Why not store the transcript?** Because it contains tool output, and tool output contains whatever the agent read. See [What stays out of git](concepts/storage.md).
 
-**Does it work with rebase and squash?** Trailers survive; each squashed commit's trailers are concatenated into the new message by git's default behaviour. Notes attach to the original commit objects and do not follow a rewrite unless `notes.rewriteRef` is configured; that is on the roadmap.
+**Does it work with rebase and squash?** Yes. Trailers are in the message and survive on their own. Install sets `notes.rewriteRef` so notes follow amend, rebase and squash to the rewritten commit.
+
+**Two agents in one repository at once?** Each session writes its own notes ref, `refs/notes/gitvow/<session-id>`, so they never contend, and pushing notes from many machines never conflicts.
 
 **Which agents?** Claude Code now. The payload shape is documented; adapters are welcome.

@@ -5,13 +5,15 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
 
 from . import __version__
 from .collect import collect, summarize_text
-from .hooks import HANDLERS
+from .hooks import HANDLERS, LEGACY_NOTES_REF, notes_ref
 from .install import install_repo, install_user, uninstall_repo, uninstall_user
 from .policy import PolicyError, evaluate, load_policy
+from .redact import RedactionError, load_rules, redact
 from .state import git
 
 
@@ -70,8 +72,25 @@ def cmd_show(a: argparse.Namespace) -> int:
         print(f"no such commit: {a.commit}", file=sys.stderr)
         return 1
     print(msg)
-    rc, note, _ = git(["notes", "--ref=sessions", "show", a.commit], os.getcwd())
-    print(note if rc == 0 else "(no session note)")
+    m = re.search(r"^Gitvow-Session:\s*(\S+)", msg, re.M)
+    refs = ([notes_ref(m.group(1))] if m else []) + [LEGACY_NOTES_REF]
+    for ref in refs:
+        rc, note, _ = git(["notes", f"--ref={ref}", "show", a.commit], os.getcwd())
+        if rc == 0:
+            print(note)
+            return 0
+    print("(no session note)")
+    return 0
+
+
+def cmd_redact(a: argparse.Namespace) -> int:
+    """Apply the built-in layers plus the rules files to text."""
+    try:
+        rules = load_rules(os.getcwd(), os.path.expanduser("~"))
+    except RedactionError as e:
+        print(f"redaction rules error: {e}", file=sys.stderr)
+        return 2
+    print(redact(" ".join(a.text), rules))
     return 0
 
 
@@ -119,6 +138,9 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("show", help="print a commit's trailers and session note")
     s.add_argument("commit", nargs="?", default="HEAD")
     s.set_defaults(f=cmd_show)
+    s = sub.add_parser("redact", help="apply built-in redaction plus your rules files to text")
+    s.add_argument("text", nargs="+")
+    s.set_defaults(f=cmd_redact)
     s = sub.add_parser("collect", help="gather ledger, logs, trailers and notes into one directory")
     s.add_argument("--out", default=os.path.expanduser("~/Desktop"))
     s.set_defaults(f=cmd_collect)

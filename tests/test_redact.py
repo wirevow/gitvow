@@ -1,4 +1,8 @@
-from gitvow.redact import redact, redact_high_entropy, shannon_entropy
+import json
+
+import pytest
+
+from gitvow.redact import RedactionError, load_rules, redact, redact_high_entropy, shannon_entropy
 
 
 def test_known_secret_formats_are_replaced():
@@ -44,3 +48,37 @@ def test_custom_rules_apply_first():
 
 def test_non_string_values_are_serialised():
     assert "[email:" in redact({"to": "a@b.io"})
+
+
+def test_load_rules_both_locations_and_shapes(tmp_path):
+    repo, home = tmp_path / "r", tmp_path / "h"
+    (repo / ".gitvow").mkdir(parents=True)
+    (home / ".gitvow").mkdir(parents=True)
+    (repo / ".gitvow" / "redact-rules.json").write_text(json.dumps([{"pattern": "a", "replacement": "1"}]))
+    (home / ".gitvow" / "redact-rules.json").write_text(json.dumps({"rules": [{"pattern": "b", "replacement": "2"}]}))
+    assert load_rules(str(repo), str(home)) == [("a", "1"), ("b", "2")]
+    assert load_rules(str(tmp_path / "none"), str(tmp_path / "none2")) == []
+
+
+@pytest.mark.parametrize(
+    "content,msg",
+    [
+        ("{oops", "invalid JSON"),
+        ('"just a string"', "expected a list"),
+        ('[{"pattern": 1, "replacement": "x"}]', "needs string"),
+        ('[{"pattern": "(", "replacement": "x"}]', "does not compile"),
+    ],
+)
+def test_load_rules_rejects_bad_files(tmp_path, content, msg):
+    (tmp_path / ".gitvow").mkdir()
+    (tmp_path / ".gitvow" / "redact-rules.json").write_text(content)
+    with pytest.raises(RedactionError, match=msg):
+        load_rules(str(tmp_path), str(tmp_path / "nohome"))
+
+
+def test_load_rules_unreadable_file(tmp_path):
+    d = tmp_path / ".gitvow"
+    d.mkdir()
+    (d / "redact-rules.json").mkdir()  # a directory where a file should be
+    with pytest.raises(RedactionError):
+        load_rules(str(tmp_path), str(tmp_path / "nohome"))

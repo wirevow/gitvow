@@ -2,11 +2,12 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
-## 0.2 — Trial-hardened
-- One git ref per session note (`refs/sessions/<ulid>`) so parallel agents never contend; `git notes` kept as a compatibility view.
-- Custom redaction rules from `~/.gitvow/redact-rules.json`.
-- Line-level attribution (agent-written vs human-edited lines) in the note.
-- Exit: a five-person, two-week trial produces zero secrets in collected archives on manual review.
+## 0.2 — Trial-hardened (shipped)
+- One notes ref per session, `refs/notes/gitvow/<session-id>`, so parallel agents never contend and pushes never conflict.
+- Custom redaction rules from `.gitvow/redact-rules.json` in the repository and in the home directory; invalid rules fail closed.
+- Line-level attribution: lines a human changed after the agent, per file, and the agent's share of the commit.
+- Notes follow amend, rebase and squash through `notes.rewriteRef`.
+- Exit still open: a five-person, two-week trial produces zero secrets in collected archives on manual review.
 
 ## 0.3 — Reviewer surface
 - A GitHub check that publishes each PR's session notes as a comment or check summary, and fails when agent commits lack trailers.

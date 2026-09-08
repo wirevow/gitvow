@@ -50,3 +50,8 @@ def log_event(cwd: str, kind: str, payload: dict[str, Any]) -> None:
         return
     with open(os.path.join(gd, "gitvow-hooks.log"), "a") as fh:
         fh.write(json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "kind": kind, **payload}) + "\n")
+
+
+def toplevel(cwd: str) -> str | None:
+    rc, out, _ = git(["rev-parse", "--show-toplevel"], cwd)
+    return out if rc == 0 else None

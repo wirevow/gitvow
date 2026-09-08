@@ -22,6 +22,20 @@ SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null &
 exit 0
 """
 MARKER = "gitvow hook "
+NOTES_GLOB = "refs/notes/gitvow/*"
+NOTES_KEYS = ("notes.displayRef", "notes.rewriteRef")
+
+
+def _set_notes_config(cwd: str, scope: list[str]) -> None:
+    for key in NOTES_KEYS:
+        rc, cur, _ = git(["config", *scope, "--get-all", key], cwd)
+        if rc != 0 or NOTES_GLOB not in cur.splitlines():
+            git(["config", *scope, "--add", key, NOTES_GLOB], cwd)
+
+
+def _unset_notes_config(cwd: str, scope: list[str]) -> None:
+    for key in NOTES_KEYS:
+        git(["config", *scope, "--unset", key, "^" + NOTES_GLOB.replace("*", "\\*").replace(".", "\\.") + "$"], cwd)
 
 
 def _hook_entries(cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
@@ -34,7 +48,7 @@ def _hook_entries(cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
     return {
         "SessionStart": [entry("SessionStart", None)],
         "PreToolUse": [entry("PreToolUse", "Bash|Edit|Write|MultiEdit|NotebookEdit|mcp__.*")],
-        "PostToolUse": [entry("PostToolUse", "Bash")],
+        "PostToolUse": [entry("PostToolUse", "Bash|Edit|Write|MultiEdit|NotebookEdit")],
         "Stop": [entry("Stop", None)],
     }
 
@@ -94,7 +108,12 @@ def install_user(home: str, cmd_prefix: str = "gitvow") -> list[str]:
     _write_git_hook(os.path.join(base, "git-hooks"))
     merge_settings(os.path.join(home, ".claude", "settings.json"), cmd_prefix)
     git(["config", "--global", "core.hooksPath", os.path.join(base, "git-hooks")], home)
-    done += ["hooks merged into ~/.claude/settings.json", "global core.hooksPath → ~/.gitvow/git-hooks"]
+    _set_notes_config(home, ["--global"])
+    done += [
+        "hooks merged into ~/.claude/settings.json",
+        "global core.hooksPath → ~/.gitvow/git-hooks",
+        f"global notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
+    ]
     return done
 
 
@@ -107,6 +126,7 @@ def uninstall_user(home: str, purge_policy: bool = False, purge_ledger: bool = F
         git(["config", "--global", "--unset", "core.hooksPath"], home)
         done.append("global core.hooksPath unset")
     shutil.rmtree(os.path.join(base, "git-hooks"), ignore_errors=True)
+    _unset_notes_config(home, ["--global"])
     if purge_policy and os.path.exists(os.path.join(base, "policy.json")):
         os.remove(os.path.join(base, "policy.json"))
         done.append("policy removed")
@@ -128,10 +148,12 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow") -> list[str]:
     _write_git_hook(os.path.join(base, "git-hooks"))
     merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix)
     git(["config", "core.hooksPath", ".gitvow/git-hooks"], repo)
+    _set_notes_config(repo, [])
     return [
         f"policy → {pol}",
         "hooks merged into .claude/settings.json",
         "core.hooksPath → .gitvow/git-hooks",
+        f"notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
         "commit .gitvow/ and .claude/settings.json to share; teammates run: git config core.hooksPath .gitvow/git-hooks",
     ]
 
@@ -144,6 +166,7 @@ def uninstall_repo(repo: str, purge_notes: bool = False) -> list[str]:
         git(["config", "--unset", "core.hooksPath"], repo)
         done.append("core.hooksPath unset")
     shutil.rmtree(os.path.join(repo, ".gitvow"), ignore_errors=True)
+    _unset_notes_config(repo, [])
     rc, gd, _ = git(["rev-parse", "--git-dir"], repo)
     if rc == 0:
         gd = gd if os.path.isabs(gd) else os.path.join(repo, gd)
@@ -152,7 +175,9 @@ def uninstall_repo(repo: str, purge_notes: bool = False) -> list[str]:
             if os.path.exists(p):
                 os.remove(p)
     if purge_notes:
-        git(["update-ref", "-d", "refs/notes/sessions"], repo)
-        done.append("local refs/notes/sessions deleted (remote copies untouched)")
+        _, refs, _ = git(["for-each-ref", "--format=%(refname)", "refs/notes/sessions", "refs/notes/gitvow/"], repo)
+        for ref in refs.split():
+            git(["update-ref", "-d", ref], repo)
+        done.append(f"{len(refs.split())} local session note ref(s) deleted (remote copies untouched)")
     done.append(".gitvow removed; commit trailers already in history remain")
     return done

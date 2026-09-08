@@ -24,16 +24,29 @@ git log --grep='Gitvow-Session: 8f3d5c71'      # everything one session produced
 ```
 
 ## Session note
-A structural summary attached to the commit under the git ref `refs/notes/sessions`:
+A structural summary attached to the commit as a git note under `refs/notes/gitvow/<session-id>`:
 
 - the session id and step
 - how many assistant turns and tool calls had happened so far
 - which tools were used
 - the agent's last stated plan before committing, after redaction
 - the files in the commit, and which of them the agent itself wrote or edited in this session
-- an attribution count: files in the commit versus files touched by the agent
+- line-level attribution: for each file the agent wrote, how many lines a human changed after the agent's last write, and the agent's share of the lines added in the commit
 
-Notes are git objects but not part of the tree. `git status`, diffs and checkouts never see them. They are local until pushed with `git push origin refs/notes/sessions`, and read with `git log --show-notes=sessions` or `gitvow show <commit>`.
+Notes are git objects but not part of the tree. `git status`, diffs and checkouts never see them. They are local until pushed, and read with `gitvow show <commit>` or plain `git log --show-notes` once installed.
+
+### One ref per session
+Each session writes only to its own ref. Two agents committing in the same repository at the same time never touch the same ref, and pushing notes never conflicts, because no two machines ever write the same ref:
+
+```sh
+git push origin 'refs/notes/gitvow/*'          # publish every session's notes
+git fetch origin 'refs/notes/gitvow/*:refs/notes/gitvow/*'
+```
+
+Notes written by gitvow 0.1 live on the single ref `refs/notes/sessions`; `gitvow show` still reads them. The per-session refs use a different prefix because git cannot hold a ref and a directory of refs under the same name.
+
+### Notes follow rewrites
+Install sets `notes.rewriteRef` to the session refs, so `git commit --amend`, `git rebase` and squash merges carry each note to the rewritten commit. Trailers are in the message and survive on their own. A squash of several agent commits concatenates their trailers and keeps the notes of every squashed commit on the result.
 
 ## Ledger
 At the end of a session, a redacted summary is written to `~/.gitvow/ledger/<session-id>.json`: every tool call with a shortened argument, the commits made during the session, the last stated plan. It is the fullest record gitvow keeps, and it never enters a repository. See [What stays out of git](storage.md).

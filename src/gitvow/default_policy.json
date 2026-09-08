@@ -62,8 +62,8 @@
       "reason": "edits CI definitions"
     },
     {
-      "pattern": "(^|/)\\.gitvow/(policy\\.json|hooks/)|(^|/)\\.claude/settings.*\\.json",
-      "reason": "edits the gate policy or the hook configuration"
+      "pattern": "(^|/)\\.gitvow/(policy\\.json|redact-rules\\.json|hooks/|git-hooks/)|(^|/)\\.claude/settings.*\\.json",
+      "reason": "edits gitvow's own policy, redaction rules or hooks"
     },
     {
       "pattern": "(^|/)(auth|authz|authorization|gate|whitelist|allowlist)[^/]*\\.(java|go|py|ts|js|ya?ml)$",

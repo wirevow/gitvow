@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 import os
 import shutil
 import subprocess
@@ -65,20 +66,30 @@ def run() -> int:
                 "deny: destructive MCP tool",
             )
         )
+        with open(os.path.join(repo, "a.txt"), "a") as fh:
+            fh.write("b\n")
+        post_tool_use({**base, "tool_name": "Edit", "tool_input": {"file_path": "a.txt"}}, home)
+        with open(os.path.join(repo, "a.txt"), "a") as fh:
+            fh.write("human\n")
         pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
         hooks_dir = os.path.join(repo, ".gitvow", "git-hooks")
         _write_git_hook(hooks_dir)
         g("config", "core.hooksPath", ".gitvow/git-hooks")
-        with open(os.path.join(repo, "a.txt"), "a") as fh:
-            fh.write("b\n")
+        g("config", "notes.rewriteRef", "refs/notes/gitvow/*")
         g("commit", "-qam", "selftest commit")
         results.append(("Gitvow-Session:" in g("log", "-1", "--format=%B"), "commit trailer added"))
         post_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
+        note = g("notes", "--ref=gitvow/selftest-session", "show", "HEAD")
+        results.append((note.startswith("gitvow-session"), "session note attached on the session's own ref"))
+        att = json.loads(note.split("\n", 1)[1])["attribution"] if note else {}
+        results.append(
+            (att.get("lines_changed_by_human_after_agent") == 1 and att.get("agent_share") == 0.5, "line attribution")
+        )
+        g("commit", "-q", "--amend", "-m", "amended")
         results.append(
             (
-                g("notes", "--ref=sessions", "list").count("\n") + (1 if g("notes", "--ref=sessions", "list") else 0)
-                == 1,
-                "session note attached",
+                g("notes", "--ref=gitvow/selftest-session", "show", "HEAD").startswith("gitvow-session"),
+                "note follows amend",
             )
         )
         stop(base, home)

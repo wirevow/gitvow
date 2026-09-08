@@ -9,12 +9,21 @@ import time
 from typing import Any
 
 from ..policy import PolicyError, evaluate, load_policy, message_for
-from ..redact import redact
-from ..state import git, load_state, log_event, save_state
+from ..redact import RedactionError, load_rules, redact
+from ..state import git, load_state, log_event, save_state, toplevel
 from ..transcript import summarize
 
-NOTES_REF = "sessions"
+NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
+LEGACY_NOTES_REF = "sessions"
+NOTE_SCHEMA = 2
 COMMIT_RE = re.compile(r"\bgit\s+commit\b")
+EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
+REDACTION_UNAVAILABLE = "redaction rules invalid; nothing written for this event"
+
+
+def notes_ref(session_id: str | None) -> str:
+    sid = re.sub(r"[^A-Za-z0-9._-]", "_", session_id or "unknown")
+    return f"{NOTES_REF_PREFIX}/{sid}"
 
 
 def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
@@ -26,11 +35,20 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
             "transcript_path": h.get("transcript_path"),
             "started": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "steps": st.get("steps", 0),
+            "agent_blobs": st.get("agent_blobs", {}) if st.get("session_id") == h.get("session_id") else {},
         }
     )
     save_state(cwd, st)
     log_event(cwd, "session_start", {"session_id": h.get("session_id")})
     return 0, ""
+
+
+def _rules_or_none(cwd: str, home: str | None) -> tuple[list[tuple[str, str]] | None, str]:
+    try:
+        return load_rules(cwd, home), ""
+    except RedactionError as e:
+        log_event(cwd, "redaction_unavailable", {"error": str(e)[:200]})
+        return None, f"gitvow: {e}. {REDACTION_UNAVAILABLE}."
 
 
 def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
@@ -45,12 +63,12 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
             f"BLOCKED: tool policy could not be loaded ({e}); refusing all tool calls until the policy is restored.",
         )
     d = evaluate(pol, tool, inp)
+    rules, warn = _rules_or_none(cwd, home)
     if d.blocks:
-        log_event(
-            cwd,
-            "blocked" if d.outcome == "deny" else "confirm_required",
-            {"tool": tool, "reason": d.reason, "detail": redact(d.detail)[:200], "session_id": h.get("session_id")},
-        )
+        payload: dict[str, Any] = {"tool": tool, "reason": d.reason, "session_id": h.get("session_id")}
+        if rules is not None:
+            payload["detail"] = redact(d.detail, rules)[:200]
+        log_event(cwd, "blocked" if d.outcome == "deny" else "confirm_required", payload)
         return 2, message_for(d)
     if tool == "Bash" and COMMIT_RE.search(inp.get("command", "")):
         st = load_state(cwd)
@@ -58,27 +76,106 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")
         st["steps"] = st.get("steps", 0) + 1
         save_state(cwd, st)
+    if rules is None:
+        log_event(cwd, "allowed", {"tool": tool})
+        return 0, warn
     log_event(
-        cwd, "allowed", {"tool": tool, "detail": redact(inp.get("command") or inp.get("file_path") or tool)[:160]}
+        cwd,
+        "allowed",
+        {"tool": tool, "detail": redact(inp.get("command") or inp.get("file_path") or tool, rules)[:160]},
     )
     return 0, ""
 
 
+def _record_agent_blob(cwd: str, file_path: str) -> None:
+    """After an agent edit, remember the blob id of what the agent wrote (repo-relative path -> blob)."""
+    top = toplevel(cwd)
+    if not top:
+        return
+    abs_path = file_path if os.path.isabs(file_path) else os.path.join(cwd, file_path)
+    if not os.path.isfile(abs_path):
+        return
+    rel = os.path.relpath(os.path.realpath(abs_path), os.path.realpath(top))
+    if rel.startswith(".."):
+        return
+    rc, blob, _ = git(["hash-object", "-w", "--", abs_path], top)
+    if rc != 0:
+        return
+    st = load_state(cwd)
+    st.setdefault("agent_blobs", {})[rel] = blob
+    save_state(cwd, st)
+
+
+def _attribution(cwd: str, head: str, agent_blobs: dict[str, str], transcript_written: list[str]) -> dict[str, Any]:
+    _, numstat, _ = git(["show", "--numstat", "--format=", head], cwd)
+    files: list[dict[str, Any]] = []
+    total_added = human_changed = agent_added = 0
+    for ln in numstat.splitlines():
+        parts = ln.split("\t")
+        if len(parts) < 3:
+            continue
+        added = int(parts[0]) if parts[0].isdigit() else 0
+        path = parts[2]
+        total_added += added
+        agent_blob = agent_blobs.get(path)
+        touched = agent_blob is not None or any(path.endswith(w) or w.endswith(path) for w in transcript_written)
+        entry: dict[str, Any] = {"path": path, "agent_wrote": touched, "lines_added_in_commit": added}
+        if agent_blob:
+            rc, committed_out, _ = git(["rev-parse", f"{head}:{path}"], cwd)
+            committed: str | None = committed_out if rc == 0 else None
+            h_add = h_del = 0
+            if committed and committed != agent_blob:
+                rc, d, _ = git(["diff", "--numstat", agent_blob, committed], cwd)
+                if rc == 0 and d:
+                    a, b = d.split("\t")[:2]
+                    h_add, h_del = (int(a) if a.isdigit() else 0), (int(b) if b.isdigit() else 0)
+            human_changed += h_add + h_del
+            agent_added += max(added - h_add, 0)
+            entry.update(
+                {
+                    "human_lines_added": h_add,
+                    "human_lines_removed": h_del,
+                    "agent_blob": agent_blob,
+                    "committed_blob": committed,
+                }
+            )
+        files.append(entry)
+    have_blobs = any("agent_blob" in f for f in files)
+    return {
+        "files_in_commit": len(files),
+        "touched_by_agent": sum(1 for f in files if f["agent_wrote"]),
+        "lines_added_in_commit": total_added,
+        "lines_changed_by_human_after_agent": human_changed,
+        # None when nothing can be attributed: no lines added, or no agent-written blob was recorded
+        "agent_share": round(agent_added / total_added, 2) if total_added and have_blobs else None,
+        "files": files[:50],
+    }
+
+
 def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     cwd = h.get("cwd") or os.getcwd()
-    if h.get("tool_name") != "Bash" or not COMMIT_RE.search((h.get("tool_input") or {}).get("command", "")):
+    tool = h.get("tool_name")
+    inp = h.get("tool_input") or {}
+    if tool in EDIT_TOOLS:
+        if inp.get("file_path"):
+            _record_agent_blob(cwd, str(inp["file_path"]))
+        return 0, ""
+    if tool != "Bash" or not COMMIT_RE.search(inp.get("command", "")):
         return 0, ""
     rc, head, _ = git(["rev-parse", "HEAD"], cwd)
     if rc != 0:
         return 0, ""
+    rules, warn = _rules_or_none(cwd, home)
+    if rules is None:
+        return 0, warn
     st = load_state(cwd)
-    summ = summarize(h.get("transcript_path") or st.get("transcript_path"))
-    _, files, _ = git(["show", "--stat", "--format=", "HEAD"], cwd)
-    _, diffstat, _ = git(["show", "--numstat", "--format=", "HEAD"], cwd)
-    changed = [ln.split("\t")[-1] for ln in diffstat.splitlines() if ln.strip()]
-    agent_written = sorted(f for f in changed if any(f.endswith(w) or w.endswith(f) for w in summ["files_written"]))
+    summ = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)
+    _, files, _ = git(["show", "--stat", "--format=", head], cwd)
+    attribution = _attribution(cwd, head, st.get("agent_blobs", {}), summ["files_written"])
+    session_id = h.get("session_id") or st.get("session_id")
     note = {
-        "session_id": h.get("session_id") or st.get("session_id"),
+        "schema": NOTE_SCHEMA,
+        "session_id": session_id,
         "step": st.get("steps"),
         "committed_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
         "assistant_turns_so_far": summ["turns"],
@@ -86,22 +183,26 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "tools_used": sorted({t["tool"] for t in summ["tool_calls"] if t.get("tool")}),
         "last_stated_plan": summ["last_assistant_text"],
         "files_in_commit": [ln.strip() for ln in files.splitlines()[:-1]][:50] if files else [],
-        "files_written_by_agent_this_session": agent_written[:50],
-        "attribution": {"files_in_commit": len(changed), "touched_by_agent": len(agent_written)},
+        "files_written_by_agent_this_session": [f["path"] for f in attribution["files"] if f["agent_wrote"]][:50],
+        "attribution": attribution,
         "transcript": "kept local; see ledger",
-        "redaction": "secrets/PII patterns and high-entropy tokens replaced at write time",
+        "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time",
     }
+    ref = notes_ref(session_id)
     body = "gitvow-session\n" + json.dumps(note, indent=1)
-    git(["notes", f"--ref={NOTES_REF}", "add", "-f", "-m", body, head], cwd)
-    log_event(cwd, "note_added", {"commit": head[:12], "session_id": note["session_id"], "step": note["step"]})
-    return 0, f"session note attached to {head[:12]} (refs/notes/{NOTES_REF})"
+    git(["notes", f"--ref={ref}", "add", "-f", "-m", body, head], cwd)
+    log_event(cwd, "note_added", {"commit": head[:12], "session_id": session_id, "step": note["step"]})
+    return 0, f"session note attached to {head[:12]} (refs/notes/{ref})"
 
 
 def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     cwd = h.get("cwd") or os.getcwd()
     home = home or os.path.expanduser("~")
+    rules, warn = _rules_or_none(cwd, home)
+    if rules is None:
+        return 0, warn
     st = load_state(cwd)
-    summ = summarize(h.get("transcript_path") or st.get("transcript_path"))
+    summ = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)
     led = os.path.join(home, ".gitvow", "ledger")
     os.makedirs(led, exist_ok=True)
     commits: list[str] = []

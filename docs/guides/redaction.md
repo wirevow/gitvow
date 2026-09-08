@@ -14,15 +14,33 @@ Every string that enters a note, the ledger or the log passes through redaction 
 Tool output. gitvow records the tool name and a shortened argument, never the result. A `cat .env` is logged as `cat .env`, and the contents of `.env` go nowhere.
 
 ## Custom rules
-Add patterns for identifiers specific to your systems, customer ids, internal hostnames, ticket formats that carry names:
+Add patterns for identifiers specific to your systems, customer ids, internal hostnames, ticket formats that carry names. Put them in a rules file:
 
-```python
-from gitvow.redact import redact
-
-redact(text, custom=[(r"CUST-\d{6}", "[customer]"), (r"[a-z0-9-]+\.internal\.example\.com", "[internal-host]")])
+```json
+[
+  {"pattern": "CUST-\d{6}", "replacement": "[customer]"},
+  {"pattern": "[a-z0-9-]+\.internal\.example\.com", "replacement": "[internal-host]"}
+]
 ```
 
-A configuration file for custom rules is planned; see the roadmap.
+Two locations are read and **both** apply, repository rules first:
+
+- `<repo>/.gitvow/redact-rules.json`, committed and reviewed like the policy
+- `~/.gitvow/redact-rules.json`, for identifiers personal to you
+
+Patterns are Python `re` syntax. Replacements may use group references such as `\1`. Rules run before the built-in layers.
+
+Test a rule from the shell:
+
+```sh
+gitvow redact 'ticket CUST-123456 for host api.internal.example.com'
+# ticket [customer] for host [internal-host]
+```
+
+### Invalid rules fail closed
+If a rules file is unreadable or a pattern does not compile, gitvow writes **nothing** for that event: no note, no ledger entry, no log detail. It reports the error on stderr and records only that redaction was unavailable. Writing under-redacted text is the one failure a provenance tool must never have, so a broken rules file makes the record go quiet rather than leaky. The default policy requires confirmation before an agent edits `redact-rules.json`.
+
+The Python API remains for embedding: `redact(text, custom=[(pattern, replacement), ...])`.
 
 ## Testing your redaction
 Every pattern has positive and negative tests in `tests/test_redact.py`. Add yours there. The self-check also asserts that a planted token and email do not survive into a note.

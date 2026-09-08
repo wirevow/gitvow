@@ -12,7 +12,10 @@ def test_user_install_is_idempotent_and_reversible(home):
     assert set(s["hooks"]) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
     assert all(len(v) == 1 for v in s["hooks"].values())  # no duplicate entries after a second install
     assert git(home, "config", "--global", "--get", "core.hooksPath").endswith(".gitvow/git-hooks")
+    assert git(home, "config", "--global", "--get-all", "notes.rewriteRef") == "refs/notes/gitvow/*"  # added once
+    assert git(home, "config", "--global", "--get-all", "notes.displayRef") == "refs/notes/gitvow/*"
     uninstall_user(str(home), purge_policy=True)
+    assert git(home, "config", "--global", "--get-all", "notes.rewriteRef") == ""
     assert not (home / ".claude" / "settings.json").exists()
     assert git(home, "config", "--global", "--get", "core.hooksPath") == ""
     assert not (home / ".gitvow" / "policy.json").exists()
@@ -35,8 +38,14 @@ def test_repo_install_and_uninstall(repo, home):
     assert (repo / ".gitvow" / "policy.json").exists() and git(
         repo, "config", "--get", "core.hooksPath"
     ) == ".gitvow/git-hooks"
+    assert git(repo, "config", "--get", "notes.displayRef") == "refs/notes/gitvow/*"
     (repo / ".git" / "gitvow-hooks.log").write_text("x\n")
+    git(repo, "notes", "--ref=gitvow/a", "add", "-m", "n", "HEAD")
+    git(repo, "notes", "--ref=gitvow/b", "add", "-m", "n", "HEAD")
+    git(repo, "notes", "--ref=sessions", "add", "-m", "legacy", "HEAD")
     uninstall_repo(str(repo), purge_notes=True)
+    assert git(repo, "for-each-ref", "refs/notes/") == ""
+    assert git(repo, "config", "--get", "notes.displayRef") == ""
     assert not (repo / ".gitvow").exists() and git(repo, "config", "--get", "core.hooksPath") == ""
     assert not (repo / ".git" / "gitvow-hooks.log").exists()
 
@@ -70,3 +79,63 @@ def test_cli_hook_roundtrip_and_show(capsys, monkeypatch, repo, home):
 def test_selftest_passes(capsys):
     assert cli.main(["selftest"]) == 0
     assert "0 failed" in capsys.readouterr().out
+
+
+def test_notes_follow_amend_and_rebase(repo, home):
+    install_repo(str(repo))
+    git(repo, "notes", "--ref=gitvow/s1", "add", "-m", "gitvow-session\n{}", "HEAD")
+    git(repo, "commit", "-q", "--amend", "-m", "amended")
+    assert git(repo, "notes", "--ref=gitvow/s1", "show", "HEAD").startswith("gitvow-session")
+    assert "gitvow-session" in git(repo, "log", "-1", "--show-notes")  # displayRef makes plain git show it
+    base = git(repo, "branch", "--show-current")
+    git(repo, "checkout", "-qb", "topic")
+    (repo / "t.txt").write_text("t\n")
+    git(repo, "add", "t.txt")
+    git(repo, "commit", "-qm", "topic")
+    git(repo, "notes", "--ref=gitvow/s2", "add", "-m", 'gitvow-session\n{"step": 1}', "HEAD")
+    git(repo, "checkout", "-q", base)
+    (repo / "m.txt").write_text("m\n")
+    git(repo, "add", "m.txt")
+    git(repo, "commit", "-qm", "main moves")
+    git(repo, "checkout", "-q", "topic")
+    git(repo, "rebase", "-q", base)
+    assert git(repo, "notes", "--ref=gitvow/s2", "show", "HEAD").startswith("gitvow-session")
+
+
+def test_user_install_does_not_duplicate_notes_config(home):
+    install_user(str(home))
+    install_user(str(home))
+    assert git(home, "config", "--global", "--get-all", "notes.rewriteRef").count("refs/notes/gitvow/*") == 1
+
+
+def test_show_reads_session_ref_then_legacy(capsys, monkeypatch, repo, home):
+    monkeypatch.chdir(repo)
+    git(repo, "notes", "--ref=sessions", "add", "-m", 'gitvow-session\n{"legacy": true}', "HEAD")
+    assert cli.main(["show", "HEAD"]) == 0
+    assert '"legacy": true' in capsys.readouterr().out
+    (repo / "a.txt").write_text("n\n")
+    git(repo, "commit", "-qam", "new\n\nGitvow-Session: s9\nGitvow-Step: 1")
+    git(repo, "notes", "--ref=gitvow/s9", "add", "-m", 'gitvow-session\n{"step": 1}', "HEAD")
+    assert cli.main(["show", "HEAD"]) == 0
+    out = capsys.readouterr().out
+    assert '"step": 1' in out and "Gitvow-Session: s9" in out
+
+
+def test_cli_redact_uses_rules_and_fails_on_invalid(capsys, monkeypatch, repo, home):
+    monkeypatch.chdir(repo)
+    (repo / ".gitvow").mkdir()
+    (repo / ".gitvow" / "redact-rules.json").write_text(
+        json.dumps([{"pattern": r"CUST-\d{6}", "replacement": "[customer]"}])
+    )
+    assert cli.main(["redact", "ticket CUST-123456 for a@b.io"]) == 0
+    out = capsys.readouterr().out
+    assert "[customer]" in out and "[email:" in out
+    (repo / ".gitvow" / "redact-rules.json").write_text("not json")
+    assert cli.main(["redact", "x"]) == 2
+    assert "invalid JSON" in capsys.readouterr().err
+
+
+def test_default_policy_confirms_edits_to_redaction_rules(monkeypatch, repo, capsys):
+    monkeypatch.chdir(repo)
+    assert cli.main(["check", "--path", ".gitvow/redact-rules.json"]) == 2
+    assert cli.main(["check", "--path", ".gitvow/git-hooks/prepare-commit-msg"]) == 2

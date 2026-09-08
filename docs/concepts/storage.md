@@ -5,7 +5,8 @@ The agent's transcript contains tool output: file contents, query results, envir
 | Data | Where it lives | Enters git? |
 |---|---|---|
 | Session id and step | commit message trailers | yes, by design |
-| Session note: structure, tool names, redacted plan, attribution | `refs/notes/sessions` | yes, as a note, not in the tree; local until pushed |
+| Session note: structure, tool names, redacted plan, attribution | `refs/notes/gitvow/<session-id>` | yes, as a note, not in the tree; local until pushed |
+| Agent-written file versions (blob ids for attribution) | `.git/objects`, unreachable | no, never pushed; pruned by `git gc` |
 | Ledger: redacted tool calls, commits, plan | `~/.gitvow/ledger/` | no |
 | Hook log: every allow, confirm, deny | `<repo>/.git/gitvow-hooks.log` | no, `.git` is never pushed |
 | Session state | `<repo>/.git/gitvow-session.json` | no |
@@ -23,4 +24,4 @@ For a team that wants more than the note, four options, in rising order of ambit
 Do not put transcripts in wikis or tickets. They are treated as documentation, outlive their redaction assumptions, and are searchable by everyone.
 
 ## Redaction is a floor
-Everything that enters a note, the ledger or the log passes through [redaction](../guides/redaction.md). It lowers the probability that a secret reaches git. It cannot make it zero, and it does not protect a repository from the people who can already read it.
+Everything that enters a note, the ledger or the log passes through [redaction](../guides/redaction.md), including any rules you add in `redact-rules.json`. It lowers the probability that a secret reaches git. It cannot make it zero, and it does not protect a repository from the people who can already read it.
