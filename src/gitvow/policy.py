@@ -29,12 +29,12 @@ class Decision:
 
 
 def load_policy(cwd: str | None = None, home: str | None = None) -> dict[str, Any]:
-    """Precedence: <repo>/.provkit/policy.json → ~/.provkit/policy.json → package default."""
+    """Precedence: <repo>/.gitvow/policy.json → ~/.gitvow/policy.json → package default."""
     cwd = cwd or os.getcwd()
     home = home or os.path.expanduser("~")
     for p in (
-        os.path.join(cwd, ".provkit", "policy.json"),
-        os.path.join(home, ".provkit", "policy.json"),
+        os.path.join(cwd, ".gitvow", "policy.json"),
+        os.path.join(home, ".gitvow", "policy.json"),
         DEFAULT_POLICY_PATH,
     ):
         if os.path.exists(p):

@@ -1,6 +1,6 @@
 # FAQ
 
-**Does provkit send anything anywhere?** No. No network calls, no telemetry. Notes leave only when you push the ref.
+**Does gitvow send anything anywhere?** No. No network calls, no telemetry. Notes leave only when you push the ref.
 
 **Will my teammates see the trailers?** Yes, they are part of the commit message. That is the point: `git log` shows which commits an agent made.
 
@@ -8,7 +8,7 @@
 
 **Can an agent turn the gate off?** Editing the policy or the hook settings requires confirmation under the default policy, and a missing policy fails closed. A determined human can, of course; the gate is for agents.
 
-**What happens if a hook crashes?** Claude Code treats exit codes other than 0 and 2 as non-blocking errors and continues. provkit only exits 2 deliberately; a crash in the policy path is caught and turned into a block.
+**What happens if a hook crashes?** Claude Code treats exit codes other than 0 and 2 as non-blocking errors and continues. gitvow only exits 2 deliberately; a crash in the policy path is caught and turned into a block.
 
 **Why not store the transcript?** Because it contains tool output, and tool output contains whatever the agent read. See [What stays out of git](concepts/storage.md).
 

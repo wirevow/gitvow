@@ -4,9 +4,9 @@ A two-week trial with five people answers three questions: how often the gate fi
 
 ## Setup, per person
 ```sh
-pip install provkit
-provkit install --user
-provkit selftest
+pip install gitvow
+gitvow install --user
+gitvow selftest
 ```
 
 ## During the trial
@@ -14,7 +14,7 @@ Nothing. Work normally. The hook log fills in each repository's `.git`, the ledg
 
 ## Collect
 ```sh
-provkit collect            # → ~/Desktop/provkit-<timestamp>/ with SUMMARY.txt
+gitvow collect            # → ~/Desktop/gitvow-<timestamp>/ with SUMMARY.txt
 ```
 It reads the ledger to learn which repositories sessions touched, then gathers each repository's hook log, the commits carrying trailers, the notes and the remote URL. Everything in it was redacted at write time. Review the directory before sending it anywhere.
 
@@ -30,7 +30,7 @@ gate fired on:
   blocked             2  force push
 ```
 
-`provkit summarize <dir>` recomputes this for any collected directory, so one person can merge several.
+`gitvow summarize <dir>` recomputes this for any collected directory, so one person can merge several.
 
 ## What to decide afterwards
 - Rules that fired on routine work: relax or delete.

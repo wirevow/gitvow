@@ -1,12 +1,12 @@
-# provkit
+# gitvow
 
 Provenance and a policy gate for AI-agent coding sessions, stored in the git you already have.
 
-[![ci](https://github.com/wirevow/provkit/actions/workflows/ci.yml/badge.svg)](https://github.com/wirevow/provkit/actions/workflows/ci.yml)
-[![codeql](https://github.com/wirevow/provkit/actions/workflows/codeql.yml/badge.svg)](https://github.com/wirevow/provkit/actions/workflows/codeql.yml)
+[![ci](https://github.com/wirevow/gitvow/actions/workflows/ci.yml/badge.svg)](https://github.com/wirevow/gitvow/actions/workflows/ci.yml)
+[![codeql](https://github.com/wirevow/gitvow/actions/workflows/codeql.yml/badge.svg)](https://github.com/wirevow/gitvow/actions/workflows/codeql.yml)
 ![python](https://img.shields.io/badge/python-3.9%E2%80%933.12-blue) ![deps](https://img.shields.io/badge/runtime%20deps-0-brightgreen) ![license](https://img.shields.io/badge/license-Apache--2.0-blue)
 
-**Who made this change, what were they trying to do, and was it allowed?** For code written with AI agents, git alone cannot answer. provkit makes it answer.
+**Who made this change, what were they trying to do, and was it allowed?** For code written with AI agents, git alone cannot answer. gitvow makes it answer.
 
 - Commits made during an agent session carry the session id and a step number as **trailers**.
 - Each such commit gets a **session note**: the agent's stated plan, the tools it used, the files it touched, how much of the commit it wrote. Redacted, stored as a git note, never in the tree.
@@ -18,9 +18,9 @@ Standard-library Python and git. No runtime dependencies, no network calls, no t
 ## Quick start
 
 ```sh
-pip install provkit
-provkit install --user
-provkit selftest
+pip install gitvow
+gitvow install --user
+gitvow selftest
 ```
 
 Work in Claude Code as usual. When the agent commits:
@@ -29,12 +29,12 @@ Work in Claude Code as usual. When the agent commits:
 $ git log -1 --format=%B
 Fix week-start cache key
 
-Provkit-Session: 8f3d5c71-574a-4eec-8903-9425e3a8335b
-Provkit-Step: 4
+Gitvow-Session: 8f3d5c71-574a-4eec-8903-9425e3a8335b
+Gitvow-Step: 4
 
-$ provkit show HEAD
+$ gitvow show HEAD
 ...
-provkit-session
+gitvow-session
 {
  "step": 4,
  "tools_used": ["Bash", "Edit", "Read"],
@@ -48,20 +48,20 @@ provkit-session
 Try the gate by hand:
 
 ```sh
-provkit check -- git push --force          # DENY: force push
-provkit check -- kubectl apply -f x.yaml   # CONFIRM: cluster apply
-provkit check --path core/authz_rules.go   # CONFIRM: edits an authorization or gate file
+gitvow check -- git push --force          # DENY: force push
+gitvow check -- kubectl apply -f x.yaml   # CONFIRM: cluster apply
+gitvow check --path core/authz_rules.go   # CONFIRM: edits an authorization or gate file
 ```
 
 Remove everything:
 
 ```sh
-provkit uninstall --user
+gitvow uninstall --user
 ```
 
 ## Documentation
 
-The docs site is the source of truth: **https://wirevow.dev/provkit** (built from `docs/`).
+The docs site is the source of truth: **https://wirevow.dev/gitvow** (built from `docs/`).
 
 - [Quick start](docs/quickstart.md)
 - Concepts: [Sessions, steps and notes](docs/concepts/sessions.md) · [The gate](docs/concepts/gate.md) · [What stays out of git](docs/concepts/storage.md)
@@ -72,17 +72,17 @@ The docs site is the source of truth: **https://wirevow.dev/provkit** (built fro
 ## How it works
 
 ```
-Claude Code ──hook──▶ provkit hook PreToolUse ──▶ policy ──▶ allow / confirm / deny  (exit 0 / 2 / 2)
-            ──hook──▶ provkit hook PostToolUse ─▶ on `git commit`: read transcript → redact → git notes add
-git commit ──prepare-commit-msg──▶ Provkit-Session / Provkit-Step trailers   (from .git/provkit-session.json)
-Claude Code ──hook──▶ provkit hook Stop ─────────▶ ~/.provkit/ledger/<session>.json
+Claude Code ──hook──▶ gitvow hook PreToolUse ──▶ policy ──▶ allow / confirm / deny  (exit 0 / 2 / 2)
+            ──hook──▶ gitvow hook PostToolUse ─▶ on `git commit`: read transcript → redact → git notes add
+git commit ──prepare-commit-msg──▶ Gitvow-Session / Gitvow-Step trailers   (from .git/gitvow-session.json)
+Claude Code ──hook──▶ gitvow hook Stop ─────────▶ ~/.gitvow/ledger/<session>.json
 ```
 
 | Data | Where | Enters git? |
 |---|---|---|
 | session id, step | commit trailers | yes |
 | session note (structure, redacted plan, attribution) | `refs/notes/sessions` | as a note; local until pushed |
-| ledger, hook log, session state | `~/.provkit/`, `<repo>/.git/` | no |
+| ledger, hook log, session state | `~/.gitvow/`, `<repo>/.git/` | no |
 | transcript | untouched | never |
 
 ## Status

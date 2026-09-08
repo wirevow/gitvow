@@ -15,10 +15,10 @@ from .state import git
 
 def collect(home: str, out_dir: str) -> str:
     stamp = time.strftime("%Y%m%d-%H%M%S")
-    w = os.path.join(out_dir, f"provkit-{stamp}")
+    w = os.path.join(out_dir, f"gitvow-{stamp}")
     os.makedirs(os.path.join(w, "ledger"), exist_ok=True)
     os.makedirs(os.path.join(w, "repos"), exist_ok=True)
-    led = os.path.join(home, ".provkit", "ledger")
+    led = os.path.join(home, ".gitvow", "ledger")
     repos: set[str] = set()
     for f in glob.glob(os.path.join(led, "*.json")):
         shutil.copy(f, os.path.join(w, "ledger"))
@@ -38,12 +38,12 @@ def collect(home: str, out_dir: str) -> str:
         if rc != 0:
             continue
         gd = gd if os.path.isabs(gd) else os.path.join(r, gd)
-        lp = os.path.join(gd, "provkit-hooks.log")
+        lp = os.path.join(gd, "gitvow-hooks.log")
         if os.path.exists(lp):
-            shutil.copy(lp, os.path.join(d, "provkit-hooks.log"))
+            shutil.copy(lp, os.path.join(d, "gitvow-hooks.log"))
         for name, args in (
-            ("commits-with-trailers.txt", ["log", "--format=%H %ad %s", "--date=short", "--grep=Provkit-Session:"]),
-            ("notes.txt", ["log", "--show-notes=sessions", "--format=%H%n%N%n----", "--grep=Provkit-Session:"]),
+            ("commits-with-trailers.txt", ["log", "--format=%H %ad %s", "--date=short", "--grep=Gitvow-Session:"]),
+            ("notes.txt", ["log", "--show-notes=sessions", "--format=%H%n%N%n----", "--grep=Gitvow-Session:"]),
             ("remote.txt", ["remote", "get-url", "origin"]),
         ):
             _, out, _ = git(args, r)
@@ -60,7 +60,7 @@ def summarize(w: str) -> dict[str, Any]:
     kinds: collections.Counter[str] = collections.Counter()
     reasons: collections.Counter[tuple[str, str]] = collections.Counter()
     trailered = notes = 0
-    for lp in glob.glob(os.path.join(w, "repos", "*", "provkit-hooks.log")):
+    for lp in glob.glob(os.path.join(w, "repos", "*", "gitvow-hooks.log")):
         with open(lp) as fh:
             for line in fh:
                 try:
@@ -75,7 +75,7 @@ def summarize(w: str) -> dict[str, Any]:
             trailered += sum(1 for ln in fh if ln.strip())
     for f in glob.glob(os.path.join(w, "repos", "*", "notes.txt")):
         with open(f) as fh:
-            notes += fh.read().count("provkit-session")
+            notes += fh.read().count("gitvow-session")
     return {
         "sessions": len(led),
         "repos": len({s.get("repo") for s in led}),

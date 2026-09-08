@@ -1,6 +1,6 @@
 # Contributing
 
-Thank you. provkit is small on purpose: standard library only, one CLI, hooks that exit 0 or 2. Please keep it that way.
+Thank you. gitvow is small on purpose: standard library only, one CLI, hooks that exit 0 or 2. Please keep it that way.
 
 ## Ground rules
 - **No runtime dependencies.** Anything that needs a third-party package belongs in an optional extra or outside this project.
@@ -17,7 +17,7 @@ pip install -e ".[dev]"
 ruff check . && ruff format --check .
 pytest
 bandit -q -r src
-pip freeze --exclude-editable | grep -v '^provkit' > /tmp/req.txt && pip-audit --strict -r /tmp/req.txt
+pip freeze --exclude-editable | grep -v '^gitvow' > /tmp/req.txt && pip-audit --strict -r /tmp/req.txt
 mkdocs serve   # docs at http://127.0.0.1:8000
 ```
 

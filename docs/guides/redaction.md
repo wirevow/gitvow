@@ -11,13 +11,13 @@ Every string that enters a note, the ledger or the log passes through redaction 
 7. **High-entropy tokens**: alphanumeric runs of 20 or more characters whose Shannon entropy exceeds 4.5, unless they look like a URL or a path. This catches secret formats nobody wrote a pattern for.
 
 ## What is never redacted because it is never read
-Tool output. provkit records the tool name and a shortened argument, never the result. A `cat .env` is logged as `cat .env`, and the contents of `.env` go nowhere.
+Tool output. gitvow records the tool name and a shortened argument, never the result. A `cat .env` is logged as `cat .env`, and the contents of `.env` go nowhere.
 
 ## Custom rules
 Add patterns for identifiers specific to your systems, customer ids, internal hostnames, ticket formats that carry names:
 
 ```python
-from provkit.redact import redact
+from gitvow.redact import redact
 
 redact(text, custom=[(r"CUST-\d{6}", "[customer]"), (r"[a-z0-9-]+\.internal\.example\.com", "[internal-host]")])
 ```

@@ -1,6 +1,6 @@
 # Session note schema
 
-Stored under `refs/notes/sessions`. First line `provkit-session`, then JSON:
+Stored under `refs/notes/sessions`. First line `gitvow-session`, then JSON:
 
 | Field | Type | Meaning |
 |---|---|---|
@@ -21,7 +21,7 @@ The schema is additive. New fields may appear; existing fields keep their meanin
 
 ## Trailers
 ```
-Provkit-Session: <session id>
-Provkit-Step: <int>
+Gitvow-Session: <session id>
+Gitvow-Step: <int>
 ```
-Added by `prepare-commit-msg` when `.git/provkit-session.json` exists with a session id. Idempotent: a message that already has `Provkit-Session:` is left alone.
+Added by `prepare-commit-msg` when `.git/gitvow-session.json` exists with a session id. Idempotent: a message that already has `Gitvow-Session:` is left alone.

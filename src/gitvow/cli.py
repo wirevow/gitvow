@@ -1,4 +1,4 @@
-"""provkit command line."""
+"""gitvow command line."""
 
 from __future__ import annotations
 
@@ -94,8 +94,8 @@ def cmd_selftest(a: argparse.Namespace) -> int:
 
 
 def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(prog="provkit", description="Provenance and policy gate for agent coding sessions.")
-    p.add_argument("--version", action="version", version=f"provkit {__version__}")
+    p = argparse.ArgumentParser(prog="gitvow", description="Provenance and policy gate for agent coding sessions.")
+    p.add_argument("--version", action="version", version=f"gitvow {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("hook", help="run as a Claude Code hook (reads JSON on stdin)")
     s.add_argument("event")
@@ -111,7 +111,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--purge-policy", action="store_true")
     s.add_argument("--purge-ledger", action="store_true")
     s.set_defaults(f=cmd_uninstall)
-    s = sub.add_parser("check", help="dry-run the policy: provkit check -- git push --force")
+    s = sub.add_parser("check", help="dry-run the policy: gitvow check -- git push --force")
     s.add_argument("command", nargs="*")
     s.add_argument("--path")
     s.add_argument("--mcp")

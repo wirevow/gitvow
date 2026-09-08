@@ -12,8 +12,8 @@ from .install import _write_git_hook
 
 
 def run() -> int:
-    home = tempfile.mkdtemp(prefix="provkit-home-")
-    repo = tempfile.mkdtemp(prefix="provkit-repo-")
+    home = tempfile.mkdtemp(prefix="gitvow-home-")
+    repo = tempfile.mkdtemp(prefix="gitvow-repo-")
     results: list[tuple[bool, str]] = []
 
     def g(*a: str) -> str:
@@ -29,7 +29,7 @@ def run() -> int:
         g("commit", "-qm", "init")
         base = {"session_id": "selftest-session", "transcript_path": "", "cwd": repo}
         session_start(base, home)
-        results.append((os.path.exists(os.path.join(repo, ".git", "provkit-session.json")), "session recorded in .git"))
+        results.append((os.path.exists(os.path.join(repo, ".git", "gitvow-session.json")), "session recorded in .git"))
         results.append(
             (
                 pre_tool_use(
@@ -66,13 +66,13 @@ def run() -> int:
             )
         )
         pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
-        hooks_dir = os.path.join(repo, ".provkit", "git-hooks")
+        hooks_dir = os.path.join(repo, ".gitvow", "git-hooks")
         _write_git_hook(hooks_dir)
-        g("config", "core.hooksPath", ".provkit/git-hooks")
+        g("config", "core.hooksPath", ".gitvow/git-hooks")
         with open(os.path.join(repo, "a.txt"), "a") as fh:
             fh.write("b\n")
         g("commit", "-qam", "selftest commit")
-        results.append(("Provkit-Session:" in g("log", "-1", "--format=%B"), "commit trailer added"))
+        results.append(("Gitvow-Session:" in g("log", "-1", "--format=%B"), "commit trailer added"))
         post_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
         results.append(
             (
@@ -83,7 +83,7 @@ def run() -> int:
         )
         stop(base, home)
         results.append(
-            (os.path.exists(os.path.join(home, ".provkit", "ledger", "selftest-session.json")), "ledger written")
+            (os.path.exists(os.path.join(home, ".gitvow", "ledger", "selftest-session.json")), "ledger written")
         )
     finally:
         shutil.rmtree(home, ignore_errors=True)

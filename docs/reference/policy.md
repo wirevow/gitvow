@@ -23,4 +23,4 @@
 
 Evaluation order: deny, confirm, MCP lists, classifier, allow. Missing keys are treated as empty lists. Every pattern is compiled on load; a compile error or unreadable file makes the gate fail closed.
 
-Lookup order: `<repo>/.provkit/policy.json`, `~/.provkit/policy.json`, package default.
+Lookup order: `<repo>/.gitvow/policy.json`, `~/.gitvow/policy.json`, package default.

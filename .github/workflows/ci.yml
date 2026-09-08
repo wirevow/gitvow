@@ -19,7 +19,7 @@ jobs:
       - run: pip install -e ".[dev]"
       - run: ruff check . && ruff format --check .
       - run: pytest
-      - run: provkit selftest
+      - run: gitvow selftest
   security:
     runs-on: ubuntu-latest
     steps:
@@ -28,7 +28,7 @@ jobs:
         with: {python-version: "3.12"}
       - run: pip install -e ".[dev]"
       - run: bandit -q -r src -c pyproject.toml
-      - run: pip freeze --exclude-editable | grep -v '^provkit' > /tmp/req.txt && pip-audit --strict -r /tmp/req.txt
+      - run: pip freeze --exclude-editable | grep -v '^gitvow' > /tmp/req.txt && pip-audit --strict -r /tmp/req.txt
       - run: python -m build 2>/dev/null || pip install build && python -m build
       - run: pip install twine && twine check dist/*
   docs:

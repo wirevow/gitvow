@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 
-from provkit.collect import collect, summarize
-from provkit.hooks import post_tool_use, pre_tool_use, session_start, stop
-from provkit.install import _write_git_hook
+from gitvow.collect import collect, summarize
+from gitvow.hooks import post_tool_use, pre_tool_use, session_start, stop
+from gitvow.install import _write_git_hook
 from tests.conftest import git
 
 
@@ -11,8 +11,8 @@ def test_collect_and_summarize(repo, home, payload, transcript, tmp_path):
     session_start(payload("SessionStart"), str(home))
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git push -f"}), str(home))
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
-    _write_git_hook(str(repo / ".provkit" / "git-hooks"))
-    git(repo, "config", "core.hooksPath", ".provkit/git-hooks")
+    _write_git_hook(str(repo / ".gitvow" / "git-hooks"))
+    git(repo, "config", "core.hooksPath", ".gitvow/git-hooks")
     (repo / "a.txt").write_text("z\n")
     git(repo, "commit", "-qam", "c")
     post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))

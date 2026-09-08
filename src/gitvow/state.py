@@ -23,7 +23,7 @@ def git_dir(cwd: str) -> str | None:
 
 def state_path(cwd: str) -> str | None:
     gd = git_dir(cwd)
-    return os.path.join(gd, "provkit-session.json") if gd else None
+    return os.path.join(gd, "gitvow-session.json") if gd else None
 
 
 def load_state(cwd: str) -> dict[str, Any]:
@@ -48,5 +48,5 @@ def log_event(cwd: str, kind: str, payload: dict[str, Any]) -> None:
     gd = git_dir(cwd)
     if not gd:
         return
-    with open(os.path.join(gd, "provkit-hooks.log"), "a") as fh:
+    with open(os.path.join(gd, "gitvow-hooks.log"), "a") as fh:
         fh.write(json.dumps({"ts": time.strftime("%Y-%m-%dT%H:%M:%S"), "kind": kind, **payload}) + "\n")

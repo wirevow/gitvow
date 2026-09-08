@@ -1,7 +1,7 @@
 import json
 
-from provkit import cli
-from provkit.install import install_repo, install_user, uninstall_repo, uninstall_user
+from gitvow import cli
+from gitvow.install import install_repo, install_user, uninstall_repo, uninstall_user
 from tests.conftest import git
 
 
@@ -11,11 +11,11 @@ def test_user_install_is_idempotent_and_reversible(home):
     s = json.loads((home / ".claude" / "settings.json").read_text())
     assert set(s["hooks"]) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
     assert all(len(v) == 1 for v in s["hooks"].values())  # no duplicate entries after a second install
-    assert git(home, "config", "--global", "--get", "core.hooksPath").endswith(".provkit/git-hooks")
+    assert git(home, "config", "--global", "--get", "core.hooksPath").endswith(".gitvow/git-hooks")
     uninstall_user(str(home), purge_policy=True)
     assert not (home / ".claude" / "settings.json").exists()
     assert git(home, "config", "--global", "--get", "core.hooksPath") == ""
-    assert not (home / ".provkit" / "policy.json").exists()
+    assert not (home / ".gitvow" / "policy.json").exists()
 
 
 def test_user_install_preserves_foreign_hooks(home):
@@ -32,13 +32,13 @@ def test_user_install_preserves_foreign_hooks(home):
 
 def test_repo_install_and_uninstall(repo, home):
     install_repo(str(repo))
-    assert (repo / ".provkit" / "policy.json").exists() and git(
+    assert (repo / ".gitvow" / "policy.json").exists() and git(
         repo, "config", "--get", "core.hooksPath"
-    ) == ".provkit/git-hooks"
-    (repo / ".git" / "provkit-hooks.log").write_text("x\n")
+    ) == ".gitvow/git-hooks"
+    (repo / ".git" / "gitvow-hooks.log").write_text("x\n")
     uninstall_repo(str(repo), purge_notes=True)
-    assert not (repo / ".provkit").exists() and git(repo, "config", "--get", "core.hooksPath") == ""
-    assert not (repo / ".git" / "provkit-hooks.log").exists()
+    assert not (repo / ".gitvow").exists() and git(repo, "config", "--get", "core.hooksPath") == ""
+    assert not (repo / ".git" / "gitvow-hooks.log").exists()
 
 
 def test_cli_check_and_version(capsys, monkeypatch, repo):

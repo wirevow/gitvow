@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from provkit.policy import DEFAULT_POLICY_PATH, Decision, PolicyError, evaluate, load_policy, message_for
+from gitvow.policy import DEFAULT_POLICY_PATH, Decision, PolicyError, evaluate, load_policy, message_for
 
 
 @pytest.fixture
@@ -43,7 +43,7 @@ def test_default_allows(pol, cmd):
 
 def test_path_confirm_on_gate_files_and_own_config(pol):
     assert evaluate(pol, "Edit", {"file_path": "svc/values/production-in/app/values.yaml"}).outcome == "confirm"
-    assert evaluate(pol, "Write", {"file_path": ".provkit/policy.json"}).outcome == "confirm"
+    assert evaluate(pol, "Write", {"file_path": ".gitvow/policy.json"}).outcome == "confirm"
     assert evaluate(pol, "Edit", {"file_path": "core/authz_rules.go"}).outcome == "confirm"
     assert evaluate(pol, "Edit", {"file_path": "src/util.py"}).outcome == "allow"
 
@@ -62,16 +62,12 @@ def test_order_is_deny_then_confirm(pol):
 
 def test_policy_precedence_repo_then_home_then_default(tmp_path):
     home = tmp_path / "h"
-    (home / ".provkit").mkdir(parents=True)
+    (home / ".gitvow").mkdir(parents=True)
     repo = tmp_path / "r"
-    (repo / ".provkit").mkdir(parents=True)
-    (home / ".provkit" / "policy.json").write_text(
-        json.dumps({"bash_deny": [{"pattern": "^echo home", "reason": "h"}]})
-    )
+    (repo / ".gitvow").mkdir(parents=True)
+    (home / ".gitvow" / "policy.json").write_text(json.dumps({"bash_deny": [{"pattern": "^echo home", "reason": "h"}]}))
     assert evaluate(load_policy(str(repo), str(home)), "Bash", {"command": "echo home"}).outcome == "deny"
-    (repo / ".provkit" / "policy.json").write_text(
-        json.dumps({"bash_deny": [{"pattern": "^echo repo", "reason": "r"}]})
-    )
+    (repo / ".gitvow" / "policy.json").write_text(json.dumps({"bash_deny": [{"pattern": "^echo repo", "reason": "r"}]}))
     p = load_policy(str(repo), str(home))
     assert evaluate(p, "Bash", {"command": "echo repo"}).outcome == "deny"
     assert evaluate(p, "Bash", {"command": "echo home"}).outcome == "allow"
@@ -79,11 +75,11 @@ def test_policy_precedence_repo_then_home_then_default(tmp_path):
 
 def test_invalid_policy_raises(tmp_path):
     repo = tmp_path / "r"
-    (repo / ".provkit").mkdir(parents=True)
-    (repo / ".provkit" / "policy.json").write_text("{not json")
+    (repo / ".gitvow").mkdir(parents=True)
+    (repo / ".gitvow" / "policy.json").write_text("{not json")
     with pytest.raises(PolicyError):
         load_policy(str(repo), str(tmp_path))
-    (repo / ".provkit" / "policy.json").write_text(json.dumps({"bash_deny": [{"pattern": "(unclosed", "reason": "x"}]}))
+    (repo / ".gitvow" / "policy.json").write_text(json.dumps({"bash_deny": [{"pattern": "(unclosed", "reason": "x"}]}))
     with pytest.raises(PolicyError):
         load_policy(str(repo), str(tmp_path))
 

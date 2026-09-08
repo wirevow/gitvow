@@ -1,5 +1,5 @@
 {
-  "_doc": "Default provkit policy. Regex (Python re) on Bash command text, edited file paths, or MCP tool names. Order: deny \u2192 confirm \u2192 allow; unmatched calls are allowed and logged. Copy to <repo>/.provkit/policy.json or ~/.provkit/policy.json to customise.",
+  "_doc": "Default gitvow policy. Regex (Python re) on Bash command text, edited file paths, or MCP tool names. Order: deny \u2192 confirm \u2192 allow; unmatched calls are allowed and logged. Copy to <repo>/.gitvow/policy.json or ~/.gitvow/policy.json to customise.",
   "bash_deny": [
     {
       "pattern": "\\brm\\s+-rf?\\s+(/|~|\\$HOME)(\\s|$)",
@@ -62,7 +62,7 @@
       "reason": "edits CI definitions"
     },
     {
-      "pattern": "(^|/)\\.provkit/(policy\\.json|hooks/)|(^|/)\\.claude/settings.*\\.json",
+      "pattern": "(^|/)\\.gitvow/(policy\\.json|hooks/)|(^|/)\\.claude/settings.*\\.json",
       "reason": "edits the gate policy or the hook configuration"
     },
     {

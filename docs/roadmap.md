@@ -1,10 +1,10 @@
 # Roadmap
 
-provkit is deliberately small. These are the things it should grow into, in order, with the exit test for each.
+gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
 ## 0.2 — Trial-hardened
 - One git ref per session note (`refs/sessions/<ulid>`) so parallel agents never contend; `git notes` kept as a compatibility view.
-- Custom redaction rules from `~/.provkit/redact-rules.json`.
+- Custom redaction rules from `~/.gitvow/redact-rules.json`.
 - Line-level attribution (agent-written vs human-edited lines) in the note.
 - Exit: a five-person, two-week trial produces zero secrets in collected archives on manual review.
 
@@ -14,7 +14,7 @@ provkit is deliberately small. These are the things it should grow into, in orde
 - Exit: two teams review with it on; time-to-first-comment measured.
 
 ## 0.4 — Policy from facts
-- A hook that asks an external provider whether a file is gate-bearing or a route has callers, so the policy can be derived rather than written. provkit defines the interface; providers live elsewhere.
+- A hook that asks an external provider whether a file is gate-bearing or a route has callers, so the policy can be derived rather than written. gitvow defines the interface; providers live elsewhere.
 - Exit: a synthetic PR that adds an unauthorised route is refused with the evidence attached.
 
 ## Later
@@ -22,4 +22,4 @@ provkit is deliberately small. These are the things it should grow into, in orde
 - A configuration-driven storage tier for the ledger (restricted repository, object store).
 
 ## Not planned
-Hosting, mirroring, cloud summaries of transcripts, a web UI. provkit is the layer those things consume.
+Hosting, mirroring, cloud summaries of transcripts, a web UI. gitvow is the layer those things consume.

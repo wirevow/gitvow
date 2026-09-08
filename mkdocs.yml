@@ -1,7 +1,7 @@
-site_name: provkit
+site_name: gitvow
 site_description: Provenance and a policy gate for AI-agent coding sessions, stored in git you already have.
-repo_url: https://github.com/wirevow/provkit
-site_url: https://wirevow.dev/provkit/
+repo_url: https://github.com/wirevow/gitvow
+site_url: https://wirevow.dev/gitvow/
 theme:
   name: material
   features: [navigation.sections, navigation.expand, content.code.copy, search.suggest]

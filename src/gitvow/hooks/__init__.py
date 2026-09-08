@@ -91,7 +91,7 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "transcript": "kept local; see ledger",
         "redaction": "secrets/PII patterns and high-entropy tokens replaced at write time",
     }
-    body = "provkit-session\n" + json.dumps(note, indent=1)
+    body = "gitvow-session\n" + json.dumps(note, indent=1)
     git(["notes", f"--ref={NOTES_REF}", "add", "-f", "-m", body, head], cwd)
     log_event(cwd, "note_added", {"commit": head[:12], "session_id": note["session_id"], "step": note["step"]})
     return 0, f"session note attached to {head[:12]} (refs/notes/{NOTES_REF})"
@@ -102,7 +102,7 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     home = home or os.path.expanduser("~")
     st = load_state(cwd)
     summ = summarize(h.get("transcript_path") or st.get("transcript_path"))
-    led = os.path.join(home, ".provkit", "ledger")
+    led = os.path.join(home, ".gitvow", "ledger")
     os.makedirs(led, exist_ok=True)
     commits: list[str] = []
     if st.get("started"):

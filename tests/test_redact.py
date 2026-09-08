@@ -1,4 +1,4 @@
-from provkit.redact import redact, redact_high_entropy, shannon_entropy
+from gitvow.redact import redact, redact_high_entropy, shannon_entropy
 
 
 def test_known_secret_formats_are_replaced():
