@@ -75,6 +75,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         st["session_id"] = h.get("session_id") or st.get("session_id")
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")
         st["steps"] = st.get("steps", 0) + 1
+        st["pending_commit"] = time.time()  # the git hook adds trailers only while this is fresh
         save_state(cwd, st)
     if rules is None:
         log_event(cwd, "allowed", {"tool": tool})
@@ -162,14 +163,20 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         return 0, ""
     if tool != "Bash" or not COMMIT_RE.search(inp.get("command", "")):
         return 0, ""
+    st = load_state(cwd)
+    if "pending_commit" in st:
+        del st["pending_commit"]
+        save_state(cwd, st)
     rc, head, _ = git(["rev-parse", "HEAD"], cwd)
     if rc != 0:
         return 0, ""
     rules, warn = _rules_or_none(cwd, home)
     if rules is None:
         return 0, warn
-    st = load_state(cwd)
     summ = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)
+    _, head_msg, _ = git(["log", "-1", "--format=%B", head], cwd)
+    if "Gitvow-Session:" not in head_msg:
+        return 0, ""  # the commit did not go through (or was not the agent's): no note
     _, files, _ = git(["show", "--stat", "--format=", head], cwd)
     attribution = _attribution(cwd, head, st.get("agent_blobs", {}), summ["files_written"])
     session_id = h.get("session_id") or st.get("session_id")

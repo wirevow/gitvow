@@ -1,5 +1,6 @@
 import json
 import os
+import time
 
 from gitvow.hooks import post_tool_use, pre_tool_use, session_start, stop
 from gitvow.install import _write_git_hook
@@ -51,12 +52,32 @@ def test_commit_flow_trailer_note_and_attribution(repo, home, payload, transcrip
     assert att["files"][0]["agent_wrote"] is True and "agent_blob" not in att["files"][0]
 
 
-def test_human_commit_has_no_trailer(repo, home):
+def test_human_commit_has_no_trailer(repo, home, payload):
     _write_git_hook(str(repo / ".gitvow" / "git-hooks"))
     git(repo, "config", "core.hooksPath", ".gitvow/git-hooks")
     (repo / "a.txt").write_text("h\n")
-    git(repo, "commit", "-qam", "human")
+    git(repo, "commit", "-qam", "human, no session at all")
     assert "Gitvow-Session" not in git(repo, "log", "-1", "--format=%B")
+    session_start(payload("SessionStart"), str(home))  # session active, but the agent did not run git commit
+    (repo / "a.txt").write_text("h2\n")
+    git(repo, "commit", "-qam", "human, alongside a live session")
+    assert "Gitvow-Session" not in git(repo, "log", "-1", "--format=%B")
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    st["pending_commit"] = 1  # a stale flag from long ago
+    (repo / ".git" / "gitvow-session.json").write_text(json.dumps(st))
+    (repo / "a.txt").write_text("h3\n")
+    git(repo, "commit", "-qam", "human, stale flag")
+    assert "Gitvow-Session" not in git(repo, "log", "-1", "--format=%B")
+
+
+def test_pending_flag_is_cleared_after_note_and_no_note_without_trailer(repo, home, payload):
+    session_start(payload("SessionStart"), str(home))
+    pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}), str(home))
+    assert "pending_commit" in json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    # the agent's commit failed (nothing to commit); PostToolUse still runs
+    code, msg = post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}), str(home))
+    assert (code, msg) == (0, "") and git(repo, "for-each-ref", "refs/notes/") == ""
+    assert "pending_commit" not in json.loads((repo / ".git" / "gitvow-session.json").read_text())
 
 
 def test_git_hook_chains_to_repo_hook(repo, home):
@@ -65,7 +86,9 @@ def test_git_hook_chains_to_repo_hook(repo, home):
     local = repo / ".git" / "hooks" / "prepare-commit-msg"
     local.write_text('#!/bin/sh\necho LOCAL >> "$1"\n')
     os.chmod(local, 0o700)
-    (repo / ".git" / "gitvow-session.json").write_text(json.dumps({"session_id": "s", "steps": 2}))
+    (repo / ".git" / "gitvow-session.json").write_text(
+        json.dumps({"session_id": "s", "steps": 2, "pending_commit": time.time()})
+    )
     (repo / "a.txt").write_text("c\n")
     git(repo, "commit", "-qam", "chain")
     body = git(repo, "log", "-1", "--format=%B")

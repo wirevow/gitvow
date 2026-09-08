@@ -14,7 +14,9 @@ GIT_HOOK = """#!/bin/sh
 # gitvow: append session trailers when a session is active in this repo; chain to the repo's own hook if present.
 GD="$(git rev-parse --git-dir)"; STATE="$GD/gitvow-session.json"
 if [ -f "$STATE" ]; then
-  SID=$(python3 -c "import json;print(json.load(open('$STATE')).get('session_id') or '')" 2>/dev/null)
+  # Trailers go only on commits the agent itself runs: the PreToolUse gate sets pending_commit when the
+  # agent invokes git commit and PostToolUse clears it. A human commit in a terminal gets no trailer.
+  SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;print(s.get('session_id') or '' if time.time()-p<300 else '')" 2>/dev/null)
   STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
   if [ -n "$SID" ] && ! grep -q "^Gitvow-Session:" "$1"; then printf "\\nGitvow-Session: %s\\nGitvow-Step: %s\\n" "$SID" "$STEP" >> "$1"; fi
 fi

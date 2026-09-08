@@ -2,6 +2,8 @@
 
 **Does gitvow send anything anywhere?** No. No network calls, no telemetry. Notes leave only when you push the ref.
 
+**I committed by hand while the agent was working. Does my commit get a trailer?** No. Trailers go only on commits the agent runs through its tools. Yours has none, and no note.
+
 **Will my teammates see the trailers?** Yes, they are part of the commit message. That is the point: `git log` shows which commits an agent made.
 
 **Will they see the notes?** Only if the notes ref is pushed and they fetch it. GitHub's UI does not show notes.

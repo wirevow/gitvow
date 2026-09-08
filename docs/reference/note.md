@@ -36,4 +36,4 @@ The schema is additive. New fields may appear; existing fields keep their meanin
 Gitvow-Session: <session id>
 Gitvow-Step: <int>
 ```
-Added by `prepare-commit-msg` when `.git/gitvow-session.json` exists with a session id. Idempotent: a message that already has `Gitvow-Session:` is left alone.
+Added by `prepare-commit-msg` when `.git/gitvow-session.json` holds a session id and a `pending_commit` timestamp younger than five minutes, which the PreToolUse gate sets when the agent runs `git commit` and PostToolUse clears afterwards. Idempotent: a message that already has `Gitvow-Session:` is left alone. A note is written only when the commit at HEAD carries the trailer.

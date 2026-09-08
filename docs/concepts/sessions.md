@@ -14,7 +14,7 @@ Gitvow-Session: 8f3d5c71-574a-4eec-8903-9425e3a8335b
 Gitvow-Step: 4
 ```
 
-Trailers survive rebase, amend, squash and cherry-pick because they are part of the message rather than derived from the commit hash. Commits made outside a session get none, so the absence of a trailer is itself information.
+Trailers survive rebase, amend, squash and cherry-pick because they are part of the message rather than derived from the commit hash. Only commits the agent itself runs get them: the gate marks the moment the agent invokes `git commit`, and the git hook adds trailers only while that mark is fresh. A commit you make in a terminal, even while a session is open in the same repository, gets none. The absence of a trailer is therefore itself information: a person made this commit.
 
 Useful queries:
 
