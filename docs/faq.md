@@ -8,7 +8,7 @@
 
 **Can an agent turn the gate off?** Editing the policy or the hook settings requires confirmation under the default policy, and a missing policy fails closed. A determined human can, of course; the gate is for agents.
 
-**What happens if a hook crashes?** Claude Code treats exit codes other than 0 and 2 as non-blocking errors and continues. gitvow only exits 2 deliberately; a crash in the policy path is caught and turned into a block.
+**What happens if a hook crashes?** Claude Code treats exit codes other than 0 and 2 as non-blocking errors and continues. gitvow only exits 2 deliberately; a crash in the policy path is caught and turned into a block. The one failure this does not cover is a hook command that cannot be found at all, which is why a per-user install records the absolute path of the executable; see [Install](guides/install.md).
 
 **Why not store the transcript?** Because it contains tool output, and tool output contains whatever the agent read. See [What stays out of git](concepts/storage.md).
 

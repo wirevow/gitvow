@@ -5,6 +5,7 @@ from __future__ import annotations
 import json
 import os
 import shutil
+import sys
 from typing import Any
 
 from .state import git
@@ -36,6 +37,21 @@ def _set_notes_config(cwd: str, scope: list[str]) -> None:
 def _unset_notes_config(cwd: str, scope: list[str]) -> None:
     for key in NOTES_KEYS:
         git(["config", *scope, "--unset", key, "^" + NOTES_GLOB.replace("*", "\\*").replace(".", "\\.") + "$"], cwd)
+
+
+def executable_command() -> str:
+    """The command Claude Code should run for this install of gitvow.
+
+    Hooks run in a shell that may not have a virtualenv or pipx path activated, and a hook that
+    cannot be found exits non-zero without blocking, which would silently switch the gate off.
+    A per-user install therefore records the absolute path of the console script when one exists,
+    falling back to `<python> -m gitvow`; per-repo installs keep the bare name because the settings
+    file is shared by people with different paths.
+    """
+    exe = shutil.which("gitvow", path=os.path.dirname(sys.executable)) or shutil.which("gitvow")
+    if exe:
+        return exe
+    return f"{sys.executable} -m gitvow"
 
 
 def _hook_entries(cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
@@ -95,10 +111,11 @@ def _write_git_hook(dirpath: str) -> str:
     return p
 
 
-def install_user(home: str, cmd_prefix: str = "gitvow") -> list[str]:
+def install_user(home: str, cmd_prefix: str | None = None) -> list[str]:
     base = os.path.join(home, ".gitvow")
     os.makedirs(base, exist_ok=True)
-    done = []
+    cmd_prefix = cmd_prefix or executable_command()
+    done = [f"hook command → {cmd_prefix}"]
     pol = os.path.join(base, "policy.json")
     if not os.path.exists(pol):
         from .policy import DEFAULT_POLICY_PATH

@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.2.1 — 2026-09-09
+- Per-user install records the absolute path of the `gitvow` executable in the hook command (falling back to `python -m gitvow`), so hooks run even when Claude Code's shell lacks the virtualenv or pipx PATH. Found in an end-to-end run with a real Claude Code session. Per-repo installs keep the bare name. New `python -m gitvow` entry point.
+
 ## 0.2.0 — 2026-09-09
 - Session notes now live on one ref per session, `refs/notes/gitvow/<session-id>`; parallel agents never contend and pushing `refs/notes/gitvow/*` never conflicts. 0.1 notes on `refs/notes/sessions` are still read.
 - Custom redaction rules from `<repo>/.gitvow/redact-rules.json` and `~/.gitvow/redact-rules.json`; both apply. An invalid rules file fails closed: nothing is written for that event.

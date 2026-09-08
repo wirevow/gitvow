@@ -139,3 +139,29 @@ def test_default_policy_confirms_edits_to_redaction_rules(monkeypatch, repo, cap
     monkeypatch.chdir(repo)
     assert cli.main(["check", "--path", ".gitvow/redact-rules.json"]) == 2
     assert cli.main(["check", "--path", ".gitvow/git-hooks/prepare-commit-msg"]) == 2
+
+
+def test_user_install_records_absolute_hook_command(home):
+    from gitvow.install import executable_command
+
+    install_user(str(home))
+    s = json.loads((home / ".claude" / "settings.json").read_text())
+    cmd = s["hooks"]["PreToolUse"][0]["hooks"][0]["command"]
+    assert cmd == f"{executable_command()} hook PreToolUse"
+    assert cmd.startswith("/") or " -m gitvow " in cmd  # never a bare name that depends on PATH
+    uninstall_user(str(home))
+    assert not (home / ".claude" / "settings.json").exists()  # marker still recognised with the absolute path
+
+
+def test_repo_install_keeps_bare_name(repo, home):
+    install_repo(str(repo))
+    s = json.loads((repo / ".claude" / "settings.json").read_text())
+    assert s["hooks"]["PreToolUse"][0]["hooks"][0]["command"] == "gitvow hook PreToolUse"
+
+
+def test_python_m_gitvow_entrypoint():
+    import subprocess
+    import sys
+
+    r = subprocess.run([sys.executable, "-m", "gitvow", "--version"], capture_output=True, text=True)
+    assert r.returncode == 0 and r.stdout.startswith("gitvow ")
