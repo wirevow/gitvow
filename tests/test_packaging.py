@@ -30,3 +30,8 @@ def test_wheel_contains_policy_and_selftest_passes(tmp_path):
     r = subprocess.run([str(bin_dir / "gitvow"), "selftest"], capture_output=True, text=True, cwd=tmp_path)
     assert r.returncode == 0, r.stdout + r.stderr
     assert "0 failed" in r.stdout
+    import re
+
+    expected = re.search(r'^version = "([^"]+)"', (ROOT / "pyproject.toml").read_text(), re.M).group(1)
+    v = subprocess.run([str(bin_dir / "gitvow"), "--version"], capture_output=True, text=True, check=True)
+    assert v.stdout.strip() == f"gitvow {expected}"

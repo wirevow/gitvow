@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.1.2 — 2026-09-08
+- Fix: `gitvow --version` reported a hardcoded 0.1.0; the version now comes from package metadata, and the packaging test asserts it matches `pyproject.toml`.
+
 ## 0.1.1 — 2026-09-08
 - Fix: `default_policy.json` was missing from the wheel, so a fresh install failed closed and blocked every tool call. Now shipped as package data, with a test that installs the built wheel and runs the self-check.
 
