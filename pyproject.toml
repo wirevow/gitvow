@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitvow"
-version = "0.1.0"
+version = "0.1.1"
 description = "Provenance and policy gate for AI-agent coding sessions: session trailers on commits, redacted session notes in git, a tool-call gate, and a local ledger. No runtime dependencies."
 readme = "README.md"
 license = {text = "Apache-2.0"}
@@ -34,6 +34,9 @@ Security = "https://github.com/wirevow/gitvow/blob/main/SECURITY.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+gitvow = ["default_policy.json"]
 
 [tool.ruff]
 line-length = 120
