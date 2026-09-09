@@ -6,7 +6,7 @@
 
 **Will my teammates see the trailers?** Yes, they are part of the commit message. That is the point: `git log` shows which commits an agent made.
 
-**Will they see the notes?** Only if the notes ref is pushed and they fetch it. GitHub's UI does not show notes.
+**Will they see the notes?** On the pull request, yes, through the [gitvow action](guides/pull-requests.md). Notes are pushed automatically by the pre-push hook; GitHub's own UI does not show git notes.
 
 **Can an agent turn the gate off?** Editing the policy or the hook settings requires confirmation under the default policy, and a missing policy fails closed. A determined human can, of course; the gate is for agents.
 

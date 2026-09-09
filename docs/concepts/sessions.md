@@ -33,13 +33,13 @@ A structural summary attached to the commit as a git note under `refs/notes/gitv
 - the files in the commit, and which of them the agent itself wrote or edited in this session
 - line-level attribution: for each file the agent wrote, how many lines a human changed after the agent's last write, and the agent's share of the lines added in the commit
 
-Notes are git objects but not part of the tree. `git status`, diffs and checkouts never see them. They are local until pushed, and read with `gitvow show <commit>` or plain `git log --show-notes` once installed.
+Notes are git objects but not part of the tree. `git status`, diffs and checkouts never see them. A `pre-push` hook added by `gitvow install` pushes them to the same remote whenever you push a branch, and the [pull request action](../guides/pull-requests.md) shows them to reviewers. Read them locally with `gitvow show <commit>` or plain `git log --show-notes`.
 
 ### One ref per session
 Each session writes only to its own ref. Two agents committing in the same repository at the same time never touch the same ref, and pushing notes never conflicts, because no two machines ever write the same ref:
 
 ```sh
-git push origin 'refs/notes/gitvow/*'          # publish every session's notes
+gitvow push-notes                              # or: git push origin 'refs/notes/gitvow/*'
 git fetch origin 'refs/notes/gitvow/*:refs/notes/gitvow/*'
 ```
 

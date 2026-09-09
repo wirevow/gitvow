@@ -39,7 +39,7 @@ Read it in this order. **The plan** tells you what the agent thought it was doin
 Attribution works by recording the blob id of each file right after the agent writes it, then diffing that blob against the committed one. It is exact for what the agent wrote through its editing tools; edits the agent makes through shell commands are not attributed to it.
 
 ## In a pull request
-GitHub does not display git notes. Until a check publishes them, the fastest path is `git fetch origin 'refs/notes/gitvow/*:refs/notes/gitvow/*'` then `gitvow show <sha>` locally, or ask the author to paste `gitvow show` output into the description.
+GitHub does not display git notes. The [gitvow action](pull-requests.md) posts every session note on the pull request as a comment and job summary. Locally: `git fetch origin 'refs/notes/gitvow/*:refs/notes/gitvow/*'` then `gitvow show <sha>`.
 
 ## Finding sessions
 ```sh

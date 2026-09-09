@@ -1,0 +1,55 @@
+name: gitvow
+description: Post each pull request's agent session notes as a comment and job summary; fail when notes are missing.
+branding: {icon: git-commit, color: purple}
+inputs:
+  require-notes:
+    description: Fail when a commit carries a session trailer but its note was not pushed.
+    default: "true"
+  comment:
+    description: Post or update the pull request comment.
+    default: "true"
+  version:
+    description: gitvow version to install (pip specifier). Defaults to the action's own tag.
+    default: ""
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-python@v5
+      with: {python-version: "3.12"}
+    - shell: bash
+      run: |
+        set -euo pipefail
+        spec="${{ inputs.version }}"
+        if [ -z "$spec" ]; then
+          ref="${{ github.action_ref }}"
+          case "$ref" in v*) spec="==${ref#v}" ;; *) spec="" ;; esac
+        fi
+        case "$spec" in
+          git+*|https://*|/*|./*) pip install -q "$spec" ;;
+          ""|[=\<\>~!]*) pip install -q "gitvow${spec}" || pip install -q gitvow ;;
+          *) pip install -q "gitvow==${spec}" ;;
+        esac
+        git fetch --quiet origin '+refs/notes/gitvow/*:refs/notes/gitvow/*' || true
+        git fetch --quiet origin '+refs/notes/sessions:refs/notes/sessions' 2>/dev/null || true
+        base="${{ github.event.pull_request.base.sha }}"; head="${{ github.event.pull_request.head.sha }}"
+        git fetch --quiet origin "$base" "$head" || true
+        set +e
+        gitvow report --base "$base" --head "$head" $([ "${{ inputs.require-notes }}" = "true" ] && echo --require-notes) > gitvow-report.md
+        rc=$?
+        set -e
+        cat gitvow-report.md >> "$GITHUB_STEP_SUMMARY"
+        cat gitvow-report.md
+        echo "rc=$rc" >> "$GITHUB_OUTPUT"
+        if [ "${{ inputs.comment }}" = "true" ] && [ -n "${{ github.event.pull_request.number }}" ]; then
+          { echo "<!-- gitvow-report -->"; cat gitvow-report.md; } > body.md
+          pr=${{ github.event.pull_request.number }}
+          existing=$(gh api "repos/${{ github.repository }}/issues/$pr/comments" --paginate --jq '.[] | select(.body | startswith("<!-- gitvow-report -->")) | .id' | head -1 || true)
+          if [ -n "$existing" ]; then
+            gh api -X PATCH "repos/${{ github.repository }}/issues/comments/$existing" -F body=@body.md --silent
+          else
+            gh api -X POST "repos/${{ github.repository }}/issues/$pr/comments" -F body=@body.md --silent
+          fi
+        fi
+        exit $rc
+      env:
+        GH_TOKEN: ${{ github.token }}

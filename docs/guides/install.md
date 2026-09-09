@@ -9,6 +9,7 @@ gitvow install --user
 - Default policy → `~/.gitvow/policy.json` (created only if absent, so your edits survive reinstalls)
 - Git hook → `~/.gitvow/git-hooks/prepare-commit-msg`, registered as the global `core.hooksPath`
 - Hook entries merged into `~/.claude/settings.json`, using the **absolute path** of the `gitvow` executable, so hooks work even when Claude Code's shell has no virtualenv or pipx directory on its PATH
+- A `pre-push` hook in the same directory that pushes `refs/notes/gitvow/*` to the remote you push to
 - Global git config `notes.displayRef` and `notes.rewriteRef` set to `refs/notes/gitvow/*`, so `git log --show-notes` shows session notes and they follow amend, rebase and squash
 
 Covers every repository you open. Nothing is committed anywhere. If you already had a global hooks path, gitvow reports it; its hook chains to each repository's own `.git/hooks/prepare-commit-msg`, not to a previous global path.
@@ -23,6 +24,7 @@ gitvow install /path/to/repo
 - Hook entries merged into `<repo>/.claude/settings.json`, using the bare command `gitvow` because the file is shared by people with different install paths; every teammate needs `gitvow` on the PATH their shell gives Claude Code
 - `core.hooksPath` set to `.gitvow/git-hooks` for that repository
 - Repository git config `notes.displayRef` and `notes.rewriteRef` set to `refs/notes/gitvow/*`
+- A `pre-push` hook that pushes session notes with every push
 
 Commit `.gitvow/` and `.claude/settings.json` to share. Each teammate runs once: `git config core.hooksPath .gitvow/git-hooks`. Use this once a team has agreed a policy: it is reviewed in pull requests, and gate paths are specific to the repository.
 

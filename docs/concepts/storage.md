@@ -5,7 +5,7 @@ The agent's transcript contains tool output: file contents, query results, envir
 | Data | Where it lives | Enters git? |
 |---|---|---|
 | Session id and step | commit message trailers | yes, by design |
-| Session note: structure, tool names, redacted plan, attribution | `refs/notes/gitvow/<session-id>` | yes, as a note, not in the tree; local until pushed |
+| Session note: structure, tool names, redacted plan, attribution | `refs/notes/gitvow/<session-id>` | yes, as a note, not in the tree; pushed alongside your branches by the pre-push hook |
 | Agent-written file versions (blob ids for attribution) | `.git/objects`, unreachable | no, never pushed; pruned by `git gc` |
 | Ledger: redacted tool calls, commits, plan | `~/.gitvow/ledger/` | no |
 | Hook log: every allow, confirm, deny | `<repo>/.git/gitvow-hooks.log` | no, `.git` is never pushed |

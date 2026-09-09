@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.3.0 — 2026-09-09
+- `gitvow report --base <rev> [--head <rev>]`: per-commit Markdown or JSON report pairing trailers with session notes, with attribution and a "said vs did" check of changed files against the stated plan; `--require-notes` exits 1 when a trailered commit has no note.
+- GitHub Action `wirevow/gitvow@v0.3`: fetches session notes, posts the report as one upserted pull request comment and the job summary, fails on missing notes.
+- `pre-push` git hook installed alongside `prepare-commit-msg`: pushes `refs/notes/gitvow/*` to the remote being pushed to. `gitvow push-notes [remote]` does it by hand. **Re-run `gitvow install` after upgrading.**
+
 ## 0.2.3 — 2026-09-09
 - Fix: the step counter and recorded agent blobs carried over from earlier sessions in the same repository, so a fresh session's first commit could read `Gitvow-Step: 3`. A new session id now starts from zero; a resumed session keeps its counters. Found in an end-to-end run.
 

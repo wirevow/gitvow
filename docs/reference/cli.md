@@ -10,6 +10,9 @@ gitvow check --path <file>                                dry-run against an edi
 gitvow check --mcp <tool-name>                            dry-run against an MCP tool name
 gitvow show [commit]                                      print a commit's message, trailers and session note (default HEAD)
 gitvow redact <text>                                      apply the built-in layers plus your rules files to text and print the result
+gitvow report --base <rev> [--head <rev>] [--json] [--require-notes]
+                                                          per-commit report (trailers, notes, attribution, said vs did) for base..head; exit 1 if --require-notes and a trailered commit has no note
+gitvow push-notes [remote]                                push refs/notes/gitvow/* to the remote (default origin)
 gitvow collect [--out DIR]                                gather ledger, logs, trailers and notes into one redacted directory (default ~/Desktop)
 gitvow summarize <dir>                                    trial metrics from a collected directory
 gitvow selftest                                           drive every hook in a throwaway repository and report pass/fail

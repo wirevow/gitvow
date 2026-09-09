@@ -22,6 +22,7 @@ nav:
       - Read a commit's session: guides/reading.md
       - Run a trial and collect results: guides/trial.md
       - Redaction and custom rules: guides/redaction.md
+      - Session notes on pull requests: guides/pull-requests.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

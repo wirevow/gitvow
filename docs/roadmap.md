@@ -9,10 +9,12 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - Notes follow amend, rebase and squash through `notes.rewriteRef`.
 - Exit still open: a five-person, two-week trial produces zero secrets in collected archives on manual review.
 
-## 0.3 — Reviewer surface
-- A GitHub check that publishes each PR's session notes as a comment or check summary, and fails when agent commits lack trailers.
-- "Said versus did": the stated plan against the files changed.
-- Exit: two teams review with it on; time-to-first-comment measured.
+## 0.3 — Reviewer surface (shipped)
+- `gitvow report` and a GitHub Action that post each pull request's session notes as one updated comment and as the job summary.
+- The check fails when a commit carries a session trailer but its note was never pushed. (A commit without any trailer is, by construction, a human commit; nothing can prove otherwise, so the check reports it rather than failing.)
+- "Said versus did": each changed file checked against the agent's stated plan.
+- Notes pushed automatically by a `pre-push` hook; `gitvow push-notes` for by hand.
+- Exit still open: two teams review with it on; time-to-first-comment measured.
 
 ## 0.4 — Policy from facts
 - A hook that asks an external provider whether a file is gate-bearing or a route has callers, so the policy can be derived rather than written. gitvow defines the interface; providers live elsewhere.

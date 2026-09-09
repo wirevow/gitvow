@@ -14,6 +14,7 @@ from .hooks import HANDLERS, LEGACY_NOTES_REF, notes_ref
 from .install import install_repo, install_user, uninstall_repo, uninstall_user
 from .policy import PolicyError, evaluate, load_policy
 from .redact import RedactionError, load_rules, redact
+from .report import build, render_markdown
 from .state import git
 
 
@@ -94,6 +95,31 @@ def cmd_redact(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_report(a: argparse.Namespace) -> int:
+    """Per-commit report for base..head; exit 1 when --require-notes and a trailered commit has no note."""
+    try:
+        r = build(os.getcwd(), a.base, a.head)
+    except ValueError as e:
+        print(f"report error: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(r, indent=1) if a.json else render_markdown(r), end="" if not a.json else "\n")
+    if a.require_notes and r["missing_notes"]:
+        print(f"missing session notes for: {', '.join(r['missing_notes'])}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def cmd_push_notes(a: argparse.Namespace) -> int:
+    import subprocess
+
+    env = {**os.environ, "GITVOW_PUSHING_NOTES": "1"}  # the pre-push hook must not push the same refs again
+    r = subprocess.run(
+        ["git", "push", a.remote, "refs/notes/gitvow/*:refs/notes/gitvow/*"], env=env, capture_output=True, text=True
+    )
+    print((r.stderr or r.stdout).strip() or "notes pushed", file=sys.stderr if r.returncode else sys.stdout)
+    return 1 if r.returncode else 0
+
+
 def cmd_collect(a: argparse.Namespace) -> int:
     w = collect(os.path.expanduser("~"), a.out)
     print(summarize_text(w))
@@ -141,6 +167,15 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("redact", help="apply built-in redaction plus your rules files to text")
     s.add_argument("text", nargs="+")
     s.set_defaults(f=cmd_redact)
+    s = sub.add_parser("report", help="per-commit report for a range: trailers, notes, attribution, said vs did")
+    s.add_argument("--base", required=True)
+    s.add_argument("--head", default="HEAD")
+    s.add_argument("--json", action="store_true")
+    s.add_argument("--require-notes", action="store_true")
+    s.set_defaults(f=cmd_report)
+    s = sub.add_parser("push-notes", help="push refs/notes/gitvow/* to a remote (default origin)")
+    s.add_argument("remote", nargs="?", default="origin")
+    s.set_defaults(f=cmd_push_notes)
     s = sub.add_parser("collect", help="gather ledger, logs, trailers and notes into one directory")
     s.add_argument("--out", default=os.path.expanduser("~/Desktop"))
     s.set_defaults(f=cmd_collect)

@@ -24,6 +24,17 @@ SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null &
 [ -x "$GD/hooks/prepare-commit-msg" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/prepare-commit-msg" "$@"
 exit 0
 """
+PRE_PUSH_HOOK = """#!/bin/sh
+# gitvow: push session notes (refs/notes/gitvow/*) to the same remote whenever a branch is pushed.
+# The inner push re-enters this hook; GITVOW_PUSHING_NOTES stops the recursion.
+REMOTE="$1"
+if [ -z "$GITVOW_PUSHING_NOTES" ] && [ -n "$REMOTE" ] && git for-each-ref --count=1 refs/notes/gitvow/ | grep -q .; then
+  GITVOW_PUSHING_NOTES=1 git push --quiet "$REMOTE" 'refs/notes/gitvow/*:refs/notes/gitvow/*' 2>/dev/null || true
+fi
+GD="$(git rev-parse --git-dir)"; SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/pre-push" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/pre-push" "$@"
+exit 0
+"""
 MARKER = "gitvow hook "
 NOTES_GLOB = "refs/notes/gitvow/*"
 NOTES_KEYS = ("notes.displayRef", "notes.rewriteRef")
@@ -106,11 +117,12 @@ def unmerge_settings(path: str) -> None:
 
 def _write_git_hook(dirpath: str) -> str:
     os.makedirs(dirpath, exist_ok=True)
-    p = os.path.join(dirpath, "prepare-commit-msg")
-    with open(p, "w") as fh:
-        fh.write(GIT_HOOK)
-    os.chmod(p, 0o755)  # noqa: S103  # nosec B103 - git runs hooks as the invoking user; must be executable
-    return p
+    for name, body in (("prepare-commit-msg", GIT_HOOK), ("pre-push", PRE_PUSH_HOOK)):
+        p = os.path.join(dirpath, name)
+        with open(p, "w") as fh:
+            fh.write(body)
+        os.chmod(p, 0o755)  # noqa: S103  # nosec B103 - git runs hooks as the invoking user; must be executable
+    return os.path.join(dirpath, "prepare-commit-msg")
 
 
 def install_user(home: str, cmd_prefix: str | None = None) -> list[str]:
