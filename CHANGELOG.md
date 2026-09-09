@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.12.3 — 2026-09-10
+- Codex CLI verified in a real session, end to end: the gate collects an at-commit finding from an `apply_patch` edit, the card refuses the commit, `gitvow decide` records the answer, and the commit carries the trailers with a note holding the decision, attribution and cost.
+- Codex transcript reader: unwraps the JavaScript snippet Codex 0.15 records for every tool call (`await tools.exec_command({...})`, `await tools.apply_patch("...")`), so notes and reports name `Bash` and `Edit` instead of a single `exec`, and patched files reach `files_written`.
+- User turns are counted from `input_text` parts as well as `text`, and blocks the harness injects (`<recommended_plugins>` and the like) no longer count as a person speaking, so `human_turns_after_card` is accurate on Codex.
+- Documented two Codex requirements found in that session, each of which otherwise leaves the gate installed but inert: hooks must be trusted once via `/hooks`, and the repository's `.git` must be in `sandbox_workspace_write.writable_roots` or the agent cannot commit at all.
+
 ## 0.12.2 — 2026-09-09
 - `gitvow revisit <commit> [accept|decline] [--finding N]`: answer a decision already on the branch again, including a `Gitvow-Open` finding from a person's commit. Writes an empty commit with the new answer and `Gitvow-Revisits: <commit>`; the earlier trailer stays. Open findings a revisit has answered stop counting as debt.
 - Digest: decisions accepted, declined, open and revisited; decision debt with the command to close each item; earned rules in force; questions per session against the previous period; findings collected and immediate confirmations; payback (snapshots restored, questions pre-answered, answers that matched the proposal). Per repository only.

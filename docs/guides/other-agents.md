@@ -19,7 +19,22 @@ gitvow install --user --agent codex     # or gemini, cursor, copilot, factory; r
 gitvow install --user                   # Claude Code, as before
 ```
 
-Each install merges gitvow's entries into that agent's configuration file, idempotently, and `gitvow uninstall --user --agent <name>` removes exactly those entries. Codex requires hooks to be enabled in `~/.codex/config.toml`; the installer prints the line if it is missing.
+Each install merges gitvow's entries into that agent's configuration file, idempotently, and `gitvow uninstall --user --agent <name>` removes exactly those entries.
+
+### Two extra steps for Codex CLI
+
+Both were found in a real session; without them the gate is installed but does nothing.
+
+1. **Trust the hooks.** Codex lists newly added hooks and skips them until a person approves, so installing gitvow is not enough. Start Codex, run `/hooks`, review the four gitvow entries and trust them. Trust is remembered by hash, so changing the hook command means trusting it again. Until then Codex runs your tools with no gate and says nothing. Automation that has already vetted the hooks can pass `--dangerously-bypass-hook-trust` instead. Hooks are on by default; `[features] hooks = false` in `~/.codex/config.toml` turns them off entirely.
+2. **Let the agent write to `.git`.** Codex's `workspace-write` sandbox refuses writes inside `.git`, so `git commit` fails with `Unable to create '.git/index.lock'` and no commit, trailer or note is ever produced. Add the repository's git directory to the writable roots:
+
+```toml
+# ~/.codex/config.toml
+[sandbox_workspace_write]
+writable_roots = ["/absolute/path/to/repo/.git"]
+```
+
+Check both at once: `gitvow selftest --agent codex` proves the adapter, then in Codex ask for a trivial commit and confirm `git log -1` carries `Gitvow-Session`.
 
 ## What is the same
 - The gate: the same policy, the same deny, confirm and allow decisions, the same providers and classifier. A confirmation in Cursor is delivered as its native `ask`, so the user sees the question in Cursor's own prompt.
@@ -28,10 +43,11 @@ Each install merges gitvow's entries into that agent's configuration file, idemp
 
 ## What differs, honestly
 - **Codex edits arrive as patches.** Codex's file edits are a single `apply_patch` call carrying a patch, not a file path. gitvow parses the patch for the files it touches and the lines it adds, so path rules, route questions, attribution and snapshots work, but a rule that depends on the exact edit text sees the patch text.
+- **Codex wraps its tool calls in JavaScript.** In the session file, Codex 0.15 records one `exec` tool whose input is a snippet such as `await tools.exec_command({"cmd": ...})` or `await tools.apply_patch("...")`. gitvow unwraps it, so notes and reports name `Bash` and `Edit` rather than `exec`. The hook payload itself is unaffected; this only concerns what the transcript reader can see.
 - **Cursor's transcript is not read.** The stated plan and tool counts come from the transcript. gitvow reads Claude Code's format, Codex's session files (`~/.codex/sessions/.../rollout-*.jsonl`) and Gemini CLI's chat recordings (`~/.gemini/tmp/<project>/chats/session-*.jsonl`), each detected from the file itself. Cursor does not document the file behind `transcript_path`, so for Cursor the note records the commit, trailers, snapshot and attribution and leaves the plan empty. The Codex and Gemini readers follow the formats as published in each project's source and community write-ups; they are marked *unverified against a live file* until a user confirms.
 - **Cursor has no hook before a file edit** other than the generic `preToolUse`; gitvow uses that for gating and `afterFileEdit` for snapshots. If Cursor's built-in edit tool bypasses `preToolUse` in a future version, the gate still sees shell commands and MCP calls through `beforeShellExecution` and `beforeMCPExecution`.
 - **Copilot CLI passes no transcript path**, so its notes never carry a plan; everything else works. Factory passes one, but its format is not documented, so the same applies.
-- **Verification status.** Claude Code's adapter has been exercised in real sessions throughout. The Codex, Gemini, Cursor, Copilot CLI and Factory adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
+- **Verification status.** Claude Code and Codex CLI have been exercised in real sessions end to end: the gate collects a finding, the card refuses the commit, a person's answer becomes trailers, and the note carries the decision, attribution and cost. The Gemini CLI, Cursor, Copilot CLI and Factory adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
 
 ## An agent not listed here
 Write a `gitvow-agent-<name>` executable and put it on the PATH; gitvow discovers it and every command that takes `--agent` accepts the new name. The contract is three small subcommands over JSON, described in the [external adapter protocol](../reference/adapter-protocol.md), with a complete example in the repository.

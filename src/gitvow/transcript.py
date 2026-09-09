@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from collections.abc import Iterable
 from typing import Any
 
@@ -40,8 +41,6 @@ def _text_of(content: Any) -> str:
 
 
 def _patch_files(text: str) -> list[str]:
-    import re
-
     return re.findall(r"^\*\*\* (?:Update|Add|Delete) File: (.+)$", text or "", re.M)
 
 
@@ -167,13 +166,50 @@ def _finish_usage(usage: dict[str, Any]) -> None:
     )
 
 
-def _is_person_text(content: Any) -> bool:
-    """A user message typed by a person, not a tool_result the harness sent back."""
+INJECTED_RE = re.compile(r"^\s*<[a-z_]+>")  # Codex prepends <recommended_plugins>, <environment_context> and the like
+PERSON_TEXT = ("text", "input_text")
+
+
+def _person_text(content: Any) -> str:
     if isinstance(content, str):
-        return bool(content.strip())
+        return content
     if isinstance(content, list):
-        return any(isinstance(c, dict) and c.get("type") == "text" and str(c.get("text", "")).strip() for c in content)
-    return False
+        return "\n".join(
+            str(c.get("text", ""))
+            for c in content
+            if isinstance(c, dict) and c.get("type") in PERSON_TEXT and str(c.get("text", "")).strip()
+        )
+    return ""
+
+
+def _is_person_text(content: Any) -> bool:
+    """A user message typed by a person: not a tool result, and not a block the harness injected."""
+    text = _person_text(content).strip()
+    return bool(text) and not INJECTED_RE.match(text)
+
+
+TOOLS_CALL_RE = re.compile(r"tools\.([A-Za-z_][A-Za-z0-9_]*)\s*\(")
+
+
+def _codex_unwrap(text: str) -> list[tuple[str, Any]]:
+    """Codex 0.15 wraps every tool call in a JavaScript snippet: `await tools.exec_command({...})`.
+
+    Returns (function name, decoded argument) pairs; the argument is whatever JSON follows the bracket.
+    """
+    out: list[tuple[str, Any]] = []
+    dec = json.JSONDecoder()
+    for m in TOOLS_CALL_RE.finditer(text or ""):
+        i = m.end()
+        while i < len(text) and text[i] in " \t\n\r":
+            i += 1
+        arg: Any = ""
+        if i < len(text) and text[i] in '{"[':
+            try:
+                arg, _ = dec.raw_decode(text, i)
+            except ValueError:
+                arg = ""
+        out.append((m.group(1), arg))
+    return out
 
 
 def _add_tool(out: dict[str, Any], tool: str, brief: str, rules: list[tuple[str, str]], max_tools: int) -> None:
@@ -256,9 +292,11 @@ def _codex_event(
         elif pt in ("function_call", "custom_tool_call", "local_shell_call"):
             name = str(p.get("name") or ("local_shell" if pt == "local_shell_call" else ""))
             arguments = p.get("arguments") if pt == "function_call" else (p.get("input") or p.get("action") or "")
-            tool, brief, files = _codex_tool(name, arguments)
-            _add_tool(out, tool, brief, rules, max_tools)
-            written.update(files)
+            inner = _codex_unwrap(arguments) if isinstance(arguments, str) and "tools." in arguments else []
+            for fn, arg in inner or [(name, arguments)]:
+                tool, brief, files = _codex_tool(fn, arg)
+                _add_tool(out, tool, brief, rules, max_tools)
+                written.update(files)
     elif t == "turn_context":
         if p.get("model"):
             out["_codex_model"] = str(p["model"])
