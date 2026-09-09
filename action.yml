@@ -57,8 +57,16 @@ runs:
         fi
         mode="${{ inputs.pr-description }}"
         if [ "$mode" = "auto" ]; then
-          allow=$(gh api "repos/${{ github.repository }}" --jq '[.allow_squash_merge, .allow_merge_commit, .allow_rebase_merge] | map(tostring) | join(",")' 2>/dev/null || echo "")
-          [ "$allow" = "true,false,false" ] && mode=always || mode=never
+          # merge settings from the event payload; the workflow token often cannot read them from the API
+          allow="${{ github.event.repository.allow_squash_merge }},${{ github.event.repository.allow_merge_commit }},${{ github.event.repository.allow_rebase_merge }}"
+          if [ "$allow" = ",," ]; then
+            allow=$(gh api "repos/${{ github.repository }}" --jq '[.allow_squash_merge, .allow_merge_commit, .allow_rebase_merge] | map(tostring) | join(",")' 2>/dev/null || echo "")
+          fi
+          case "$allow" in
+            true,false,false) mode=always; echo "gitvow: squash-only repository, writing decisions into the pull request description" ;;
+            *true*) mode=never; echo "gitvow: repository allows merge or rebase ($allow); decisions stay on the commits" ;;
+            *) mode=never; echo "gitvow: merge settings not readable ($allow); set pr-description: always to write the block" ;;
+          esac
         fi
         if [ "$mode" = "always" ] && [ -n "${{ github.event.pull_request.number }}" ] && [ -s gitvow-decisions.txt ]; then
           pr=${{ github.event.pull_request.number }}
