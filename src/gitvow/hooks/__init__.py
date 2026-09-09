@@ -8,6 +8,7 @@ import re
 import time
 from typing import Any
 
+from .. import snapshots
 from ..policy import PolicyError, evaluate, load_policy, message_for
 from ..redact import RedactionError, load_rules, redact
 from ..state import git, load_state, log_event, save_state, toplevel
@@ -15,7 +16,7 @@ from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 2
+NOTE_SCHEMA = 3
 COMMIT_RE = re.compile(r"\bgit\s+commit\b")
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 REDACTION_UNAVAILABLE = "redaction rules invalid; nothing written for this event"
@@ -37,6 +38,8 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
             "started": st.get("started") if same_session and st.get("started") else time.strftime("%Y-%m-%dT%H:%M:%S"),
             "steps": st.get("steps", 0) if same_session else 0,
             "agent_blobs": st.get("agent_blobs", {}) if same_session else {},
+            "snapshots": st.get("snapshots", 0) if same_session else 0,
+            "last_snapshot": st.get("last_snapshot") if same_session else None,
         }
     )
     st.pop("pending_commit", None)
@@ -160,8 +163,18 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     tool = h.get("tool_name")
     inp = h.get("tool_input") or {}
     if tool in EDIT_TOOLS:
-        if inp.get("file_path"):
-            _record_agent_blob(cwd, str(inp["file_path"]))
+        fp = str(inp.get("file_path") or inp.get("notebook_path") or "")
+        if fp:
+            _record_agent_blob(cwd, fp)
+        try:
+            pol = load_policy(cwd, home)
+        except PolicyError:
+            pol = {}
+        cfg = snapshots.settings(pol)
+        if cfg.get("enabled", True):
+            ref = snapshots.take(cwd, h.get("session_id") or load_state(cwd).get("session_id"), tool, fp, cfg)
+            if ref:
+                log_event(cwd, "snapshot", {"ref": ref, "tool": tool})
         return 0, ""
     if tool != "Bash" or not COMMIT_RE.search(inp.get("command", "")):
         return 0, ""
@@ -194,6 +207,7 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "files_in_commit": [ln.strip() for ln in files.splitlines()[:-1]][:50] if files else [],
         "files_written_by_agent_this_session": [f["path"] for f in attribution["files"] if f["agent_wrote"]][:50],
         "attribution": attribution,
+        "snapshot": st.get("last_snapshot"),
         "transcript": "kept local; see ledger",
         "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time",
     }

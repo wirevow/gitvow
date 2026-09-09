@@ -12,6 +12,8 @@
 
 **What happens if a hook crashes?** Claude Code treats exit codes other than 0 and 2 as non-blocking errors and continues. gitvow only exits 2 deliberately; a crash in the policy path is caught and turned into a block. The one failure this does not cover is a hook command that cannot be found at all, which is why a per-user install records the absolute path of the executable; see [Install](guides/install.md).
 
+**Can I get back what the agent had before I changed it?** Yes. Every agent edit takes a snapshot under a session ref; `gitvow snapshots`, `gitvow diff` and `gitvow restore` list, compare and check one out into a scratch worktree. Code only; the conversation stays local. See [Snapshots](concepts/snapshots.md).
+
 **Why not store the transcript?** Because it contains tool output, and tool output contains whatever the agent read. See [What stays out of git](concepts/storage.md).
 
 **Does it work with rebase and squash?** Yes. Trailers are in the message and survive on their own. Install sets `notes.rewriteRef` so notes follow amend, rebase and squash to the rewritten commit.

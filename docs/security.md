@@ -12,6 +12,9 @@ Layered patterns plus an entropy pass lower the probability that a secret reache
 ## Fail closed
 A missing or invalid policy refuses every tool call. A classifier that fails or times out yields confirm, not allow. An invalid redaction rules file stops notes, ledger entries and log details from being written at all, rather than writing them under-redacted.
 
+## Snapshots
+A snapshot is a commit object holding the working tree after an agent edit, minus ignored files and the secrets exclusion list. It lives under `refs/gitvow/snapshots/`, which no gitvow command pushes and which is excluded from the pre-push hook. Anyone with read access to the repository directory can read snapshots, exactly as they can read the working tree. Extend `snapshots.exclude` for files that must never be captured, or disable snapshots in the policy.
+
 ## Attribution blobs
 To attribute lines, gitvow stores the version of a file the agent wrote as a loose git object in `.git/objects`. It is unreachable from any ref, is never pushed, and `git gc` prunes it on the normal schedule. It contains exactly what was already in the working tree.
 

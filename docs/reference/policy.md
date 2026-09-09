@@ -9,7 +9,8 @@
   "mcp_allow":    ["<regex matched against the full tool name>"],
   "mcp_deny":     ["<regex matched against the full tool name>"],
   "providers": [{"name": "<text>", "command": "<program and arguments>", "questions": ["gate_bearing", "route_gate", "route_callers"], "timeout": 10}],
-  "llm_classifier": {"enabled": false, "command": "<program and arguments, run without a shell>"}
+  "llm_classifier": {"enabled": false, "command": "<program and arguments, run without a shell>"},
+  "snapshots": {"enabled": true, "max_per_session": 200, "exclude": [".env*", "*.pem", "*.key", "*secret*", "*credential*", ".gitvow/**", ".claude/**"]}
 }
 ```
 
@@ -21,6 +22,7 @@
 | `mcp_deny` | MCP tool name | `re.fullmatch` | deny |
 | `mcp_allow` | MCP tool name | `re.fullmatch`; if the list is non-empty, non-matching tools → confirm | |
 | `providers` | Edit/Write paths and route literals in Edit text | each provider asked its declared questions; see [Provider protocol](provider-protocol.md) | `yes` → confirm with evidence; failure → confirm |
+| `snapshots` | after each agent edit | not a gate rule; controls working-tree snapshots, see [Snapshots](../concepts/snapshots.md) | |
 | `llm_classifier` | anything not decided above | command prints `ALLOW` / `CONFIRM reason` / `DENY reason` | as printed; failure → confirm |
 
 Evaluation order: deny, confirm, MCP lists, providers, classifier, allow. Missing keys are treated as empty lists. Every pattern is compiled on load; a compile error or unreadable file makes the gate fail closed.

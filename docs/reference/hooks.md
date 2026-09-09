@@ -11,7 +11,7 @@ Claude Code invokes each hook command with a JSON object on stdin. gitvow reads 
 | `tool_name` | PreToolUse, PostToolUse | e.g. `Bash`, `Edit`, `mcp__server__tool` |
 | `tool_input` | PreToolUse, PostToolUse | e.g. `{"command": "..."}` or `{"file_path": "..."}` |
 
-PostToolUse on an editing tool records the blob id of the written file for attribution; on a `git commit` it writes the session note.
+PostToolUse on an editing tool records the blob id of the written file for attribution and takes a working-tree snapshot; on a `git commit` it writes the session note.
 
 Output contract: exit `0` allows the call; exit `2` blocks it and Claude Code feeds stderr back to the model as the reason. gitvow never writes to stdout from a hook.
 

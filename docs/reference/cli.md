@@ -4,7 +4,7 @@
 gitvow hook <SessionStart|PreToolUse|PostToolUse|Stop>   run as a Claude Code hook; reads the JSON payload on stdin; exits 0 to allow, 2 to block
 gitvow install --user | install [repo]                    install per user or into a repository (default: current directory)
 gitvow uninstall --user [--purge-policy] [--purge-ledger] remove the user install
-gitvow uninstall [repo] [--purge-notes]                   remove a repository install; --purge-notes deletes local refs/notes/gitvow/*
+gitvow uninstall [repo] [--purge-notes] [--purge-snapshots]  remove a repository install; --purge-notes deletes local refs/notes/gitvow/*, --purge-snapshots deletes refs/gitvow/snapshots/*
 gitvow check -- <command...>                              dry-run the policy against a Bash command; exit 0 allow, 2 blocked
 gitvow check --path <file>                                dry-run against an edited path
 gitvow check --mcp <tool-name>                            dry-run against an MCP tool name
@@ -13,6 +13,10 @@ gitvow redact <text>                                      apply the built-in lay
 gitvow report --base <rev> [--head <rev>] [--json] [--require-notes]
                                                           per-commit report (trailers, notes, attribution, said vs did) for base..head; exit 1 if --require-notes and a trailered commit has no note
 gitvow ask <question> <subject> [--path <file>]         ask every configured provider and print the gate's decision
+gitvow snapshots [--session ID] [--all]                   list working-tree snapshots taken after agent edits
+gitvow snapshots prune [--older-than 14d] [--session ID]  delete snapshot refs
+gitvow diff <session> <n> [--full]                        what the agent had changed at snapshot n, against the HEAD of that moment
+gitvow restore <session> <n> [--to DIR]                   check a snapshot out into a detached scratch worktree
 gitvow push-notes [remote]                                push refs/notes/gitvow/* to the remote (default origin)
 gitvow collect [--out DIR]                                gather ledger, logs, trailers and notes into one redacted directory (default ~/Desktop)
 gitvow summarize <dir>                                    trial metrics from a collected directory

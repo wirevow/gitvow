@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.5.0 — 2026-09-09
+- Snapshots: after every agent Edit, Write, MultiEdit or NotebookEdit the working tree is written into a commit under `refs/gitvow/snapshots/<session>/<n>`, parented on HEAD, excluding ignored files and a secrets list. Local only; the pre-push hook does not push it.
+- New commands `gitvow snapshots [prune]`, `gitvow diff <session> <n>`, `gitvow restore <session> <n> [--to DIR]` (detached worktree). `uninstall --purge-snapshots`.
+- Session note schema 3: `snapshot` names the last snapshot before the commit.
+- Policy key `snapshots` (`enabled`, `max_per_session`, `exclude`).
+
 ## 0.4.0 — 2026-09-09
 - Providers: the policy's `providers` list names programs the gate asks `gate_bearing` (edited path), `route_gate` (route literal introduced by an Edit) and `route_callers` (route literal removed by an Edit). A `yes` requires confirmation with the provider's evidence shown to the agent; a failed or malformed provider yields confirm. Protocol documented; example provider `examples/providers/static_facts.py`.
 - `gitvow ask <question> <subject>` to test providers.

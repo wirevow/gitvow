@@ -65,6 +65,9 @@ def _validate(pol: dict[str, Any], path: str) -> None:
                 re.compile(pat)
             except re.error as e:
                 raise PolicyError(f"{path}: bad regex in {key}: {pat} ({e})") from e
+    snap = pol.get("snapshots", {})
+    if not isinstance(snap, dict) or not isinstance(snap.get("exclude", []), list):
+        raise PolicyError(f"{path}: snapshots must be an object with an optional 'exclude' list")
     provs = pol.get("providers", [])
     if not isinstance(provs, list):
         raise PolicyError(f"{path}: providers must be a list")

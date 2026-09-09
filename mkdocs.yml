@@ -16,6 +16,7 @@ nav:
       - Sessions, steps and notes: concepts/sessions.md
       - The gate: concepts/gate.md
       - What stays out of git: concepts/storage.md
+      - Snapshots, the code as the agent left it: concepts/snapshots.md
       - Providers, policy from facts: concepts/providers.md
   - Guides:
       - Install per user or per repo: guides/install.md
@@ -25,6 +26,7 @@ nav:
       - Redaction and custom rules: guides/redaction.md
       - Session notes on pull requests: guides/pull-requests.md
       - Wire a provider: guides/providers.md
+      - Restore what the agent had: guides/snapshots.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

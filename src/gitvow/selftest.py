@@ -88,6 +88,16 @@ def run() -> int:
         with open(os.path.join(repo, "a.txt"), "a") as fh:
             fh.write("b\n")
         post_tool_use({**base, "tool_name": "Edit", "tool_input": {"file_path": "a.txt"}}, home)
+        snaps = g("for-each-ref", "--format=%(refname)", "refs/gitvow/snapshots/").splitlines()
+        results.append(
+            (len(snaps) == 1 and snaps[0].endswith("/selftest-session/1"), "snapshot taken after the agent edit")
+        )
+        results.append(
+            (
+                g("show", f"{snaps[0]}:a.txt") == "a\nb" if snaps else False,
+                "snapshot holds the agent's version of the file",
+            )
+        )
         with open(os.path.join(repo, "a.txt"), "a") as fh:
             fh.write("human\n")
         pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)

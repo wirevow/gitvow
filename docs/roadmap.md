@@ -24,6 +24,11 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - [gitvow-provider-facts](https://wirevow.dev/gitvow-provider-facts/): a provider over a derived fact store of routes, gates and inbound calls, in its own repository. Class-level prefix resolution, whitelist-pattern classification of new routes, callers by repository and call site, store age in every answer.
 - Exit met: a real agent session removing a route with recorded callers is stopped, and the message names the calling services and call sites.
 
+## 0.5 — Snapshots (shipped)
+- Working-tree snapshot after every agent edit, under `refs/gitvow/snapshots/<session>/<n>`, parented on HEAD, never pushed, secrets excluded.
+- `gitvow snapshots`, `gitvow diff`, `gitvow restore` into a detached worktree, pruning by count and age, purge on uninstall. Session notes name the snapshot that preceded the commit.
+- Exit met: a real agent session's first edit is restored intact after the agent edited the same file again and a person changed it further.
+
 ## Later
 - Adapters for other agents that expose before/after tool hooks.
 - A configuration-driven storage tier for the ledger (restricted repository, object store).

@@ -9,6 +9,7 @@ import re
 import sys
 
 from . import __version__
+from . import snapshots as snap
 from .collect import collect, summarize_text
 from .hooks import HANDLERS, LEGACY_NOTES_REF, notes_ref
 from .install import install_repo, install_user, uninstall_repo, uninstall_user
@@ -44,7 +45,7 @@ def cmd_uninstall(a: argparse.Namespace) -> int:
     done = (
         uninstall_user(os.path.expanduser("~"), a.purge_policy, a.purge_ledger)
         if a.user
-        else uninstall_repo(os.path.abspath(a.repo), a.purge_notes)
+        else uninstall_repo(os.path.abspath(a.repo), a.purge_notes, a.purge_snapshots)
     )
     print("\n".join(done))
     return 0
@@ -130,6 +131,61 @@ def cmd_report(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_snapshots(a: argparse.Namespace) -> int:
+    cwd = os.getcwd()
+    if a.sub == "prune":
+        days = None
+        if a.older_than:
+            m = re.fullmatch(r"(\d+)([dh]?)", a.older_than)
+            if not m:
+                print("--older-than takes a number of days, e.g. 14d", file=sys.stderr)
+                return 1
+            days = int(m.group(1)) / (24 if m.group(2) == "h" else 1)
+        print(f"pruned {snap.prune(cwd, days, a.session)} snapshot(s)")
+        return 0
+    rows = snap.list_snapshots(cwd, a.session)
+    if not rows:
+        print("no snapshots" + (f" for session {a.session}" if a.session else ""))
+        return 0
+    cur = None
+    for r in rows:
+        if r["session"] != cur:
+            cur = r["session"]
+            print(f"session {cur[:8]}   {sum(1 for x in rows if x['session'] == cur)} snapshots")
+            print("  n    taken                tool        file                                  changed vs HEAD")
+        print(
+            f"  {r['n']:<4d} {r['taken']:<20s} {r['tool']:<11s} {r['file'][:37]:<37s} {r['changed_files']} file{'s' if r['changed_files'] != 1 else ''}"
+        )
+    return 0
+
+
+def _resolve_or_fail(a: argparse.Namespace) -> str | None:
+    ref = snap.resolve(os.getcwd(), a.session, a.n)
+    if not ref:
+        print(f"no snapshot {a.n} for a unique session matching {a.session!r}", file=sys.stderr)
+    return ref
+
+
+def cmd_diff(a: argparse.Namespace) -> int:
+    ref = _resolve_or_fail(a)
+    if not ref:
+        return 1
+    print(snap.diff(os.getcwd(), ref, a.full))
+    return 0
+
+
+def cmd_restore(a: argparse.Namespace) -> int:
+    ref = _resolve_or_fail(a)
+    if not ref:
+        return 1
+    rc, msg = snap.restore(os.getcwd(), ref, a.to)
+    print(
+        f"restored {ref} into {msg} (detached worktree; remove with: git worktree remove {msg})" if rc == 0 else msg,
+        file=sys.stderr if rc else sys.stdout,
+    )
+    return rc
+
+
 def cmd_push_notes(a: argparse.Namespace) -> int:
     import subprocess
 
@@ -176,6 +232,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--purge-notes", action="store_true")
     s.add_argument("--purge-policy", action="store_true")
     s.add_argument("--purge-ledger", action="store_true")
+    s.add_argument("--purge-snapshots", action="store_true")
     s.set_defaults(f=cmd_uninstall)
     s = sub.add_parser("check", help="dry-run the policy: gitvow check -- git push --force")
     s.add_argument("command", nargs="*")
@@ -199,6 +256,24 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--json", action="store_true")
     s.add_argument("--require-notes", action="store_true")
     s.set_defaults(f=cmd_report)
+    s = sub.add_parser(
+        "snapshots", help="list working-tree snapshots taken after agent edits; 'snapshots prune' deletes"
+    )
+    s.add_argument("sub", nargs="?", choices=["prune"])
+    s.add_argument("--session")
+    s.add_argument("--all", action="store_true")
+    s.add_argument("--older-than")
+    s.set_defaults(f=cmd_snapshots)
+    s = sub.add_parser("diff", help="what the agent had changed at snapshot n: gitvow diff <session> <n>")
+    s.add_argument("session")
+    s.add_argument("n", type=int)
+    s.add_argument("--full", action="store_true")
+    s.set_defaults(f=cmd_diff)
+    s = sub.add_parser("restore", help="check a snapshot out into a detached scratch worktree")
+    s.add_argument("session")
+    s.add_argument("n", type=int)
+    s.add_argument("--to")
+    s.set_defaults(f=cmd_restore)
     s = sub.add_parser("push-notes", help="push refs/notes/gitvow/* to a remote (default origin)")
     s.add_argument("remote", nargs="?", default="origin")
     s.set_defaults(f=cmd_push_notes)

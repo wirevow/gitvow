@@ -189,7 +189,7 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow") -> list[str]:
     ]
 
 
-def uninstall_repo(repo: str, purge_notes: bool = False) -> list[str]:
+def uninstall_repo(repo: str, purge_notes: bool = False, purge_snapshots: bool = False) -> list[str]:
     done = []
     unmerge_settings(os.path.join(repo, ".claude", "settings.json"))
     rc, cur, _ = git(["config", "--get", "core.hooksPath"], repo)
@@ -210,5 +210,9 @@ def uninstall_repo(repo: str, purge_notes: bool = False) -> list[str]:
         for ref in refs.split():
             git(["update-ref", "-d", ref], repo)
         done.append(f"{len(refs.split())} local session note ref(s) deleted (remote copies untouched)")
+    if purge_snapshots:
+        from . import snapshots as _snap
+
+        done.append(f"{_snap.purge_all(repo)} snapshot ref(s) deleted")
     done.append(".gitvow removed; commit trailers already in history remain")
     return done
