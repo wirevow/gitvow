@@ -10,6 +10,7 @@ PRICING_LABEL = "gitvow defaults 2026-09"
 DEFAULTS: dict[str, dict[str, float]] = {
     "claude-fable-5-1": {"input": 15, "output": 75, "cache_read": 1.5, "cache_write": 18.75},
     "claude-opus-5": {"input": 15, "output": 75, "cache_read": 1.5, "cache_write": 18.75},
+    "claude-opus-4-8": {"input": 7.5, "output": 37.5, "cache_read": 0.75, "cache_write": 9.375},
     "claude-opus-4": {"input": 15, "output": 75, "cache_read": 1.5, "cache_write": 18.75},
     "claude-sonnet-5": {"input": 3, "output": 15, "cache_read": 0.3, "cache_write": 3.75},
     "claude-sonnet-4": {"input": 3, "output": 15, "cache_read": 0.3, "cache_write": 3.75},

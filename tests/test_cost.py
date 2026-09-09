@@ -13,6 +13,8 @@ def test_pricing_table_and_prefix_match():
     assert tbl is DEFAULTS and label.startswith("gitvow defaults")
     assert price_for("claude-fable-5-1", tbl)["output"] == 75
     assert price_for("claude-fable-5-1-20261001", tbl)["input"] == 15  # prefix
+    assert price_for("claude-opus-4-8", tbl)["input"] == 7.5  # exact entry beats the older-generation prefix
+    assert price_for("claude-opus-4-1", tbl)["input"] == 15
     assert price_for("gpt-5-mini", tbl) is not None and price_for("totally-unknown", tbl) is None
     tbl2, label2 = table({"pricing": {"my-model": {"input": 1, "output": 2}, "gpt-5": {"input": 0, "output": 0}}})
     assert "overrides" in label2 and tbl2["my-model"] == {"input": 1.0, "output": 2.0} and tbl2["gpt-5"]["input"] == 0

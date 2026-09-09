@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.11.1 — 2026-09-09
+- Pricing: explicit entry for the current Opus generation after a real-session calibration showed the older-generation prefix overstated cost about two times. Calibration method documented.
+
 ## 0.11.0 — 2026-09-09
 - Usage per session: input, output, cache and reasoning tokens, models seen and an estimated cost in USD, from Claude Code, Codex and Gemini transcripts. Default pricing table dated 2026-09, overridable under `pricing` in the policy. Shown in the session note (schema 4), ledger, `report`, `digest` and `handoff`.
 - Subagent side conversations counted in the note; Cursor subagent events recorded in the hook log.

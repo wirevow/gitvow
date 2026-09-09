@@ -58,5 +58,8 @@ Cost: $23.60 estimated · 4.1M input, 0.3M output tokens · 2 sessions unpriced
 ## Subagents
 Claude Code runs delegated work as side conversations inside the same transcript; gitvow counts them and their tool calls under `subagents` in the note. Cursor announces subagents through hooks; the adapter records each one in the hook log. Their tokens are included in the session's totals when the transcript carries them.
 
+## Calibration
+On 2026-09-09 a real Claude Code session was measured against the cost Claude Code itself reported: gitvow's token counts matched to within the final turn (the note is written at commit time, before the closing message), and the estimate was within ten percent once the model's own price was in the table. Before that entry existed, a prefix match to an older generation overstated the cost by about two times. When a new model appears, add its price under `pricing` rather than trusting a prefix match, and `unpriced_models` in the note tells you when no price applied at all.
+
 ## Honesty
 Estimates use list prices unless you override them, ignore discounts and free tiers, and depend on what the agent reports. Treat them as a trend and a comparison between sessions, not an invoice.
