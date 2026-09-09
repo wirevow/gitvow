@@ -40,6 +40,8 @@ nav:
       - Adapters for other agents: reference/adapters.md
       - External adapter protocol: reference/adapter-protocol.md
   - Security: security.md
+  - Design notes:
+      - Decisions (0.12, proposed): design/decisions.md
   - Roadmap: roadmap.md
   - FAQ: faq.md
   - Architecture: ARCHITECTURE.md
