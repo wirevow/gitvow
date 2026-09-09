@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.4.0 — 2026-09-09
+- Providers: the policy's `providers` list names programs the gate asks `gate_bearing` (edited path), `route_gate` (route literal introduced by an Edit) and `route_callers` (route literal removed by an Edit). A `yes` requires confirmation with the provider's evidence shown to the agent; a failed or malformed provider yields confirm. Protocol documented; example provider `examples/providers/static_facts.py`.
+- `gitvow ask <question> <subject>` to test providers.
+
 ## 0.3.0 — 2026-09-09
 - `gitvow report --base <rev> [--head <rev>]`: per-commit Markdown or JSON report pairing trailers with session notes, with attribution and a "said vs did" check of changed files against the stated plan; `--require-notes` exits 1 when a trailered commit has no note.
 - GitHub Action `wirevow/gitvow@v0.3`: fetches session notes, posts the report as one upserted pull request comment and the job summary, fails on missing notes.

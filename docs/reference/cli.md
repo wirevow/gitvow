@@ -12,6 +12,7 @@ gitvow show [commit]                                      print a commit's messa
 gitvow redact <text>                                      apply the built-in layers plus your rules files to text and print the result
 gitvow report --base <rev> [--head <rev>] [--json] [--require-notes]
                                                           per-commit report (trailers, notes, attribution, said vs did) for base..head; exit 1 if --require-notes and a trailered commit has no note
+gitvow ask <question> <subject> [--path <file>]         ask every configured provider and print the gate's decision
 gitvow push-notes [remote]                                push refs/notes/gitvow/* to the remote (default origin)
 gitvow collect [--out DIR]                                gather ledger, logs, trailers and notes into one redacted directory (default ~/Desktop)
 gitvow summarize <dir>                                    trial metrics from a collected directory

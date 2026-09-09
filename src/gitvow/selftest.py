@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import subprocess
+import sys
 import tempfile
 
 from .hooks import post_tool_use, pre_tool_use, session_start, stop
@@ -66,6 +67,24 @@ def run() -> int:
                 "deny: destructive MCP tool",
             )
         )
+        prov = (
+            f'{sys.executable} -c "import sys,json;q=json.load(sys.stdin);'
+            "print(json.dumps({'answer':'yes' if q['question']=='route_gate' else 'no',"
+            "'evidence':['route not covered by authorization (selftest provider)']}))\""
+        )
+        os.makedirs(os.path.join(repo, ".gitvow"), exist_ok=True)
+        with open(os.path.join(repo, ".gitvow", "policy.json"), "w") as fh:
+            json.dump({"providers": [{"name": "selftest", "command": prov}]}, fh)
+        code, msg = pre_tool_use(
+            {
+                **base,
+                "tool_name": "Edit",
+                "tool_input": {"file_path": "api.py", "old_string": "", "new_string": '"/v1/new"'},
+            },
+            home,
+        )
+        results.append((code == 2 and "route not covered" in msg, "confirm: provider says new route is unauthorised"))
+        os.remove(os.path.join(repo, ".gitvow", "policy.json"))
         with open(os.path.join(repo, "a.txt"), "a") as fh:
             fh.write("b\n")
         post_tool_use({**base, "tool_name": "Edit", "tool_input": {"file_path": "a.txt"}}, home)

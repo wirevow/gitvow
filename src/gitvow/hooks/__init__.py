@@ -64,7 +64,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
             2,
             f"BLOCKED: tool policy could not be loaded ({e}); refusing all tool calls until the policy is restored.",
         )
-    d = evaluate(pol, tool, inp)
+    d = evaluate(pol, tool, inp, cwd)
     rules, warn = _rules_or_none(cwd, home)
     if d.blocks:
         payload: dict[str, Any] = {"tool": tool, "reason": d.reason, "session_id": h.get("session_id")}

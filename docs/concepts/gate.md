@@ -14,6 +14,7 @@ The decision is made from a policy file of regular expressions, evaluated in the
 - **Bash**: the full command text.
 - **Edit, Write, MultiEdit, NotebookEdit**: the file path.
 - **MCP tools**: the tool name, `mcp__<server>__<tool>`, against a deny list and an optional allow list.
+- **Providers**: optional programs that answer factual questions about the edit, such as whether a file is gate-bearing or a new route would be exposed without authorization. See [Providers](providers.md).
 - **Anything else**: an optional classifier command you provide, for decisions regular expressions cannot make.
 
 ## Fail closed
@@ -23,4 +24,4 @@ If the policy file is missing or invalid, every tool call is refused until it is
 `<repo>/.gitvow/policy.json` if present, else `~/.gitvow/policy.json`, else the package default. A repository can therefore tighten or override a user's defaults, and the repository's policy can be reviewed in a pull request like any other change.
 
 ## What the gate cannot see
-It inspects tool calls made through Claude Code. A Bash command is inspected as text; a process it spawns is not seen separately. Path checks use the path, not the diff. Regular expressions are a floor; the classifier is how you raise it. See [Write a policy](../guides/policy.md).
+It inspects tool calls made through Claude Code. A Bash command is inspected as text; a process it spawns is not seen separately. Path checks use the path, not the diff. Regular expressions are a floor; providers and the classifier are how you raise it. See [Write a policy](../guides/policy.md).

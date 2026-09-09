@@ -16,9 +16,9 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - Notes pushed automatically by a `pre-push` hook; `gitvow push-notes` for by hand.
 - Exit still open: two teams review with it on; time-to-first-comment measured.
 
-## 0.4 — Policy from facts
-- A hook that asks an external provider whether a file is gate-bearing or a route has callers, so the policy can be derived rather than written. gitvow defines the interface; providers live elsewhere.
-- Exit: a synthetic PR that adds an unauthorised route is refused with the evidence attached.
+## 0.4 — Policy from facts (shipped)
+- Provider protocol: the gate asks external programs `gate_bearing`, `route_gate` and `route_callers`; a `yes` requires a human, with the provider's evidence in the message. Failure means confirm. gitvow defines the contract; providers live elsewhere; an example over a static facts file ships in the repository.
+- Exit met: a real agent session adding an unauthorised route to a synthetic repository is stopped, and the message names the whitelist file.
 
 ## Later
 - Adapters for other agents that expose before/after tool hooks.

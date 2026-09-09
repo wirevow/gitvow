@@ -10,6 +10,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Any
 
+from . import providers as _providers
+
 DEFAULT_POLICY_PATH = os.path.join(os.path.dirname(__file__), "default_policy.json")
 
 
@@ -63,9 +65,18 @@ def _validate(pol: dict[str, Any], path: str) -> None:
                 re.compile(pat)
             except re.error as e:
                 raise PolicyError(f"{path}: bad regex in {key}: {pat} ({e})") from e
+    provs = pol.get("providers", [])
+    if not isinstance(provs, list):
+        raise PolicyError(f"{path}: providers must be a list")
+    for prov in provs:
+        if not isinstance(prov, dict) or not prov.get("name") or not prov.get("command"):
+            raise PolicyError(f"{path}: each provider needs 'name' and 'command'")
+        bad = [q for q in prov.get("questions", []) if q not in _providers.QUESTIONS]
+        if bad:
+            raise PolicyError(f"{path}: provider {prov['name']} lists unknown questions {bad}")
 
 
-def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any]) -> Decision:
+def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: str | None = None) -> Decision:
     text = tool_input.get("command", "") if tool == "Bash" else ""
     path = tool_input.get("file_path", "") or tool_input.get("notebook_path", "")
     if tool == "Bash":
@@ -85,6 +96,10 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any]) -> Deci
         allow = pol.get("mcp_allow", [])
         if allow and not any(re.fullmatch(p, tool) for p in allow):
             return Decision("confirm", "MCP tool not on allow list", tool)
+    if pol.get("providers") and tool in ("Edit", "Write", "MultiEdit", "NotebookEdit"):
+        hits = [a for a in _providers.ask(pol, tool, tool_input, cwd) if a.blocks]
+        if hits:
+            return Decision("confirm", "; ".join(h.text() for h in hits[:3]), path)
     clf = pol.get("llm_classifier") or {}
     if clf.get("enabled") and clf.get("command"):
         return _classify(clf["command"], tool, tool_input, text or path or tool)

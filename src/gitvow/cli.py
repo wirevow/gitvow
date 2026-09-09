@@ -13,6 +13,7 @@ from .collect import collect, summarize_text
 from .hooks import HANDLERS, LEGACY_NOTES_REF, notes_ref
 from .install import install_repo, install_user, uninstall_repo, uninstall_user
 from .policy import PolicyError, evaluate, load_policy
+from .providers import QUESTIONS, ask
 from .redact import RedactionError, load_rules, redact
 from .report import build, render_markdown
 from .state import git
@@ -64,6 +65,26 @@ def cmd_check(a: argparse.Namespace) -> int:
         d = evaluate(pol, "Bash", {"command": " ".join(a.command)})
     print(d.outcome.upper() + (f": {d.reason}" if d.reason else ""))
     return 2 if d.blocks else 0
+
+
+def cmd_ask(a: argparse.Namespace) -> int:
+    """Ask every configured provider one question and show the gate's decision."""
+    try:
+        pol = load_policy(os.getcwd())
+    except PolicyError as e:
+        print(f"policy error: {e}", file=sys.stderr)
+        return 2
+    if not pol.get("providers"):
+        print("no providers configured in the active policy", file=sys.stderr)
+        return 1
+    path = a.path or (a.subject if a.question == "gate_bearing" else "")
+    answers = ask(pol, "Edit", {"file_path": path}, os.getcwd(), only=[(a.question, a.subject)])
+    for ans in answers:
+        ev = " — " + "; ".join(ans.evidence) if ans.evidence else ""
+        print(f"{ans.provider}: {ans.answer}{ev}")
+    blocked = any(x.blocks for x in answers)
+    print("decision: " + ("CONFIRM" if blocked else "ALLOW"))
+    return 2 if blocked else 0
 
 
 def cmd_show(a: argparse.Namespace) -> int:
@@ -164,6 +185,11 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("show", help="print a commit's trailers and session note")
     s.add_argument("commit", nargs="?", default="HEAD")
     s.set_defaults(f=cmd_show)
+    s = sub.add_parser("ask", help="ask configured providers a question: gitvow ask route_gate /v1/x --path src/api.py")
+    s.add_argument("question", choices=QUESTIONS)
+    s.add_argument("subject")
+    s.add_argument("--path", default="")
+    s.set_defaults(f=cmd_ask)
     s = sub.add_parser("redact", help="apply built-in redaction plus your rules files to text")
     s.add_argument("text", nargs="+")
     s.set_defaults(f=cmd_redact)
