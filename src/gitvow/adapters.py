@@ -4,7 +4,10 @@ and render decisions in each agent's native form. See docs/reference/adapters.md
 from __future__ import annotations
 
 import json
+import os
 import re
+import shutil
+import subprocess
 from typing import Any
 
 AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory")
@@ -231,3 +234,73 @@ def respond(agent: str, code: int, msg: str) -> tuple[int, str, str]:
             return 0, json.dumps({"permissionDecision": perm, "permissionDecisionReason": msg}), ""
         return 0, json.dumps({"permissionDecision": "allow"}), msg
     return code, "", msg
+
+
+# ---------------------------------------------------------------------------
+# External adapters: gitvow-agent-<name> executables (see docs/reference/adapter-protocol.md)
+# ---------------------------------------------------------------------------
+
+
+class AdapterError(Exception):
+    """The external adapter is missing, failed, or returned malformed JSON."""
+
+
+def external_path(agent: str, home: str | None = None) -> str | None:
+    if agent in AGENTS or not re.fullmatch(r"[A-Za-z0-9_-]+", agent or ""):
+        return None
+    name = f"gitvow-agent-{agent}"
+    found = shutil.which(name)
+    if found:
+        return found
+    cand = os.path.join(home or os.path.expanduser("~"), ".gitvow", "agents", name)
+    return cand if os.access(cand, os.X_OK) else None
+
+
+def _run_external(exe: str, sub: str, payload: dict[str, Any] | None) -> dict[str, Any]:
+    try:
+        r = subprocess.run(
+            [exe, sub],
+            input=json.dumps(payload) if payload is not None else None,
+            capture_output=True,
+            text=True,
+            timeout=10,
+            check=False,
+        )
+    except (OSError, subprocess.TimeoutExpired) as e:
+        raise AdapterError(f"{os.path.basename(exe)} {sub}: {type(e).__name__}") from e
+    if r.returncode != 0:
+        raise AdapterError(f"{os.path.basename(exe)} {sub}: exit {r.returncode} {r.stderr.strip()[:120]}")
+    try:
+        out = json.loads(r.stdout)
+    except json.JSONDecodeError as e:
+        raise AdapterError(f"{os.path.basename(exe)} {sub}: malformed JSON") from e
+    if not isinstance(out, dict):
+        raise AdapterError(f"{os.path.basename(exe)} {sub}: expected an object")
+    return out
+
+
+def external_info(exe: str) -> dict[str, Any]:
+    info = _run_external(exe, "info", None)
+    if info.get("protocol") != 1:
+        raise AdapterError(f"{os.path.basename(exe)}: unsupported protocol {info.get('protocol')!r}")
+    return info
+
+
+def external_normalize(exe: str, event: str, payload: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
+    out = _run_external(exe, "normalize", {"event": event, "payload": payload})
+    calls = out.get("calls")
+    if not isinstance(calls, list):
+        raise AdapterError(f"{os.path.basename(exe)} normalize: 'calls' must be a list")
+    result: list[tuple[str, dict[str, Any]]] = []
+    for c in calls:
+        ev, p = (c or {}).get("event"), (c or {}).get("payload")
+        if ev not in ("SessionStart", "PreToolUse", "PostToolUse", "Stop") or not isinstance(p, dict):
+            raise AdapterError(f"{os.path.basename(exe)} normalize: bad call {c!r}"[:160])
+        p.setdefault("hook_event_name", ev)
+        result.append((ev, p))
+    return result
+
+
+def external_respond(exe: str, code: int, msg: str) -> tuple[int, str, str]:
+    out = _run_external(exe, "respond", {"code": code, "message": msg})
+    return int(out.get("exit_code", code)), str(out.get("stdout", "")), str(out.get("stderr", ""))

@@ -29,9 +29,16 @@ def cmd_hook(a: argparse.Namespace) -> int:
         payload = json.load(sys.stdin)
     except json.JSONDecodeError:
         payload = {}
+    from .adapters import AdapterError, external_normalize, external_path, external_respond
+
     agent = a.agent or "claude"
+    exe = external_path(agent)
     try:
-        calls = normalize(agent, a.event, payload)
+        calls = external_normalize(exe, a.event, payload) if exe else normalize(agent, a.event, payload)
+    except AdapterError as e:
+        # a broken external adapter must not let a tool call through unseen
+        print(f"BLOCKED: agent adapter failed ({e}).", file=sys.stderr)
+        return 2
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 1
@@ -49,7 +56,13 @@ def cmd_hook(a: argparse.Namespace) -> int:
         worst = max(worst, code)
         if msg:
             messages.append(msg)
-    exit_code, out, err = respond(agent, worst, "\n".join(messages))
+    try:
+        exit_code, out, err = (
+            external_respond(exe, worst, "\n".join(messages)) if exe else respond(agent, worst, "\n".join(messages))
+        )
+    except AdapterError as e:
+        print(f"BLOCKED: agent adapter failed ({e}).", file=sys.stderr)
+        return 2
     if out:
         print(out)
     if err:
@@ -57,8 +70,22 @@ def cmd_hook(a: argparse.Namespace) -> int:
     return exit_code
 
 
+def _check_agent(agent: str) -> int:
+    from .adapters import AGENTS, external_path
+
+    if agent in AGENTS or external_path(agent):
+        return 0
+    print(
+        f"unknown agent {agent!r}: not built in and no gitvow-agent-{agent} executable on PATH or in ~/.gitvow/agents",
+        file=sys.stderr,
+    )
+    return 1
+
+
 def cmd_install(a: argparse.Namespace) -> int:
     agent = a.agent or "claude"
+    if _check_agent(agent):
+        return 1
     if a.user:
         done = install_user(os.path.expanduser("~"), agent=agent)
     else:
@@ -69,6 +96,8 @@ def cmd_install(a: argparse.Namespace) -> int:
 
 def cmd_uninstall(a: argparse.Namespace) -> int:
     agent = a.agent or "claude"
+    if _check_agent(agent):
+        return 1
     done = (
         uninstall_user(os.path.expanduser("~"), a.purge_policy, a.purge_ledger, agent=agent)
         if a.user
@@ -266,6 +295,8 @@ def cmd_selftest(a: argparse.Namespace) -> int:
     from .selftest import run, run_agent
 
     if a.agent and a.agent != "claude":
+        if _check_agent(a.agent):
+            return 1
         return run_agent(a.agent)
     return run()
 
@@ -275,13 +306,21 @@ def main(argv: list[str] | None = None) -> int:
     p.add_argument("--version", action="version", version=f"gitvow {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
     s = sub.add_parser("hook", help="run as an agent hook (reads the agent's JSON on stdin)")
-    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor", "copilot", "factory"], default="claude")
+    s.add_argument(
+        "--agent",
+        default="claude",
+        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>",
+    )
     s.add_argument("event")
     s.set_defaults(f=cmd_hook)
     s = sub.add_parser("install", help="install per user (--user) or into a repo")
     s.add_argument("repo", nargs="?", default=".")
     s.add_argument("--user", action="store_true")
-    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor", "copilot", "factory"], default="claude")
+    s.add_argument(
+        "--agent",
+        default="claude",
+        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>",
+    )
     s.set_defaults(f=cmd_install)
     s = sub.add_parser("uninstall", help="remove what install added")
     s.add_argument("repo", nargs="?", default=".")
@@ -290,7 +329,11 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--purge-policy", action="store_true")
     s.add_argument("--purge-ledger", action="store_true")
     s.add_argument("--purge-snapshots", action="store_true")
-    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor", "copilot", "factory"], default="claude")
+    s.add_argument(
+        "--agent",
+        default="claude",
+        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>",
+    )
     s.set_defaults(f=cmd_uninstall)
     s = sub.add_parser("check", help="dry-run the policy: gitvow check -- git push --force")
     s.add_argument("command", nargs="*")
@@ -359,7 +402,11 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("dir")
     s.set_defaults(f=cmd_summarize)
     s = sub.add_parser("selftest", help="prove the hooks work here without touching a real repo")
-    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor", "copilot", "factory"], default="claude")
+    s.add_argument(
+        "--agent",
+        default="claude",
+        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>",
+    )
     s.set_defaults(f=cmd_selftest)
     a = p.parse_args(argv)
     return a.f(a)

@@ -18,8 +18,10 @@ def run_agent(agent: str) -> int:
     """Drive the adapter for another agent with that agent's payload shapes: a block and a snapshot."""
     import json as _json
 
-    from .adapters import normalize, respond
+    from .adapters import external_normalize, external_path, external_respond, normalize, respond
     from .hooks import HANDLERS
+
+    exe = external_path(agent)
 
     home = tempfile.mkdtemp(prefix="gitvow-home-")
     repo = tempfile.mkdtemp(prefix="gitvow-repo-")
@@ -125,16 +127,35 @@ def run_agent(agent: str) -> int:
                 ),
             ],
         }
+        if exe:
+            # external adapters are exercised with a generic shape: whatever they cannot map is a no-op
+            samples[agent] = [
+                ("start", {"sid": "st", "dir": repo}),
+                ("beforeTool", {"sid": "st", "dir": repo, "tool": "sh", "args": {"cmd": "git push --force"}}),
+                (
+                    "afterTool",
+                    {
+                        "sid": "st",
+                        "dir": repo,
+                        "tool": "edit",
+                        "args": {"path": os.path.join(repo, "a.txt"), "before": "a", "after": "b"},
+                    },
+                ),
+            ]
         for ev, payload in samples[agent]:
             worst, msgs = 0, []
-            for gv_event, p in normalize(agent, ev, payload):
+            for gv_event, p in external_normalize(exe, ev, payload) if exe else normalize(agent, ev, payload):
                 code, msg = HANDLERS[gv_event](p, home)
                 worst = max(worst, code)
                 if msg:
                     msgs.append(msg)
-            exit_code, out, _err = respond(agent, worst, "\n".join(msgs))
-            if ev in ("PreToolUse", "BeforeTool", "beforeShellExecution", "preToolUse"):
-                if agent == "cursor":
+            exit_code, out, _err = (
+                external_respond(exe, worst, "\n".join(msgs)) if exe else respond(agent, worst, "\n".join(msgs))
+            )
+            if ev in ("PreToolUse", "BeforeTool", "beforeShellExecution", "preToolUse", "beforeTool"):
+                if exe:
+                    blocked = exit_code == 2 or ("deny" in out)
+                elif agent == "cursor":
                     blocked = _json.loads(out).get("permission") == "deny"
                 elif agent == "copilot":
                     blocked = _json.loads(out).get("permissionDecision") == "deny"

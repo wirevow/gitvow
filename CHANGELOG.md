@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.10.0 — 2026-09-09
+- External adapter protocol: `gitvow-agent-<name>` executables on the PATH (or in `~/.gitvow/agents/`) with `info`, `normalize` and `respond` subcommands are discovered by `hook`, `install`, `uninstall` and `selftest --agent`. Missing or broken adapters block during PreToolUse and log otherwise. Example adapter under `examples/agents/`.
+
 ## 0.9.0 — 2026-09-09
 - `gitvow digest [--since 7d|date] [--json]`: a period summary of the current branch from trailers, notes and the hook log: agent versus human commits, sessions with plans and attribution, human edits after agents, gate confirmations and denials by reason, files most changed by agents.
 

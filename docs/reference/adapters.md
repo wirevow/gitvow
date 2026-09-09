@@ -1,6 +1,6 @@
 # Adapter reference
 
-`gitvow hook --agent <claude|codex|gemini|cursor|copilot|factory> <Event>` reads the agent's payload on stdin, normalises it, runs the corresponding gitvow handler, and answers in the agent's form. `--agent claude` is the default and changes nothing.
+`gitvow hook --agent <claude|codex|gemini|cursor|copilot|factory|any external name> <Event>` reads the agent's payload on stdin, normalises it, runs the corresponding gitvow handler, and answers in the agent's form. `--agent claude` is the default and changes nothing.
 
 ## Normalised payload
 Every adapter produces the Claude Code shape documented in [Hook payloads](hooks.md): `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `tool_name`, `tool_input`. Session ids come from `session_id` (Codex, Gemini, Factory), `conversation_id` (Cursor) or `sessionId` (Copilot, whose payloads are camelCase: `toolName`, `toolArgs`).

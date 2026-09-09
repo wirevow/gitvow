@@ -166,6 +166,40 @@ def _agent_entries(agent: str, cmd_prefix: str) -> dict[str, list[dict[str, Any]
     raise ValueError(f"unknown agent {agent}")
 
 
+def _external(agent: str) -> tuple[str, dict[str, Any]] | None:
+    from .adapters import external_info, external_path
+
+    exe = external_path(agent)
+    if not exe:
+        return None
+    return exe, external_info(exe)
+
+
+def _external_files(info: dict[str, Any]) -> tuple[str, str]:
+    inst = info.get("install") or {}
+    return str(inst.get("user_file") or f".{info.get('name', 'agent')}/hooks.json"), str(
+        inst.get("repo_file") or inst.get("user_file") or f".{info.get('name', 'agent')}/hooks.json"
+    )
+
+
+def merge_external_settings(path: str, info: dict[str, Any], cmd_prefix: str) -> None:
+    inst = info.get("install") or {}
+    cur: dict[str, Any] = {}
+    if os.path.exists(path):
+        with open(path) as fh:
+            cur = json.load(fh)
+    if inst.get("version_key"):
+        cur.setdefault(str(inst["version_key"]), 1)
+    hooks = cur.setdefault("hooks", {})
+    for ev, entries in (inst.get("entries") or {}).items():
+        rendered = json.loads(json.dumps(entries).replace("__GITVOW__", cmd_prefix))
+        kept = [x for x in hooks.get(ev, []) if not _is_ours(x)]
+        hooks[ev] = kept + rendered
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(cur, fh, indent=2)
+
+
 def _is_ours(entry: dict[str, Any]) -> bool:
     if MARKER in (entry.get("command") or "") or MARKER in (entry.get("bash") or ""):
         return True
@@ -274,9 +308,12 @@ def install_user(home: str, cmd_prefix: str | None = None, agent: str = "claude"
         shutil.copy(DEFAULT_POLICY_PATH, pol)
         done.append(f"default policy → {pol}")
     _write_git_hook(os.path.join(base, "git-hooks"))
-    settings_rel = AGENT_FILES[agent][0]
+    ext = None if agent in AGENT_FILES else _external(agent)
+    settings_rel = AGENT_FILES[agent][0] if agent in AGENT_FILES else _external_files(ext[1])[0]  # type: ignore[index]
     if agent == "claude":
         merge_settings(os.path.join(home, ".claude", "settings.json"), cmd_prefix)
+    elif ext:
+        merge_external_settings(os.path.join(home, settings_rel), ext[1], cmd_prefix)
     else:
         merge_agent_settings(os.path.join(home, settings_rel), agent, cmd_prefix)
         if agent == "codex":
@@ -298,10 +335,12 @@ def uninstall_user(
 ) -> list[str]:
     base = os.path.join(home, ".gitvow")
     done = []
+    ext = None if agent in AGENT_FILES else _external(agent)
+    user_rel = AGENT_FILES[agent][0] if agent in AGENT_FILES else _external_files(ext[1])[0]  # type: ignore[index]
     if agent == "claude":
         unmerge_settings(os.path.join(home, ".claude", "settings.json"))
     else:
-        unmerge_agent_settings(os.path.join(home, AGENT_FILES[agent][0]))
+        unmerge_agent_settings(os.path.join(home, user_rel))
     rc, cur, _ = git(["config", "--global", "--get", "core.hooksPath"], home)
     if rc == 0 and cur == os.path.join(base, "git-hooks"):
         git(["config", "--global", "--unset", "core.hooksPath"], home)
@@ -314,7 +353,7 @@ def uninstall_user(
     if purge_ledger:
         shutil.rmtree(os.path.join(base, "ledger"), ignore_errors=True)
         done.append("ledger removed")
-    done.append(f"hook entries removed from ~/{AGENT_FILES[agent][0]}")
+    done.append(f"hook entries removed from ~/{user_rel}")
     return done
 
 
@@ -327,15 +366,19 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -
     if not os.path.exists(pol):
         shutil.copy(DEFAULT_POLICY_PATH, pol)
     _write_git_hook(os.path.join(base, "git-hooks"))
+    ext = None if agent in AGENT_FILES else _external(agent)
+    repo_rel = AGENT_FILES[agent][1] if agent in AGENT_FILES else _external_files(ext[1])[1]  # type: ignore[index]
     if agent == "claude":
         merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix)
+    elif ext:
+        merge_external_settings(os.path.join(repo, repo_rel), ext[1], cmd_prefix)
     else:
-        merge_agent_settings(os.path.join(repo, AGENT_FILES[agent][1]), agent, cmd_prefix)
+        merge_agent_settings(os.path.join(repo, repo_rel), agent, cmd_prefix)
     git(["config", "core.hooksPath", ".gitvow/git-hooks"], repo)
     _set_notes_config(repo, [])
     return [
         f"policy → {pol}",
-        f"hooks merged into {AGENT_FILES[agent][1]}",
+        f"hooks merged into {repo_rel}",
         "core.hooksPath → .gitvow/git-hooks",
         f"notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
         "commit .gitvow/ and .claude/settings.json to share; teammates run: git config core.hooksPath .gitvow/git-hooks",
@@ -346,10 +389,12 @@ def uninstall_repo(
     repo: str, purge_notes: bool = False, purge_snapshots: bool = False, agent: str = "claude"
 ) -> list[str]:
     done = []
+    ext = None if agent in AGENT_FILES else _external(agent)
+    repo_rel = AGENT_FILES[agent][1] if agent in AGENT_FILES else _external_files(ext[1])[1]  # type: ignore[index]
     if agent == "claude":
         unmerge_settings(os.path.join(repo, ".claude", "settings.json"))
     else:
-        unmerge_agent_settings(os.path.join(repo, AGENT_FILES[agent][1]))
+        unmerge_agent_settings(os.path.join(repo, repo_rel))
     rc, cur, _ = git(["config", "--get", "core.hooksPath"], repo)
     if rc == 0 and cur == ".gitvow/git-hooks":
         git(["config", "--unset", "core.hooksPath"], repo)

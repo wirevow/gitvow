@@ -33,6 +33,9 @@ Each install merges gitvow's entries into that agent's configuration file, idemp
 - **Copilot CLI passes no transcript path**, so its notes never carry a plan; everything else works. Factory passes one, but its format is not documented, so the same applies.
 - **Verification status.** Claude Code's adapter has been exercised in real sessions throughout. The Codex, Gemini, Cursor, Copilot CLI and Factory adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
 
+## An agent not listed here
+Write a `gitvow-agent-<name>` executable and put it on the PATH; gitvow discovers it and every command that takes `--agent` accepts the new name. The contract is three small subcommands over JSON, described in the [external adapter protocol](../reference/adapter-protocol.md), with a complete example in the repository.
+
 ## Tool name mapping
 
 | Agent tool | gitvow sees |

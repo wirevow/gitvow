@@ -37,6 +37,7 @@ nav:
       - Policy schema: reference/policy.md
       - Provider protocol: reference/provider-protocol.md
       - Adapters for other agents: reference/adapters.md
+      - External adapter protocol: reference/adapter-protocol.md
   - Security: security.md
   - Roadmap: roadmap.md
   - FAQ: faq.md
