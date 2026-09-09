@@ -36,7 +36,7 @@ gitvow is deliberately small. These are the things it should grow into, in order
 ## 0.7 — The record teaches the next session (in progress)
 - `gitvow why`, `trace`, `recall`, `handoff` over trailers, notes, snapshots and the ledger; agent skills in the common format for Claude Code, Codex, Cursor and Gemini CLI.
 - Transcript readers for Codex and Gemini so their notes carry a plan and tool counts (done, unverified against live files); Cursor's transcript is undocumented.
-- Copilot CLI and Factory adapters.
+- Copilot CLI and Factory adapters (done, real-session verification pending).
 - Exit: a real session on a repository with history answers "why does this file look like this" from the record, and a handoff produced by one agent is picked up by another.
 
 ## Later

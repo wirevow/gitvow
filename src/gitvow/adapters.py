@@ -7,7 +7,7 @@ import json
 import re
 from typing import Any
 
-AGENTS = ("claude", "codex", "gemini", "cursor")
+AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory")
 
 # agent event -> gitvow handler
 EVENT_MAP: dict[str, dict[str, str]] = {
@@ -24,6 +24,19 @@ EVENT_MAP: dict[str, dict[str, str]] = {
         "AfterTool": "PostToolUse",
         "SessionEnd": "Stop",
     },
+    "copilot": {
+        "sessionStart": "SessionStart",
+        "preToolUse": "PreToolUse",
+        "postToolUse": "PostToolUse",
+        "sessionEnd": "Stop",
+    },
+    "factory": {
+        "SessionStart": "SessionStart",
+        "PreToolUse": "PreToolUse",
+        "PostToolUse": "PostToolUse",
+        "Stop": "Stop",
+        "SessionEnd": "Stop",
+    },
     "cursor": {
         "sessionStart": "SessionStart",
         "preToolUse": "PreToolUse",
@@ -36,6 +49,42 @@ EVENT_MAP: dict[str, dict[str, str]] = {
 }
 
 GEMINI_TOOLS = {"run_shell_command": "Bash", "write_file": "Write", "replace": "Edit", "edit": "Edit"}
+COPILOT_TOOLS = {
+    "bash": "Bash",
+    "powershell": "Bash",
+    "edit": "Edit",
+    "str_replace_editor": "Edit",
+    "apply_patch": "Edit",
+    "create": "Write",
+}
+FACTORY_TOOLS = {"Execute": "Bash", "Edit": "Edit", "ApplyPatch": "Edit", "Create": "Write", "MultiEdit": "MultiEdit"}
+
+
+def _edit_input(args: dict[str, Any]) -> dict[str, Any]:
+    """Common edit argument names across agents -> Claude Code Edit/Write input."""
+    out: dict[str, Any] = {}
+    fp = args.get("file_path") or args.get("path") or args.get("filePath") or ""
+    if fp:
+        out["file_path"] = str(fp)
+    for src, dst in (
+        ("old_string", "old_string"),
+        ("old_str", "old_string"),
+        ("new_string", "new_string"),
+        ("new_str", "new_string"),
+        ("content", "content"),
+        ("file_text", "content"),
+    ):
+        if src in args and dst not in out:
+            out[dst] = args[src]
+    if "command" in args and isinstance(args["command"], str) and "*** Begin Patch" in args["command"]:
+        files = parse_apply_patch(args["command"])
+        if files:
+            out.setdefault("file_path", files[0]["file_path"])
+            out.setdefault("old_string", files[0]["old_string"])
+            out.setdefault("new_string", files[0]["new_string"])
+    return out
+
+
 PATCH_FILE_RE = re.compile(r"^\*\*\* (Update|Add|Delete) File: (.+)$")
 
 
@@ -74,7 +123,7 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
     if not gv_event:
         return []
     base = {
-        "session_id": payload.get("session_id") or payload.get("conversation_id") or "",
+        "session_id": payload.get("session_id") or payload.get("conversation_id") or payload.get("sessionId") or "",
         "transcript_path": payload.get("transcript_path") or "",
         "cwd": payload.get("cwd") or (payload.get("workspace_roots") or [None])[0] or "",
         "hook_event_name": gv_event,
@@ -82,8 +131,32 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
     }
     if gv_event in ("SessionStart", "Stop"):
         return [(gv_event, base)]
-    tool = str(payload.get("tool_name") or "")
-    inp = dict(payload.get("tool_input") or {})
+    tool = str(payload.get("tool_name") or payload.get("toolName") or "")
+    raw_in = payload.get("tool_input")
+    if raw_in is None:
+        raw_in = payload.get("toolArgs")
+    inp = dict(raw_in) if isinstance(raw_in, dict) else ({"command": raw_in} if isinstance(raw_in, str) else {})
+    if agent == "copilot":
+        mapped = COPILOT_TOOLS.get(tool, tool)
+        if mapped in ("Edit", "Write"):
+            return [(gv_event, {**base, "tool_name": mapped, "tool_input": _edit_input(inp)})]
+        if mapped == "Bash":
+            return [
+                (
+                    gv_event,
+                    {
+                        **base,
+                        "tool_name": "Bash",
+                        "tool_input": {"command": str(inp.get("command") or inp.get("cmd") or "")},
+                    },
+                )
+            ]
+        return [(gv_event, {**base, "tool_name": mapped, "tool_input": inp})]
+    if agent == "factory":
+        mapped = FACTORY_TOOLS.get(tool, tool)
+        if mapped in ("Edit", "Write", "MultiEdit"):
+            return [(gv_event, {**base, "tool_name": mapped, "tool_input": {**inp, **_edit_input(inp)}})]
+        return [(gv_event, {**base, "tool_name": mapped, "tool_input": inp})]
     if agent == "codex":
         if tool == "apply_patch":
             out = []
@@ -152,4 +225,9 @@ def respond(agent: str, code: int, msg: str) -> tuple[int, str, str]:
             perm = "deny" if msg.startswith("BLOCKED") else "ask"
             return 0, json.dumps({"permission": perm, "user_message": msg, "agent_message": msg}), ""
         return 0, json.dumps({"permission": "allow"}), msg
+    if agent == "copilot":
+        if code == 2:
+            perm = "deny" if msg.startswith("BLOCKED") else "ask"
+            return 0, json.dumps({"permissionDecision": perm, "permissionDecisionReason": msg}), ""
+        return 0, json.dumps({"permissionDecision": "allow"}), msg
     return code, "", msg

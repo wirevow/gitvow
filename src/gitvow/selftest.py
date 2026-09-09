@@ -71,6 +71,43 @@ def run_agent(agent: str) -> int:
                     },
                 ),
             ],
+            "copilot": [
+                ("sessionStart", {"sessionId": "st", "cwd": repo}),
+                (
+                    "preToolUse",
+                    {"sessionId": "st", "cwd": repo, "toolName": "bash", "toolArgs": {"command": "git push --force"}},
+                ),
+                (
+                    "postToolUse",
+                    {
+                        "sessionId": "st",
+                        "cwd": repo,
+                        "toolName": "edit",
+                        "toolArgs": {"path": os.path.join(repo, "a.txt"), "old_str": "a", "new_str": "b"},
+                    },
+                ),
+            ],
+            "factory": [
+                ("SessionStart", {"session_id": "st", "cwd": repo}),
+                (
+                    "PreToolUse",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "Execute",
+                        "tool_input": {"command": "git push --force"},
+                    },
+                ),
+                (
+                    "PostToolUse",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "Edit",
+                        "tool_input": {"file_path": os.path.join(repo, "a.txt"), "old_string": "a", "new_string": "b"},
+                    },
+                ),
+            ],
             "cursor": [
                 ("sessionStart", {"conversation_id": "st", "workspace_roots": [repo]}),
                 (
@@ -96,10 +133,13 @@ def run_agent(agent: str) -> int:
                 if msg:
                     msgs.append(msg)
             exit_code, out, _err = respond(agent, worst, "\n".join(msgs))
-            if ev in ("PreToolUse", "BeforeTool", "beforeShellExecution"):
-                blocked = (agent == "cursor" and _json.loads(out).get("permission") == "deny") or (
-                    agent != "cursor" and exit_code == 2
-                )
+            if ev in ("PreToolUse", "BeforeTool", "beforeShellExecution", "preToolUse"):
+                if agent == "cursor":
+                    blocked = _json.loads(out).get("permission") == "deny"
+                elif agent == "copilot":
+                    blocked = _json.loads(out).get("permissionDecision") == "deny"
+                else:
+                    blocked = exit_code == 2
                 results.append((blocked, f"{agent}: force push denied in the agent's own form"))
         refs = subprocess.run(
             ["git", "for-each-ref", "refs/gitvow/snapshots/"], cwd=repo, capture_output=True, text=True

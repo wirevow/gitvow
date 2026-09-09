@@ -8,12 +8,14 @@ gitvow's record and gate are agent-neutral: trailers, notes, snapshots and the l
 | Codex CLI | `~/.codex/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
 | Gemini CLI | `~/.gemini/settings.json` | SessionStart, BeforeTool, AfterTool, SessionEnd | exit 2, reason on stderr |
 | Cursor | `~/.cursor/hooks.json` | sessionStart, preToolUse, beforeShellExecution, afterFileEdit, stop | JSON `permission: deny` or `ask` with `agent_message` |
+| Copilot CLI | `~/.copilot/hooks/gitvow.json` | sessionStart, preToolUse, postToolUse, sessionEnd | JSON `permissionDecision: deny` or `ask` with `permissionDecisionReason` |
+| Factory Droid | `~/.factory/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
 
 ## Install
 
 ```sh
 pip install gitvow
-gitvow install --user --agent codex     # or gemini, cursor; repeat per agent you use
+gitvow install --user --agent codex     # or gemini, cursor, copilot, factory; repeat per agent you use
 gitvow install --user                   # Claude Code, as before
 ```
 
@@ -28,7 +30,8 @@ Each install merges gitvow's entries into that agent's configuration file, idemp
 - **Codex edits arrive as patches.** Codex's file edits are a single `apply_patch` call carrying a patch, not a file path. gitvow parses the patch for the files it touches and the lines it adds, so path rules, route questions, attribution and snapshots work, but a rule that depends on the exact edit text sees the patch text.
 - **Cursor's transcript is not read.** The stated plan and tool counts come from the transcript. gitvow reads Claude Code's format, Codex's session files (`~/.codex/sessions/.../rollout-*.jsonl`) and Gemini CLI's chat recordings (`~/.gemini/tmp/<project>/chats/session-*.jsonl`), each detected from the file itself. Cursor does not document the file behind `transcript_path`, so for Cursor the note records the commit, trailers, snapshot and attribution and leaves the plan empty. The Codex and Gemini readers follow the formats as published in each project's source and community write-ups; they are marked *unverified against a live file* until a user confirms.
 - **Cursor has no hook before a file edit** other than the generic `preToolUse`; gitvow uses that for gating and `afterFileEdit` for snapshots. If Cursor's built-in edit tool bypasses `preToolUse` in a future version, the gate still sees shell commands and MCP calls through `beforeShellExecution` and `beforeMCPExecution`.
-- **Verification status.** Claude Code's adapter has been exercised in real sessions throughout. The Codex, Gemini and Cursor adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
+- **Copilot CLI passes no transcript path**, so its notes never carry a plan; everything else works. Factory passes one, but its format is not documented, so the same applies.
+- **Verification status.** Claude Code's adapter has been exercised in real sessions throughout. The Codex, Gemini, Cursor, Copilot CLI and Factory adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
 
 ## Tool name mapping
 
@@ -39,4 +42,8 @@ Each install merges gitvow's entries into that agent's configuration file, idemp
 | Gemini `write_file` | `Write` with `file_path`, `content` |
 | Gemini `replace` | `Edit` with `file_path`, `old_string`, `new_string` |
 | Cursor `afterFileEdit` | `Edit` with `file_path` and the concatenated `edits` |
+| Copilot `bash` / `powershell` | `Bash` with `command` |
+| Copilot `edit`, `str_replace_editor`, `apply_patch` / `create` | `Edit` / `Write` with `file_path` (from `path` or `file_path`), `old_string`, `new_string`, `content` |
+| Factory `Execute` | `Bash` with `command` |
+| Factory `Edit`, `ApplyPatch` / `Create` | `Edit` / `Write` with `file_path`, `old_string`, `new_string`, `content` |
 | any `mcp__server__tool` | unchanged |

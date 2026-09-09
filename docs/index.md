@@ -28,4 +28,4 @@ It is not a review tool, a chat UI or a hosted product. It is the layer those th
 
 ## Supported agents
 
-Claude Code, verified in real sessions throughout. Codex CLI, Gemini CLI and Cursor through [adapters](guides/other-agents.md) built against each vendor's documented hook contract and awaiting real-session verification by users of those agents.
+Claude Code, verified in real sessions throughout. Codex CLI, Gemini CLI, Cursor, Copilot CLI and Factory through [adapters](guides/other-agents.md) built against each vendor's documented hook contract and awaiting real-session verification by users of those agents.

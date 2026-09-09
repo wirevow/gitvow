@@ -88,6 +88,8 @@ AGENT_FILES = {
     "codex": (".codex/hooks.json", ".codex/hooks.json"),
     "gemini": (".gemini/settings.json", ".gemini/settings.json"),
     "cursor": (".cursor/hooks.json", ".cursor/hooks.json"),
+    "copilot": (".copilot/hooks/gitvow.json", ".github/hooks/gitvow.json"),
+    "factory": (".factory/hooks.json", ".factory/hooks.json"),
 }
 
 
@@ -124,6 +126,26 @@ def _agent_entries(agent: str, cmd_prefix: str) -> dict[str, list[dict[str, Any]
             "AfterTool": [g("AfterTool", "run_shell_command|write_file|replace|edit")],
             "SessionEnd": [g("SessionEnd", "*")],
         }
+    if agent == "copilot":
+
+        def cp(ev: str) -> dict[str, Any]:
+            return {"type": "command", "bash": f"{c} {ev}", "timeoutSec": 30}
+
+        return {ev: [cp(ev)] for ev in ("sessionStart", "preToolUse", "postToolUse", "sessionEnd")}
+    if agent == "factory":
+
+        def fe(ev: str, matcher: str | None) -> dict[str, Any]:
+            x: dict[str, Any] = {"hooks": [{"type": "command", "command": f"{c} {ev}", "timeout": 30}]}
+            if matcher:
+                x["matcher"] = matcher
+            return x
+
+        return {
+            "SessionStart": [fe("SessionStart", None)],
+            "PreToolUse": [fe("PreToolUse", "Execute|Edit|Create|ApplyPatch|MultiEdit|mcp__.*")],
+            "PostToolUse": [fe("PostToolUse", "Execute|Edit|Create|ApplyPatch|MultiEdit")],
+            "Stop": [fe("Stop", None)],
+        }
     if agent == "cursor":
 
         def u(ev: str) -> dict[str, Any]:
@@ -145,7 +167,7 @@ def _agent_entries(agent: str, cmd_prefix: str) -> dict[str, list[dict[str, Any]
 
 
 def _is_ours(entry: dict[str, Any]) -> bool:
-    if MARKER in (entry.get("command") or ""):
+    if MARKER in (entry.get("command") or "") or MARKER in (entry.get("bash") or ""):
         return True
     return any(MARKER in (h.get("command") or "") for h in entry.get("hooks", []))
 
@@ -155,7 +177,7 @@ def merge_agent_settings(path: str, agent: str, cmd_prefix: str) -> None:
     if os.path.exists(path):
         with open(path) as fh:
             cur = json.load(fh)
-    if agent == "cursor":
+    if agent in ("cursor", "copilot"):
         cur.setdefault("version", 1)
     hooks = cur.setdefault("hooks", {})
     for ev, entries in _agent_entries(agent, cmd_prefix).items():

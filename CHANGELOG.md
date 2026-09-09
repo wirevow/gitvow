@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.8.0 — 2026-09-09
+- Adapters for GitHub Copilot CLI (camelCase payloads, `permissionDecision` JSON with `ask` for confirmations, hooks under `~/.copilot/hooks/`) and Factory Droid (Claude-compatible payloads, `Execute`/`Edit`/`Create`/`ApplyPatch` tools, `~/.factory/hooks.json`). Built against vendor documentation; real-session verification pending.
+
 ## 0.7.1 — 2026-09-09
 - Transcript readers for Codex session files and Gemini CLI chat recordings, detected from the file: session notes and ledgers for those agents now carry the stated plan, tool counts and files written. Tool output is never read in any format. Cursor's transcript remains undocumented and unread.
 

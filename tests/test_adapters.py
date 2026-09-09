@@ -236,3 +236,128 @@ def test_install_per_agent_idempotent_and_reversible(home, repo):
     assert (repo / ".codex" / "hooks.json").exists()
     uninstall_repo(str(repo), agent="codex")
     assert not (repo / ".codex" / "hooks.json").exists()
+
+
+def test_copilot_and_factory_normalization_and_responses():
+    c = normalize(
+        "copilot",
+        "preToolUse",
+        {"sessionId": "cp1", "cwd": "/w", "toolName": "bash", "toolArgs": {"command": "rm -rf /"}},
+    )
+    assert (
+        c[0][0] == "PreToolUse"
+        and c[0][1]["session_id"] == "cp1"
+        and c[0][1]["tool_name"] == "Bash"
+        and c[0][1]["tool_input"] == {"command": "rm -rf /"}
+    )
+    c = normalize(
+        "copilot",
+        "postToolUse",
+        {
+            "sessionId": "cp1",
+            "cwd": "/w",
+            "toolName": "str_replace_editor",
+            "toolArgs": {"path": "/w/a.py", "old_str": "x", "new_str": "y"},
+        },
+    )
+    assert c[0][1]["tool_name"] == "Edit" and c[0][1]["tool_input"] == {
+        "file_path": "/w/a.py",
+        "old_string": "x",
+        "new_string": "y",
+    }
+    c = normalize(
+        "copilot",
+        "preToolUse",
+        {
+            "sessionId": "cp1",
+            "cwd": "/w",
+            "toolName": "create",
+            "toolArgs": {"path": "/w/n.py", "file_text": "print(1)"},
+        },
+    )
+    assert c[0][1]["tool_name"] == "Write" and c[0][1]["tool_input"]["content"] == "print(1)"
+    assert normalize("copilot", "sessionEnd", {"sessionId": "cp1", "cwd": "/w"})[0][0] == "Stop"
+    assert json.loads(respond("copilot", 2, "BLOCKED by policy (x).")[1]) == {
+        "permissionDecision": "deny",
+        "permissionDecisionReason": "BLOCKED by policy (x).",
+    }
+    assert json.loads(respond("copilot", 2, "CONFIRMATION REQUIRED (y).")[1])["permissionDecision"] == "ask"
+    assert json.loads(respond("copilot", 0, "")[1]) == {"permissionDecision": "allow"}
+    f = normalize(
+        "factory",
+        "PreToolUse",
+        {"session_id": "f1", "cwd": "/w", "tool_name": "Execute", "tool_input": {"command": "terraform destroy"}},
+    )
+    assert f[0][1]["tool_name"] == "Bash"
+    f = normalize(
+        "factory",
+        "PostToolUse",
+        {
+            "session_id": "f1",
+            "cwd": "/w",
+            "tool_name": "Create",
+            "tool_input": {"file_path": "/w/a.py", "content": "x"},
+        },
+    )
+    assert f[0][1]["tool_name"] == "Write" and f[0][1]["tool_input"]["file_path"] == "/w/a.py"
+    f = normalize(
+        "factory",
+        "PreToolUse",
+        {
+            "session_id": "f1",
+            "cwd": "/w",
+            "tool_name": "ApplyPatch",
+            "tool_input": {
+                "file_path": "/w/a.py",
+                "command": '*** Begin Patch\n*** Update File: a.py\n+"/v1/x"\n*** End Patch\n',
+            },
+        },
+    )
+    assert f[0][1]["tool_name"] == "Edit" and '"/v1/x"' in f[0][1]["tool_input"]["new_string"]
+    assert respond("factory", 2, "BLOCKED")[0] == 2
+
+
+def test_copilot_factory_cli_and_install(repo, home, monkeypatch, capsys):
+    monkeypatch.chdir(repo)
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "copilot",
+        "preToolUse",
+        {"sessionId": "cp1", "cwd": str(repo), "toolName": "bash", "toolArgs": {"command": "kubectl apply -f x.yaml"}},
+    )
+    assert code == 0 and json.loads(out)["permissionDecision"] == "ask"
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "copilot",
+        "preToolUse",
+        {"sessionId": "cp1", "cwd": str(repo), "toolName": "bash", "toolArgs": {"command": "ls"}},
+    )
+    assert json.loads(out) == {"permissionDecision": "allow"}
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "factory",
+        "PreToolUse",
+        {"session_id": "f1", "cwd": str(repo), "tool_name": "Execute", "tool_input": {"command": "git push --force"}},
+    )
+    assert code == 2 and "BLOCKED" in err
+    for agent, rel, key in (
+        ("copilot", ".copilot/hooks/gitvow.json", "preToolUse"),
+        ("factory", ".factory/hooks.json", "PreToolUse"),
+    ):
+        install_user(str(home), agent=agent)
+        install_user(str(home), agent=agent)
+        s = json.loads((home / rel).read_text())
+        assert len(s["hooks"][key]) == 1
+        if agent == "copilot":
+            assert s["version"] == 1 and "hook --agent copilot preToolUse" in s["hooks"][key][0]["bash"]
+        else:
+            assert "hook --agent factory PreToolUse" in s["hooks"][key][0]["hooks"][0]["command"]
+        uninstall_user(str(home), agent=agent)
+        assert not (home / rel).exists()
+    install_repo(str(repo), agent="copilot")
+    assert (repo / ".github" / "hooks" / "gitvow.json").exists()
+    uninstall_repo(str(repo), agent="copilot")
+    assert not (repo / ".github" / "hooks" / "gitvow.json").exists()
