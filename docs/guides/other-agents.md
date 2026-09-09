@@ -61,6 +61,9 @@ Write a `gitvow-agent-<name>` executable and put it on the PATH; gitvow discover
 | Gemini `write_file` | `Write` with `file_path`, `content` |
 | Gemini `replace` | `Edit` with `file_path`, `old_string`, `new_string` |
 | Cursor `afterFileEdit` | `Edit` with `file_path` and the concatenated `edits` |
+| Cursor `Write` (its name for any agent file modification) | `Write` with `file_path`; Cursor's `new_content` is also exposed as `content`, so route questions and providers see the new text |
+| Cursor `Delete` | `Edit` with `file_path`, so deleting a gate-bearing file is gated like editing one |
+| Cursor `MCP:<tool>` with `mcp_server_name` | `mcp__<server>__<tool>` |
 | Copilot `bash` / `powershell` | `Bash` with `command` |
 | Copilot `edit`, `str_replace_editor`, `apply_patch` / `create` | `Edit` / `Write` with `file_path` (from `path` or `file_path`), `old_string`, `new_string`, `content` |
 | Factory `Execute` | `Bash` with `command` |

@@ -369,3 +369,43 @@ def test_copilot_factory_cli_and_install(repo, home, monkeypatch, capsys):
     assert (repo / ".github" / "hooks" / "gitvow.json").exists()
     uninstall_repo(str(repo), agent="copilot")
     assert not (repo / ".github" / "hooks" / "gitvow.json").exists()
+
+
+def test_cursor_pretooluse_matches_the_documented_payload(repo, home):
+    """Cursor sends Write with new_content for file edits and MCP:<tool> for MCP calls."""
+    from gitvow.adapters import normalize
+
+    ev, p = normalize(
+        "cursor",
+        "preToolUse",
+        {
+            "conversation_id": "cu",
+            "workspace_roots": [str(repo)],
+            "tool_name": "Write",
+            "tool_input": {"file_path": "core/authz_rules.go", "new_content": 'var Public = []string{"/v1/x"}'},
+        },
+    )[0]
+    assert ev == "PreToolUse" and p["tool_name"] == "Write"
+    # the gate and the providers read `content`; Cursor's own key is preserved alongside it
+    assert p["tool_input"]["content"] == 'var Public = []string{"/v1/x"}'
+    assert p["tool_input"]["new_content"] == p["tool_input"]["content"]
+    ev, p = normalize(
+        "cursor",
+        "preToolUse",
+        {
+            "conversation_id": "cu",
+            "workspace_roots": [str(repo)],
+            "tool_name": "Delete",
+            "tool_input": {"file_path": "core/authz_rules.go"},
+        },
+    )[0]
+    assert p["tool_name"] == "Edit"  # a deleted gate-bearing file still reaches the gate
+    for payload, expected in (
+        ({"tool_name": "MCP:drop_table", "mcp_server_name": "postgres"}, "mcp__postgres__drop_table"),
+        ({"tool_name": "MCP:read_rows"}, "mcp__server__read_rows"),
+        ({"tool_name": "mcp__already__mapped"}, "mcp__already__mapped"),
+    ):
+        ev, p = normalize("cursor", "preToolUse", {"conversation_id": "cu", "workspace_roots": [str(repo)], **payload})[
+            0
+        ]
+        assert p["tool_name"] == expected

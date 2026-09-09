@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.12.4 — 2026-09-10
+- Cursor adapter corrected against the published payload contract: Cursor names every agent file modification `Write` and carries the new text as `new_content`, which the gate and providers never read, so route questions were silently skipped on Cursor; `new_content` is now exposed as `content`. Its `MCP:<tool>` naming in `preToolUse` is mapped to `mcp__<server>__<tool>`, so MCP allow and deny lists apply. `Delete` is treated as an edit, so removing a gate-bearing file is gated like changing one.
+
 ## 0.12.3 — 2026-09-10
 - Codex CLI verified in a real session, end to end: the gate collects an at-commit finding from an `apply_patch` edit, the card refuses the commit, `gitvow decide` records the answer, and the commit carries the trailers with a note holding the decision, attribution and cost.
 - Codex transcript reader: unwraps the JavaScript snippet Codex 0.15 records for every tool call (`await tools.exec_command({...})`, `await tools.apply_patch("...")`), so notes and reports name `Bash` and `Edit` instead of a single `exec`, and patched files reach `files_written`.

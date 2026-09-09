@@ -216,9 +216,11 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
                 )
             ]
         if event == "beforeMCPExecution":
-            name = tool if tool.startswith("mcp__") else f"mcp__{payload.get('mcp_server_name', 'server')}__{tool}"
+            name = _cursor_mcp(tool, payload)
             return [(gv_event, {**base, "tool_name": name, "tool_input": inp})]
         # generic preToolUse: Cursor's own tool names
+        if tool.startswith("MCP:") or tool.startswith("mcp__"):
+            return [(gv_event, {**base, "tool_name": _cursor_mcp(tool, payload), "tool_input": inp})]
         mapped = {
             "Shell": "Bash",
             "shell": "Bash",
@@ -227,11 +229,24 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
             "write_file": "Write",
             "Edit": "Edit",
             "Write": "Write",
+            "Delete": "Edit",  # deleting an authorization file is as consequential as editing one
         }.get(tool, tool)
         if mapped == "Bash" and "command" not in inp and payload.get("command"):
             inp["command"] = payload["command"]
+        if mapped in ("Write", "Edit") and "new_content" in inp:
+            # Cursor names the whole new file `new_content`; the gate and providers read `content`
+            inp.setdefault("content", inp["new_content"])
         return [(gv_event, {**base, "tool_name": mapped, "tool_input": inp})]
     return [(gv_event, {**base, "tool_name": tool, "tool_input": inp})]
+
+
+def _cursor_mcp(tool: str, payload: dict[str, Any]) -> str:
+    """Cursor names MCP tools `MCP:<tool>` in preToolUse and passes the server separately."""
+    if tool.startswith("mcp__"):
+        return tool
+    name = tool[4:] if tool.startswith("MCP:") else tool
+    server = str(payload.get("mcp_server_name") or "server")
+    return f"mcp__{server}__{name}"
 
 
 def respond(agent: str, code: int, msg: str) -> tuple[int, str, str]:
