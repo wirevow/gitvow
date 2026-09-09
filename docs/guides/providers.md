@@ -28,6 +28,16 @@ gitvow ask route_gate /v1/orders/export
 # facts: yes — not covered by authorized_routes; whitelist is auth/AuthorizeWhitelistedPaths.java
 ```
 
+## Use the fact-store provider
+[gitvow-provider-facts](https://wirevow.dev/gitvow-provider-facts/) answers all three questions from a SQLite store of facts derived from your repositories: routes, how each is gated, and the calls between services. It resolves class-level path prefixes from the routes already recorded for the edited file, classifies new routes against the whitelist patterns in the store, names calling repositories and call sites, and reports the store's age in every answer.
+
+```sh
+pip install gitvow-provider-facts
+```
+```json
+"providers": [{"name": "topology", "command": "gitvow-provider-facts --store /var/lib/topology/facts.db --service orders"}]
+```
+
 ## Write your own
 Any language. Read one JSON object from stdin, write one to stdout, exit 0. Answer `unknown` for questions you cannot decide; never guess `no` to be quiet, because `no` is what lets an edit through without a person. Keep evidence strings short and free of secrets: they are shown to the agent and written to the hook log after redaction.
 

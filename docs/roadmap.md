@@ -20,6 +20,10 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - Provider protocol: the gate asks external programs `gate_bearing`, `route_gate` and `route_callers`; a `yes` requires a human, with the provider's evidence in the message. Failure means confirm. gitvow defines the contract; providers live elsewhere; an example over a static facts file ships in the repository.
 - Exit met: a real agent session adding an unauthorised route to a synthetic repository is stopped, and the message names the whitelist file.
 
+## 0.5 — Live provider (shipped)
+- [gitvow-provider-facts](https://wirevow.dev/gitvow-provider-facts/): a provider over a derived fact store of routes, gates and inbound calls, in its own repository. Class-level prefix resolution, whitelist-pattern classification of new routes, callers by repository and call site, store age in every answer.
+- Exit met: a real agent session removing a route with recorded callers is stopped, and the message names the calling services and call sites.
+
 ## Later
 - Adapters for other agents that expose before/after tool hooks.
 - A configuration-driven storage tier for the ledger (restricted repository, object store).

@@ -28,4 +28,4 @@ The evidence is the provider's, verbatim, so the agent can put a precise questio
 A provider that is missing, times out, crashes or returns something unparseable yields **confirm**, never allow, and the log records which provider failed. An `unknown` answer is treated as no evidence and does not block on its own.
 
 ## Where providers come from
-Anyone can write one: a script over a facts database, an HTTP client to an internal service, a query against a code graph. The reference example in the repository reads a static JSON facts file and exists to show the contract and to drive the tests. A provider backed by a derived model of an organisation's services is the intended production shape; it lives in its own project.
+Anyone can write one: a script over a facts database, an HTTP client to an internal service, a query against a code graph. The reference example in the repository reads a static JSON facts file and exists to show the contract and to drive the tests. [gitvow-provider-facts](https://wirevow.dev/gitvow-provider-facts/) is that production shape: a provider over a derived fact store of routes, gates and calls, in its own project.
