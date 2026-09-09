@@ -12,8 +12,8 @@ inputs:
     description: gitvow version to install (pip specifier). Defaults to the action's own tag.
     default: ""
   pr-description:
-    description: Write the decisions trailer block into the pull request description so a squash commit inherits it. auto (only when the repository allows squash merges alone), always, never.
-    default: "auto"
+    description: Write the decisions trailer block into the pull request description so a squash commit inherits it. always (default; harmless where merges keep the original commits), never, or auto (only when the workflow token can read the merge settings and the repository is squash-only; most tokens cannot).
+    default: "always"
 runs:
   using: composite
   steps:

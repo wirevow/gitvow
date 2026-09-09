@@ -6,7 +6,7 @@
 - Decisions. Confirm rules carry `when`: `immediate` (default for Bash rules) or `commit` (default for path and provider rules). At-commit findings accumulate in the session state while the agent works; `git commit` is refused once with a card naming each finding, its evidence and what the record proposes from earlier decisions on the same finding in the repository.
 - `gitvow decide <n|all> accept|decline [--scope] [--reason] [--by]` records a person's answer; `gitvow decisions` prints the card. Answers become `Gitvow-Accepted` / `Gitvow-Declined` trailers and a `decisions` array in the session note (schema 5) with authority, scope, reason and the number of user turns between the card and the answer.
 - Human commits while findings are open: `Gitvow-Open` trailers by default; `decisions.mode: strict` makes the pre-commit hook refuse until answers are recorded. New `pre-commit` and `post-commit` git hooks; re-run `gitvow install` to get them.
-- `gitvow report` lists decisions per commit, reopens scoped decisions when `--target` is a production branch, and prints a `--decisions-summary` block; the action's `pr-description` input writes that block into the pull request description of squash-only repositories.
+- `gitvow report` lists decisions per commit, reopens scoped decisions when `--target` is a production branch, and prints a `--decisions-summary` block; the action's `pr-description` input (default `always`) writes that block into the pull request description so a squash commit inherits it.
 - `gitvow check` reports `CONFIRM AT COMMIT` for at-commit rules and exits 0.
 
 ## 0.11.1 — 2026-09-09
