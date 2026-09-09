@@ -36,7 +36,7 @@ def test_snapshot_per_edit_with_head_parent_and_exclusions(repo, home, payload):
     assert git(repo, "status", "--short").count("\n") >= 0  # the real index was never touched
     assert "calc.py" not in git(repo, "diff", "--cached", "--name-only")
     st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
-    assert st["snapshots"] == 2 and st["last_snapshot"] == "refs/gitvow/snapshots/sess-1/2"
+    assert st["snapshots"] == 3 and st["last_snapshot"] == "refs/gitvow/snapshots/sess-1/3"
     assert '"kind": "snapshot"' in (repo / ".git" / "gitvow-hooks.log").read_text()
 
 
