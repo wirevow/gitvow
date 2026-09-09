@@ -27,12 +27,14 @@ nav:
       - Session notes on pull requests: guides/pull-requests.md
       - Wire a provider: guides/providers.md
       - Restore what the agent had: guides/snapshots.md
+      - Codex, Gemini and Cursor: guides/other-agents.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md
       - Session note schema: reference/note.md
       - Policy schema: reference/policy.md
       - Provider protocol: reference/provider-protocol.md
+      - Adapters for other agents: reference/adapters.md
   - Security: security.md
   - Roadmap: roadmap.md
   - FAQ: faq.md

@@ -20,4 +20,4 @@
 
 **Two agents in one repository at once?** Each session writes its own notes ref, `refs/notes/gitvow/<session-id>`, so they never contend, and pushing notes from many machines never conflicts.
 
-**Which agents?** Claude Code now. The payload shape is documented; adapters are welcome.
+**Which agents?** Claude Code, verified in real sessions. Codex CLI, Gemini CLI and Cursor through adapters built against their documented hook contracts; see [Codex, Gemini and Cursor](guides/other-agents.md).

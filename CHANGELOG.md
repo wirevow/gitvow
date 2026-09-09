@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.6.0 — 2026-09-09
+- Adapters for Codex CLI, Gemini CLI and Cursor: `gitvow hook --agent <name> <Event>` normalises each agent's payload and answers in its native form (exit 2 for Codex and Gemini; `permission` JSON with `ask` for confirmations in Cursor). Codex `apply_patch` edits are parsed per file for path rules, route questions, attribution and snapshots.
+- `gitvow install --user --agent <name>` / `gitvow install <repo> --agent <name>` and matching uninstall write each agent's hook configuration idempotently.
+- Built against vendor documentation; real-session verification pending for the three new agents.
+
 ## 0.5.0 — 2026-09-09
 - Snapshots: after every agent Edit, Write, MultiEdit or NotebookEdit the working tree is written into a commit under `refs/gitvow/snapshots/<session>/<n>`, parented on HEAD, excluding ignored files and a secrets list. Local only; the pre-push hook does not push it.
 - New commands `gitvow snapshots [prune]`, `gitvow diff <session> <n>`, `gitvow restore <session> <n> [--to DIR]` (detached worktree). `uninstall --purge-snapshots`.

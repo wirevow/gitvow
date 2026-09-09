@@ -30,4 +30,4 @@ Output contract: exit `0` allows the call; exit `2` blocks it and Claude Code fe
 Entries are recognised by the `gitvow hook ` prefix, so install is idempotent and uninstall removes only these.
 
 ## Other agents
-Any agent that can run a command before and after tool calls and pass this shape can use gitvow unchanged. Adapters that translate other payload formats are welcome; keep them in `gitvow/adapters/`.
+Codex CLI, Gemini CLI and Cursor are supported through adapters that translate their payloads into this shape; see [Adapter reference](adapters.md).

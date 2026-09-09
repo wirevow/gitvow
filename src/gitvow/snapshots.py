@@ -11,7 +11,7 @@ import tempfile
 import time
 from typing import Any
 
-from .state import git, git_dir, load_state, save_state, toplevel
+from .state import git, git_dir, load_state, log_event, save_state, toplevel
 
 REF_PREFIX = "refs/gitvow/snapshots"
 DEFAULTS: dict[str, Any] = {
@@ -78,10 +78,20 @@ def take(cwd: str, session_id: str | None, tool: str, file_path: str, cfg: dict[
             "taken": time.strftime("%Y-%m-%dT%H:%M:%S"),
         }
     )
-    args = ["commit-tree", tree, "-m", msg] + (["-p", parent] if parent else [])
-    rc, commit, _ = git(args, top)
-    if rc != 0:
+    # the snapshot is gitvow's object, not the user's commit: give it a fixed identity so it never depends on git config
+    ident = {
+        **os.environ,
+        "GIT_AUTHOR_NAME": "gitvow",
+        "GIT_AUTHOR_EMAIL": "gitvow@localhost",
+        "GIT_COMMITTER_NAME": "gitvow",
+        "GIT_COMMITTER_EMAIL": "gitvow@localhost",
+    }
+    args = ["git", "commit-tree", tree, "-m", msg] + (["-p", parent] if parent else [])
+    r = subprocess.run(args, cwd=top, env=ident, capture_output=True, text=True, check=False)
+    if r.returncode != 0:
+        log_event(cwd, "snapshot_failed", {"step": "commit-tree", "error": r.stderr.strip()[:300]})
         return None
+    commit = r.stdout.strip()
     ref = ref_for(session_id, n)
     git(["update-ref", ref, commit], top)
     st["snapshots"] = n

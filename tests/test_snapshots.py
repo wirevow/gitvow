@@ -126,11 +126,14 @@ def test_snapshot_in_repo_without_commits(tmp_path, home, payload):
     r = tmp_path / "fresh"
     r.mkdir()
     git(r, "init", "-q")
+    git(r, "config", "user.useConfigOnly", "true")  # no identity anywhere, as on a CI runner: snapshots must still work
     (r / "f.txt").write_text("first\n")
     p = payload("SessionStart")
     p["cwd"] = str(r)
     session_start(p, str(home))
     post_tool_use({**p, "tool_name": "Write", "tool_input": {"file_path": str(r / "f.txt")}}, str(home))
     ref = git(r, "for-each-ref", "--format=%(refname)", "refs/gitvow/snapshots/")
-    assert ref.endswith("/1") and git(r, "show", f"{ref}:f.txt") == "first"
+    log = (r / ".git" / "gitvow-hooks.log").read_text() if (r / ".git" / "gitvow-hooks.log").exists() else ""
+    assert ref.endswith("/1"), f"no snapshot ref; hook log: {log}"
+    assert git(r, "show", f"{ref}:f.txt") == "first"
     assert os.path.exists(r / ".git")

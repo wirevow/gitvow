@@ -29,8 +29,11 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - `gitvow snapshots`, `gitvow diff`, `gitvow restore` into a detached worktree, pruning by count and age, purge on uninstall. Session notes name the snapshot that preceded the commit.
 - Exit met: a real agent session's first edit is restored intact after the agent edited the same file again and a person changed it further.
 
+## 0.6 — Adapters for other agents (shipped, real-session verification pending)
+- Codex CLI, Gemini CLI and Cursor adapters: payload normalisation, native responses (Cursor `ask` for confirm), patch parsing for Codex edits, per-agent install and uninstall.
+- Exit: a real session on each agent stopped by the gate and producing a trailer, note and snapshot. Claude Code met; the other three await users of those agents.
+
 ## Later
-- Adapters for other agents that expose before/after tool hooks.
 - A configuration-driven storage tier for the ledger (restricted repository, object store).
 
 ## Not planned

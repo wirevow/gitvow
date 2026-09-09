@@ -21,31 +21,56 @@ from .state import git
 
 
 def cmd_hook(a: argparse.Namespace) -> int:
+    from .adapters import normalize, respond
+
     try:
         payload = json.load(sys.stdin)
     except json.JSONDecodeError:
         payload = {}
-    handler = HANDLERS.get(a.event)
-    if not handler:
-        print(f"unknown hook event {a.event}", file=sys.stderr)
+    agent = a.agent or "claude"
+    try:
+        calls = normalize(agent, a.event, payload)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
         return 1
-    code, msg = handler(payload)
-    if msg:
-        print(msg, file=sys.stderr)
-    return code
+    if not calls:
+        return 0  # an event this adapter does not use
+    worst, messages = 0, []
+    for gv_event, p in calls:
+        handler = HANDLERS.get(gv_event)
+        if not handler:
+            print(f"unknown hook event {gv_event}", file=sys.stderr)
+            return 1
+        code, msg = handler(p)
+        if code == 2 and len(calls) > 1 and p.get("tool_input", {}).get("file_path"):
+            msg = f"{msg} [file: {p['tool_input']['file_path']}]"
+        worst = max(worst, code)
+        if msg:
+            messages.append(msg)
+    exit_code, out, err = respond(agent, worst, "\n".join(messages))
+    if out:
+        print(out)
+    if err:
+        print(err, file=sys.stderr)
+    return exit_code
 
 
 def cmd_install(a: argparse.Namespace) -> int:
-    done = install_user(os.path.expanduser("~")) if a.user else install_repo(os.path.abspath(a.repo))
+    agent = a.agent or "claude"
+    if a.user:
+        done = install_user(os.path.expanduser("~"), agent=agent)
+    else:
+        done = install_repo(os.path.abspath(a.repo), agent=agent)
     print("\n".join(done))
     return 0
 
 
 def cmd_uninstall(a: argparse.Namespace) -> int:
+    agent = a.agent or "claude"
     done = (
-        uninstall_user(os.path.expanduser("~"), a.purge_policy, a.purge_ledger)
+        uninstall_user(os.path.expanduser("~"), a.purge_policy, a.purge_ledger, agent=agent)
         if a.user
-        else uninstall_repo(os.path.abspath(a.repo), a.purge_notes, a.purge_snapshots)
+        else uninstall_repo(os.path.abspath(a.repo), a.purge_notes, a.purge_snapshots, agent=agent)
     )
     print("\n".join(done))
     return 0
@@ -219,12 +244,14 @@ def main(argv: list[str] | None = None) -> int:
     p = argparse.ArgumentParser(prog="gitvow", description="Provenance and policy gate for agent coding sessions.")
     p.add_argument("--version", action="version", version=f"gitvow {__version__}")
     sub = p.add_subparsers(dest="cmd", required=True)
-    s = sub.add_parser("hook", help="run as a Claude Code hook (reads JSON on stdin)")
+    s = sub.add_parser("hook", help="run as an agent hook (reads the agent's JSON on stdin)")
+    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor"], default="claude")
     s.add_argument("event")
     s.set_defaults(f=cmd_hook)
     s = sub.add_parser("install", help="install per user (--user) or into a repo")
     s.add_argument("repo", nargs="?", default=".")
     s.add_argument("--user", action="store_true")
+    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor"], default="claude")
     s.set_defaults(f=cmd_install)
     s = sub.add_parser("uninstall", help="remove what install added")
     s.add_argument("repo", nargs="?", default=".")
@@ -233,6 +260,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--purge-policy", action="store_true")
     s.add_argument("--purge-ledger", action="store_true")
     s.add_argument("--purge-snapshots", action="store_true")
+    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor"], default="claude")
     s.set_defaults(f=cmd_uninstall)
     s = sub.add_parser("check", help="dry-run the policy: gitvow check -- git push --force")
     s.add_argument("command", nargs="*")
