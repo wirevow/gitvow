@@ -235,8 +235,10 @@ def cmd_summarize(a: argparse.Namespace) -> int:
 
 
 def cmd_selftest(a: argparse.Namespace) -> int:
-    from .selftest import run
+    from .selftest import run, run_agent
 
+    if a.agent and a.agent != "claude":
+        return run_agent(a.agent)
     return run()
 
 
@@ -312,6 +314,7 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("dir")
     s.set_defaults(f=cmd_summarize)
     s = sub.add_parser("selftest", help="prove the hooks work here without touching a real repo")
+    s.add_argument("--agent", choices=["claude", "codex", "gemini", "cursor"], default="claude")
     s.set_defaults(f=cmd_selftest)
     a = p.parse_args(argv)
     return a.f(a)

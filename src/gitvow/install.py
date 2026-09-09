@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 from typing import Any
@@ -82,6 +83,120 @@ def _hook_entries(cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
     }
 
 
+AGENT_FILES = {
+    "claude": (".claude/settings.json", ".claude/settings.json"),
+    "codex": (".codex/hooks.json", ".codex/hooks.json"),
+    "gemini": (".gemini/settings.json", ".gemini/settings.json"),
+    "cursor": (".cursor/hooks.json", ".cursor/hooks.json"),
+}
+
+
+def _agent_entries(agent: str, cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
+    """Hook entries in each agent's own schema. Every command carries MARKER so install stays idempotent."""
+    c = f"{cmd_prefix} hook --agent {agent}"
+    if agent == "claude":
+        return _hook_entries(cmd_prefix)
+    if agent == "codex":
+
+        def e(ev: str, matcher: str | None) -> dict[str, Any]:
+            x: dict[str, Any] = {"hooks": [{"type": "command", "command": f"{c} {ev}", "timeout": 30}]}
+            if matcher:
+                x["matcher"] = matcher
+            return x
+
+        return {
+            "SessionStart": [e("SessionStart", None)],
+            "PreToolUse": [e("PreToolUse", "Bash|apply_patch|mcp__.*")],
+            "PostToolUse": [e("PostToolUse", "Bash|apply_patch")],
+            "Stop": [e("Stop", None)],
+        }
+    if agent == "gemini":
+
+        def g(ev: str, matcher: str) -> dict[str, Any]:
+            return {
+                "matcher": matcher,
+                "hooks": [{"name": f"gitvow-{ev}", "type": "command", "command": f"{c} {ev}", "timeout": 30000}],
+            }
+
+        return {
+            "SessionStart": [g("SessionStart", "*")],
+            "BeforeTool": [g("BeforeTool", "run_shell_command|write_file|replace|edit|mcp__.*")],
+            "AfterTool": [g("AfterTool", "run_shell_command|write_file|replace|edit")],
+            "SessionEnd": [g("SessionEnd", "*")],
+        }
+    if agent == "cursor":
+
+        def u(ev: str) -> dict[str, Any]:
+            return {"command": f"{c} {ev}", "type": "command", "timeout": 30, "failClosed": True}
+
+        return {
+            ev: [u(ev)]
+            for ev in (
+                "sessionStart",
+                "preToolUse",
+                "beforeShellExecution",
+                "beforeMCPExecution",
+                "afterFileEdit",
+                "afterShellExecution",
+                "stop",
+            )
+        }
+    raise ValueError(f"unknown agent {agent}")
+
+
+def _is_ours(entry: dict[str, Any]) -> bool:
+    if MARKER in (entry.get("command") or ""):
+        return True
+    return any(MARKER in (h.get("command") or "") for h in entry.get("hooks", []))
+
+
+def merge_agent_settings(path: str, agent: str, cmd_prefix: str) -> None:
+    cur: dict[str, Any] = {}
+    if os.path.exists(path):
+        with open(path) as fh:
+            cur = json.load(fh)
+    if agent == "cursor":
+        cur.setdefault("version", 1)
+    hooks = cur.setdefault("hooks", {})
+    for ev, entries in _agent_entries(agent, cmd_prefix).items():
+        kept = [x for x in hooks.get(ev, []) if not _is_ours(x)]
+        hooks[ev] = kept + entries
+    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
+    with open(path, "w") as fh:
+        json.dump(cur, fh, indent=2)
+
+
+def unmerge_agent_settings(path: str) -> None:
+    if not os.path.exists(path):
+        return
+    with open(path) as fh:
+        cur = json.load(fh)
+    hooks = cur.get("hooks", {})
+    for ev in list(hooks):
+        hooks[ev] = [x for x in hooks[ev] if not _is_ours(x)]
+        if not hooks[ev]:
+            del hooks[ev]
+    if not hooks:
+        cur.pop("hooks", None)
+    if cur and cur != {"version": 1}:
+        with open(path, "w") as fh:
+            json.dump(cur, fh, indent=2)
+    else:
+        os.remove(path)
+
+
+def codex_hooks_enabled_hint(home: str) -> str | None:
+    """Codex hooks are opt-in on some versions; point at the config line if it is absent."""
+    cfg = os.path.join(home, ".codex", "config.toml")
+    txt = ""
+    if os.path.exists(cfg):
+        with open(cfg) as fh:
+            txt = fh.read()
+    if re.search(r"^\s*hooks\s*=\s*true", txt, re.M) or re.search(r"^\s*codex_hooks\s*=\s*true", txt, re.M):
+        return None
+    return f"Codex hooks may need enabling: add `hooks = true` under [features] in {cfg}"
+
+
 def merge_settings(path: str, cmd_prefix: str) -> None:
     cur: dict[str, Any] = {}
     if os.path.exists(path):
@@ -125,7 +240,7 @@ def _write_git_hook(dirpath: str) -> str:
     return os.path.join(dirpath, "prepare-commit-msg")
 
 
-def install_user(home: str, cmd_prefix: str | None = None) -> list[str]:
+def install_user(home: str, cmd_prefix: str | None = None, agent: str = "claude") -> list[str]:
     base = os.path.join(home, ".gitvow")
     os.makedirs(base, exist_ok=True)
     cmd_prefix = cmd_prefix or executable_command()
@@ -137,21 +252,34 @@ def install_user(home: str, cmd_prefix: str | None = None) -> list[str]:
         shutil.copy(DEFAULT_POLICY_PATH, pol)
         done.append(f"default policy → {pol}")
     _write_git_hook(os.path.join(base, "git-hooks"))
-    merge_settings(os.path.join(home, ".claude", "settings.json"), cmd_prefix)
+    settings_rel = AGENT_FILES[agent][0]
+    if agent == "claude":
+        merge_settings(os.path.join(home, ".claude", "settings.json"), cmd_prefix)
+    else:
+        merge_agent_settings(os.path.join(home, settings_rel), agent, cmd_prefix)
+        if agent == "codex":
+            hint = codex_hooks_enabled_hint(home)
+            if hint:
+                done.append(hint)
     git(["config", "--global", "core.hooksPath", os.path.join(base, "git-hooks")], home)
     _set_notes_config(home, ["--global"])
     done += [
-        "hooks merged into ~/.claude/settings.json",
+        f"hooks merged into ~/{settings_rel}",
         "global core.hooksPath → ~/.gitvow/git-hooks",
         f"global notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
     ]
     return done
 
 
-def uninstall_user(home: str, purge_policy: bool = False, purge_ledger: bool = False) -> list[str]:
+def uninstall_user(
+    home: str, purge_policy: bool = False, purge_ledger: bool = False, agent: str = "claude"
+) -> list[str]:
     base = os.path.join(home, ".gitvow")
     done = []
-    unmerge_settings(os.path.join(home, ".claude", "settings.json"))
+    if agent == "claude":
+        unmerge_settings(os.path.join(home, ".claude", "settings.json"))
+    else:
+        unmerge_agent_settings(os.path.join(home, AGENT_FILES[agent][0]))
     rc, cur, _ = git(["config", "--global", "--get", "core.hooksPath"], home)
     if rc == 0 and cur == os.path.join(base, "git-hooks"):
         git(["config", "--global", "--unset", "core.hooksPath"], home)
@@ -164,11 +292,11 @@ def uninstall_user(home: str, purge_policy: bool = False, purge_ledger: bool = F
     if purge_ledger:
         shutil.rmtree(os.path.join(base, "ledger"), ignore_errors=True)
         done.append("ledger removed")
-    done.append("hook entries removed from ~/.claude/settings.json")
+    done.append(f"hook entries removed from ~/{AGENT_FILES[agent][0]}")
     return done
 
 
-def install_repo(repo: str, cmd_prefix: str = "gitvow") -> list[str]:
+def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -> list[str]:
     base = os.path.join(repo, ".gitvow")
     os.makedirs(base, exist_ok=True)
     from .policy import DEFAULT_POLICY_PATH
@@ -177,21 +305,29 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow") -> list[str]:
     if not os.path.exists(pol):
         shutil.copy(DEFAULT_POLICY_PATH, pol)
     _write_git_hook(os.path.join(base, "git-hooks"))
-    merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix)
+    if agent == "claude":
+        merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix)
+    else:
+        merge_agent_settings(os.path.join(repo, AGENT_FILES[agent][1]), agent, cmd_prefix)
     git(["config", "core.hooksPath", ".gitvow/git-hooks"], repo)
     _set_notes_config(repo, [])
     return [
         f"policy → {pol}",
-        "hooks merged into .claude/settings.json",
+        f"hooks merged into {AGENT_FILES[agent][1]}",
         "core.hooksPath → .gitvow/git-hooks",
         f"notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
         "commit .gitvow/ and .claude/settings.json to share; teammates run: git config core.hooksPath .gitvow/git-hooks",
     ]
 
 
-def uninstall_repo(repo: str, purge_notes: bool = False, purge_snapshots: bool = False) -> list[str]:
+def uninstall_repo(
+    repo: str, purge_notes: bool = False, purge_snapshots: bool = False, agent: str = "claude"
+) -> list[str]:
     done = []
-    unmerge_settings(os.path.join(repo, ".claude", "settings.json"))
+    if agent == "claude":
+        unmerge_settings(os.path.join(repo, ".claude", "settings.json"))
+    else:
+        unmerge_agent_settings(os.path.join(repo, AGENT_FILES[agent][1]))
     rc, cur, _ = git(["config", "--get", "core.hooksPath"], repo)
     if rc == 0 and cur == ".gitvow/git-hooks":
         git(["config", "--unset", "core.hooksPath"], repo)

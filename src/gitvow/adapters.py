@@ -11,9 +11,19 @@ AGENTS = ("claude", "codex", "gemini", "cursor")
 
 # agent event -> gitvow handler
 EVENT_MAP: dict[str, dict[str, str]] = {
-    "claude": {"SessionStart": "SessionStart", "PreToolUse": "PreToolUse", "PostToolUse": "PostToolUse", "Stop": "Stop"},
+    "claude": {
+        "SessionStart": "SessionStart",
+        "PreToolUse": "PreToolUse",
+        "PostToolUse": "PostToolUse",
+        "Stop": "Stop",
+    },
     "codex": {"SessionStart": "SessionStart", "PreToolUse": "PreToolUse", "PostToolUse": "PostToolUse", "Stop": "Stop"},
-    "gemini": {"SessionStart": "SessionStart", "BeforeTool": "PreToolUse", "AfterTool": "PostToolUse", "SessionEnd": "Stop"},
+    "gemini": {
+        "SessionStart": "SessionStart",
+        "BeforeTool": "PreToolUse",
+        "AfterTool": "PostToolUse",
+        "SessionEnd": "Stop",
+    },
     "cursor": {
         "sessionStart": "SessionStart",
         "preToolUse": "PreToolUse",
@@ -45,7 +55,15 @@ def parse_apply_patch(text: str) -> list[dict[str, str]]:
             cur["new"].append(line[1:])
         elif line.startswith("-"):
             cur["old"].append(line[1:])
-    return [{"file_path": f["file_path"], "op": f["op"], "old_string": "\n".join(f["old"]), "new_string": "\n".join(f["new"])} for f in files]
+    return [
+        {
+            "file_path": f["file_path"],
+            "op": f["op"],
+            "old_string": "\n".join(f["old"]),
+            "new_string": "\n".join(f["new"]),
+        }
+        for f in files
+    ]
 
 
 def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str, dict[str, Any]]]:
@@ -70,7 +88,21 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
         if tool == "apply_patch":
             out = []
             for f in parse_apply_patch(str(inp.get("command") or inp.get("patch") or "")):
-                out.append((gv_event, {**base, "tool_name": "Edit", "tool_input": {"file_path": f["file_path"], "old_string": f["old_string"], "new_string": f["new_string"], "apply_patch_op": f["op"]}}))
+                out.append(
+                    (
+                        gv_event,
+                        {
+                            **base,
+                            "tool_name": "Edit",
+                            "tool_input": {
+                                "file_path": f["file_path"],
+                                "old_string": f["old_string"],
+                                "new_string": f["new_string"],
+                                "apply_patch_op": f["op"],
+                            },
+                        },
+                    )
+                )
             return out or [(gv_event, {**base, "tool_name": "Edit", "tool_input": {}})]
         return [(gv_event, {**base, "tool_name": tool, "tool_input": inp})]
     if agent == "gemini":
@@ -80,16 +112,33 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
             return [(gv_event, {**base, "tool_name": "Bash", "tool_input": {"command": payload.get("command", "")}})]
         if event == "afterFileEdit":
             edits = payload.get("edits") or []
-            return [(gv_event, {**base, "tool_name": "Edit", "tool_input": {
-                "file_path": payload.get("file_path", ""),
-                "old_string": "\n".join(str(e.get("old_string", "")) for e in edits),
-                "new_string": "\n".join(str(e.get("new_string", "")) for e in edits),
-            }})]
+            return [
+                (
+                    gv_event,
+                    {
+                        **base,
+                        "tool_name": "Edit",
+                        "tool_input": {
+                            "file_path": payload.get("file_path", ""),
+                            "old_string": "\n".join(str(e.get("old_string", "")) for e in edits),
+                            "new_string": "\n".join(str(e.get("new_string", "")) for e in edits),
+                        },
+                    },
+                )
+            ]
         if event == "beforeMCPExecution":
             name = tool if tool.startswith("mcp__") else f"mcp__{payload.get('mcp_server_name', 'server')}__{tool}"
             return [(gv_event, {**base, "tool_name": name, "tool_input": inp})]
         # generic preToolUse: Cursor's own tool names
-        mapped = {"Shell": "Bash", "shell": "Bash", "run_terminal_cmd": "Bash", "edit_file": "Edit", "write_file": "Write", "Edit": "Edit", "Write": "Write"}.get(tool, tool)
+        mapped = {
+            "Shell": "Bash",
+            "shell": "Bash",
+            "run_terminal_cmd": "Bash",
+            "edit_file": "Edit",
+            "write_file": "Write",
+            "Edit": "Edit",
+            "Write": "Write",
+        }.get(tool, tool)
         if mapped == "Bash" and "command" not in inp and payload.get("command"):
             inp["command"] = payload["command"]
         return [(gv_event, {**base, "tool_name": mapped, "tool_input": inp})]

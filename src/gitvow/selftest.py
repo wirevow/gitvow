@@ -8,9 +8,116 @@ import shutil
 import subprocess
 import sys
 import tempfile
+from typing import Any
 
 from .hooks import post_tool_use, pre_tool_use, session_start, stop
 from .install import _write_git_hook
+
+
+def run_agent(agent: str) -> int:
+    """Drive the adapter for another agent with that agent's payload shapes: a block and a snapshot."""
+    import json as _json
+
+    from .adapters import normalize, respond
+    from .hooks import HANDLERS
+
+    home = tempfile.mkdtemp(prefix="gitvow-home-")
+    repo = tempfile.mkdtemp(prefix="gitvow-repo-")
+    results: list[tuple[bool, str]] = []
+    try:
+        subprocess.run(["git", "init", "-q"], cwd=repo, check=False)
+        with open(os.path.join(repo, "a.txt"), "w") as fh:
+            fh.write("a\n")
+        samples: dict[str, list[tuple[str, dict[str, Any]]]] = {
+            "codex": [
+                ("SessionStart", {"session_id": "st", "cwd": repo}),
+                (
+                    "PreToolUse",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "Bash",
+                        "tool_input": {"command": "git push --force"},
+                    },
+                ),
+                (
+                    "PostToolUse",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "apply_patch",
+                        "tool_input": {"command": "*** Begin Patch\n*** Update File: a.txt\n+b\n*** End Patch\n"},
+                    },
+                ),
+            ],
+            "gemini": [
+                ("SessionStart", {"session_id": "st", "cwd": repo}),
+                (
+                    "BeforeTool",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "run_shell_command",
+                        "tool_input": {"command": "git push --force"},
+                    },
+                ),
+                (
+                    "AfterTool",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "write_file",
+                        "tool_input": {"file_path": os.path.join(repo, "a.txt"), "content": "b"},
+                    },
+                ),
+            ],
+            "cursor": [
+                ("sessionStart", {"conversation_id": "st", "workspace_roots": [repo]}),
+                (
+                    "beforeShellExecution",
+                    {"conversation_id": "st", "workspace_roots": [repo], "command": "git push --force"},
+                ),
+                (
+                    "afterFileEdit",
+                    {
+                        "conversation_id": "st",
+                        "workspace_roots": [repo],
+                        "file_path": os.path.join(repo, "a.txt"),
+                        "edits": [{"old_string": "a", "new_string": "b"}],
+                    },
+                ),
+            ],
+        }
+        for ev, payload in samples[agent]:
+            worst, msgs = 0, []
+            for gv_event, p in normalize(agent, ev, payload):
+                code, msg = HANDLERS[gv_event](p, home)
+                worst = max(worst, code)
+                if msg:
+                    msgs.append(msg)
+            exit_code, out, _err = respond(agent, worst, "\n".join(msgs))
+            if ev in ("PreToolUse", "BeforeTool", "beforeShellExecution"):
+                blocked = (agent == "cursor" and _json.loads(out).get("permission") == "deny") or (
+                    agent != "cursor" and exit_code == 2
+                )
+                results.append((blocked, f"{agent}: force push denied in the agent's own form"))
+        refs = subprocess.run(
+            ["git", "for-each-ref", "refs/gitvow/snapshots/"], cwd=repo, capture_output=True, text=True
+        ).stdout
+        results.append((refs.strip() != "", f"{agent}: snapshot taken after the agent's edit"))
+        results.append(
+            (os.path.exists(os.path.join(repo, ".git", "gitvow-session.json")), f"{agent}: session recorded")
+        )
+    finally:
+        shutil.rmtree(home, ignore_errors=True)
+        shutil.rmtree(repo, ignore_errors=True)
+    for ok, name in results:
+        print(("  ok   " if ok else "  FAIL ") + name)
+    failed = sum(1 for ok, _ in results if not ok)
+    print(
+        f"\nselftest --agent {agent}: {len(results) - failed} passed, {failed} failed (payload shapes from vendor docs; not a real session)"
+    )
+    return 1 if failed else 0
 
 
 def run() -> int:

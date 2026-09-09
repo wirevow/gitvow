@@ -1,0 +1,238 @@
+import io
+import json
+
+from gitvow import cli
+from gitvow.adapters import normalize, parse_apply_patch, respond
+from gitvow.install import install_repo, install_user, uninstall_repo, uninstall_user
+
+PATCH = """*** Begin Patch
+*** Update File: src/api/Orders.java
+@@
+-    return old;
++    @Path("/v1/orders/export")
++    return csv;
+*** Add File: docs/new.md
++# new
+*** Delete File: old.txt
+*** End Patch
+"""
+
+
+def test_parse_apply_patch():
+    files = parse_apply_patch(PATCH)
+    assert [f["file_path"] for f in files] == ["src/api/Orders.java", "docs/new.md", "old.txt"]
+    assert (
+        files[0]["op"] == "update"
+        and "/v1/orders/export" in files[0]["new_string"]
+        and "return old;" in files[0]["old_string"]
+    )
+    assert files[1]["op"] == "add" and files[1]["new_string"] == "# new"
+    assert files[2]["op"] == "delete"
+
+
+def test_codex_normalization_expands_patch_and_maps_events():
+    calls = normalize(
+        "codex",
+        "PreToolUse",
+        {"session_id": "c1", "cwd": "/r", "tool_name": "apply_patch", "tool_input": {"command": PATCH}},
+    )
+    assert [c[0] for c in calls] == ["PreToolUse"] * 3
+    assert calls[0][1]["tool_name"] == "Edit" and calls[0][1]["tool_input"]["file_path"] == "src/api/Orders.java"
+    bash = normalize(
+        "codex", "PreToolUse", {"session_id": "c1", "cwd": "/r", "tool_name": "Bash", "tool_input": {"command": "ls"}}
+    )
+    assert bash[0][1]["tool_name"] == "Bash" and bash[0][1]["tool_input"] == {"command": "ls"}
+    assert normalize("codex", "Stop", {"session_id": "c1", "cwd": "/r"})[0][0] == "Stop"
+    assert normalize("codex", "UserPromptSubmit", {}) == []
+
+
+def test_gemini_normalization():
+    c = normalize(
+        "gemini",
+        "BeforeTool",
+        {"session_id": "g1", "cwd": "/r", "tool_name": "run_shell_command", "tool_input": {"command": "git push -f"}},
+    )
+    assert c[0][0] == "PreToolUse" and c[0][1]["tool_name"] == "Bash"
+    c = normalize(
+        "gemini",
+        "AfterTool",
+        {
+            "session_id": "g1",
+            "cwd": "/r",
+            "tool_name": "write_file",
+            "tool_input": {"file_path": "a.py", "content": "x"},
+        },
+    )
+    assert c[0][0] == "PostToolUse" and c[0][1]["tool_name"] == "Write"
+    assert normalize("gemini", "SessionEnd", {"session_id": "g1", "cwd": "/r"})[0][0] == "Stop"
+
+
+def test_cursor_normalization_and_responses():
+    c = normalize(
+        "cursor", "beforeShellExecution", {"conversation_id": "cu1", "workspace_roots": ["/w"], "command": "rm -rf /"}
+    )
+    assert c[0][1] == {
+        "session_id": "cu1",
+        "transcript_path": "",
+        "cwd": "/w",
+        "hook_event_name": "PreToolUse",
+        "agent": "cursor",
+        "tool_name": "Bash",
+        "tool_input": {"command": "rm -rf /"},
+    }
+    c = normalize(
+        "cursor",
+        "afterFileEdit",
+        {
+            "conversation_id": "cu1",
+            "workspace_roots": ["/w"],
+            "file_path": "/w/a.py",
+            "edits": [{"old_string": "a", "new_string": "b"}, {"old_string": "", "new_string": '"/v1/x"'}],
+        },
+    )
+    assert c[0][0] == "PostToolUse" and c[0][1]["tool_input"]["new_string"] == 'b\n"/v1/x"'
+    c = normalize(
+        "cursor",
+        "beforeMCPExecution",
+        {
+            "conversation_id": "cu1",
+            "workspace_roots": ["/w"],
+            "tool_name": "delete_dashboard",
+            "mcp_server_name": "grafana",
+            "tool_input": {},
+        },
+    )
+    assert c[0][1]["tool_name"] == "mcp__grafana__delete_dashboard"
+    assert respond("cursor", 2, "BLOCKED by policy (force push).")[1] == json.dumps(
+        {
+            "permission": "deny",
+            "user_message": "BLOCKED by policy (force push).",
+            "agent_message": "BLOCKED by policy (force push).",
+        }
+    )
+    assert json.loads(respond("cursor", 2, "CONFIRMATION REQUIRED (x). Ask the user")[1])["permission"] == "ask"
+    assert json.loads(respond("cursor", 0, "")[1]) == {"permission": "allow"}
+    assert respond("codex", 2, "BLOCKED")[0] == 2 and respond("gemini", 0, "")[0] == 0
+
+
+def _run_hook(monkeypatch, capsys, agent, event, payload):
+    monkeypatch.setattr("sys.stdin", io.StringIO(json.dumps(payload)))
+    code = cli.main(["hook", "--agent", agent, event])
+    out = capsys.readouterr()
+    return code, out.out, out.err
+
+
+def test_cli_hook_per_agent_end_to_end(repo, home, monkeypatch, capsys):
+    monkeypatch.chdir(repo)
+    # codex: a destructive command is blocked with exit 2; a patch touching a gate file requires confirmation naming the file
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "codex",
+        "PreToolUse",
+        {"session_id": "c1", "cwd": str(repo), "tool_name": "Bash", "tool_input": {"command": "git push --force"}},
+    )
+    assert code == 2 and "BLOCKED" in err and out == ""
+    patch = "*** Begin Patch\n*** Update File: core/authz_rules.go\n+x\n*** Update File: README.md\n+y\n*** End Patch\n"
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "codex",
+        "PreToolUse",
+        {"session_id": "c1", "cwd": str(repo), "tool_name": "apply_patch", "tool_input": {"command": patch}},
+    )
+    assert code == 2 and "CONFIRMATION REQUIRED" in err and "[file: core/authz_rules.go]" in err
+    # gemini: allowed shell command exits 0 silently
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "gemini",
+        "BeforeTool",
+        {"session_id": "g1", "cwd": str(repo), "tool_name": "run_shell_command", "tool_input": {"command": "ls"}},
+    )
+    assert (code, out, err) == (0, "", "")
+    # cursor: JSON permission, ask for confirm-class, deny for deny-class, allow otherwise
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "cursor",
+        "beforeShellExecution",
+        {"conversation_id": "cu1", "workspace_roots": [str(repo)], "command": "kubectl apply -f x.yaml"},
+    )
+    assert code == 0 and json.loads(out)["permission"] == "ask"
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "cursor",
+        "beforeShellExecution",
+        {"conversation_id": "cu1", "workspace_roots": [str(repo)], "command": "terraform destroy"},
+    )
+    assert json.loads(out)["permission"] == "deny"
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "cursor",
+        "beforeShellExecution",
+        {"conversation_id": "cu1", "workspace_roots": [str(repo)], "command": "ls"},
+    )
+    assert json.loads(out) == {"permission": "allow"}
+    # cursor afterFileEdit takes a snapshot and records the blob like Claude Code's PostToolUse
+    (repo / "a.txt").write_text("cursor wrote this\n")
+    _run_hook(monkeypatch, capsys, "cursor", "sessionStart", {"conversation_id": "cu1", "workspace_roots": [str(repo)]})
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "cursor",
+        "afterFileEdit",
+        {
+            "conversation_id": "cu1",
+            "workspace_roots": [str(repo)],
+            "file_path": str(repo / "a.txt"),
+            "edits": [{"old_string": "a", "new_string": "cursor wrote this"}],
+        },
+    )
+    assert code == 0
+    from tests.conftest import git
+
+    assert git(repo, "for-each-ref", "--format=%(refname)", "refs/gitvow/snapshots/").endswith("/cu1/1")
+    # an event the adapter does not use is a no-op
+    assert _run_hook(monkeypatch, capsys, "gemini", "BeforeModel", {"session_id": "g1", "cwd": str(repo)})[0] == 0
+
+
+def test_install_per_agent_idempotent_and_reversible(home, repo):
+    for agent, rel, key in (
+        ("codex", ".codex/hooks.json", "PreToolUse"),
+        ("gemini", ".gemini/settings.json", "BeforeTool"),
+        ("cursor", ".cursor/hooks.json", "beforeShellExecution"),
+    ):
+        out = install_user(str(home), agent=agent)
+        install_user(str(home), agent=agent)
+        s = json.loads((home / rel).read_text())
+        assert len(s["hooks"][key]) == 1, agent
+        cmd = (
+            s["hooks"][key][0]["hooks"][0]["command"]
+            if "hooks" in s["hooks"][key][0]
+            else s["hooks"][key][0]["command"]
+        )
+        assert f"hook --agent {agent}" in cmd
+        if agent == "codex":
+            assert any("hooks = true" in x for x in out)
+        if agent == "cursor":
+            assert s["version"] == 1 and s["hooks"][key][0]["failClosed"] is True
+        if agent == "gemini":
+            assert s["hooks"][key][0]["hooks"][0]["name"] == "gitvow-BeforeTool"
+        uninstall_user(str(home), agent=agent)
+        assert not (home / rel).exists(), agent
+    # foreign entries survive
+    (home / ".cursor").mkdir(exist_ok=True)
+    (home / ".cursor" / "hooks.json").write_text(
+        json.dumps({"version": 1, "hooks": {"stop": [{"command": "mine.sh"}]}})
+    )
+    install_user(str(home), agent="cursor")
+    uninstall_user(str(home), agent="cursor")
+    assert json.loads((home / ".cursor" / "hooks.json").read_text())["hooks"]["stop"] == [{"command": "mine.sh"}]
+    # repo-level
+    install_repo(str(repo), agent="codex")
+    assert (repo / ".codex" / "hooks.json").exists()
+    uninstall_repo(str(repo), agent="codex")
+    assert not (repo / ".codex" / "hooks.json").exists()
