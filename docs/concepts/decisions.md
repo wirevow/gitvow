@@ -72,6 +72,17 @@ A person working without an agent triggers nothing. gitvow adds no ceremony to s
 
 Prefer merge commits or rebase where the evidence, not only the decision, should reach history. For repositories that squash, the [pull request check](../guides/pull-requests.md) writes a decisions summary into the pull request description so the squash commit inherits it.
 
+## Earned rules
+
+When authorities have answered the same finding the same way three times running (`decisions.rule_threshold`), the finding becomes an **earned rule**. A rule carries its evidence: the count, the first and last date, who decided, the scopes, the commits. It lapses when nobody has confirmed it within ninety days (`decisions.rule_decay_days`), and a contradicting answer resets the run. Three accepts by someone the policy does not name are data, not a rule.
+
+A rule is context, not permission. It reaches the agent in two ways:
+
+- At session start, the hook hands the rules to the agent as context: "this repository has declined every unfiltered route four times; propose the filter first". The agent can avoid raising the finding at all.
+- On the card, the finding arrives with its rule attached, next to the proposal.
+
+Nothing is accepted on the strength of a rule. The gate still asks at commit. `gitvow rules` lists rules, candidates and lapsed rules; `gitvow rules --write` puts the block into the repository's agent instruction file, in a managed section you can commit and review like the policy.
+
 ## What this is for
 
 Every answered card is a labelled pair: a situation with evidence, and a decision with a reason, made by a named person doing their normal work. Per repository, those pairs become proposals on the next card. Later they become earned rules the agent reads as context, and a payback line in the digest. Nothing in this release suppresses a question; the record has to be honest before it is allowed to be quiet.

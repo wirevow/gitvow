@@ -47,7 +47,20 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     st.pop("pending_commit", None)
     save_state(cwd, st)
     log_event(cwd, "session_start", {"session_id": h.get("session_id")})
-    return 0, ""
+    return 0, _rules_context(cwd, home)
+
+
+def _rules_context(cwd: str, home: str | None) -> str:
+    """Earned rules as context for the agent; SessionStart stdout reaches the conversation."""
+    from ..rules import derive, render
+
+    try:
+        pol = load_policy(cwd, home)
+    except PolicyError:
+        return ""
+    if not toplevel(cwd):
+        return ""
+    return render(derive(cwd, pol))
 
 
 def _policy_or_empty(cwd: str, home: str | None) -> dict[str, Any]:
@@ -119,7 +132,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
                 st["card_shown_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                 save_state(cwd, st)
             log_event(cwd, "card", {"findings": len(pending), "session_id": h.get("session_id")})
-            return 2, dec.card(cwd)
+            return 2, dec.card(cwd, pol=pol)
         st = load_state(cwd)
         st["session_id"] = h.get("session_id") or st.get("session_id")
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")

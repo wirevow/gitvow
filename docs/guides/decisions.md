@@ -75,6 +75,18 @@ If your repository squash-merges, the original commits and their trailers do not
 - Prefer merge commits or rebase merging for repositories where the evidence should live in history.
 - Keep squashing and let the [pull request check](pull-requests.md) write the decisions summary into the pull request description. GitHub uses the description as the squash commit's message by default, so the trailers arrive on the squash commit. Leave the summary block in place when you edit the description.
 
+## Earned rules
+
+After the same finding has been answered the same way three times by people the policy names, it becomes a rule with its dates and evidence:
+
+```sh
+gitvow rules                 # rules, candidates not yet at the threshold, lapsed rules
+gitvow rules --write         # managed section in CLAUDE.md (--agent codex → AGENTS.md, gemini → GEMINI.md, cursor, copilot)
+gitvow rules --json
+```
+
+Rules are handed to the agent at the start of every session, so writing them into the instruction file is optional; do it when you want them reviewed in a pull request alongside the policy. A rule changes what the agent proposes, not what the gate does: the card still comes, with the rule attached. Rules lapse after ninety days without a new confirmation and reset on a contradicting answer; both windows are in the policy under `decisions`.
+
 ## Changing your mind
 
 A decision is a row, not a lock. `gitvow decide` on the same finding again records the new answer; the trailer on the earlier commit remains, the new commit carries the new one, and `gitvow show` on each tells the story. A dedicated `gitvow revisit` for commits already on the branch follows in a later release.

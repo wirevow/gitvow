@@ -57,6 +57,9 @@ def cmd_hook(a: argparse.Namespace) -> int:
         worst = max(worst, code)
         if msg:
             messages.append(msg)
+    if a.event == "SessionStart" and worst == 0 and messages and not exe and agent not in ("cursor", "copilot"):
+        print("\n".join(messages))  # SessionStart stdout becomes context for the agent
+        return 0
     try:
         exit_code, out, err = (
             external_respond(exe, worst, "\n".join(messages)) if exe else respond(agent, worst, "\n".join(messages))
@@ -132,7 +135,46 @@ def cmd_decisions(a: argparse.Namespace) -> int:
     if a.json:
         print(json.dumps(dec.open_findings(cwd), indent=1))
         return 0
-    print(dec.card(cwd, for_agent=False), end="")
+    try:
+        pol = load_policy(cwd)
+    except PolicyError:
+        pol = None
+    print(dec.card(cwd, for_agent=False, pol=pol), end="")
+    return 0
+
+
+def cmd_rules(a: argparse.Namespace) -> int:
+    """Earned rules from the decision history; --write puts them into an agent instruction file."""
+    from .rules import INSTRUCTION_FILES, derive, render, write_section
+
+    cwd = os.getcwd()
+    try:
+        pol = load_policy(cwd)
+    except PolicyError as e:
+        print(f"policy error: {e}", file=sys.stderr)
+        return 2
+    d = derive(cwd, pol)
+    if a.json:
+        print(json.dumps(d, indent=1))
+        return 0
+    if a.write:
+        from .state import toplevel
+
+        top = toplevel(cwd) or cwd
+        target = a.file or INSTRUCTION_FILES.get(a.agent, "CLAUDE.md")
+        print(write_section(os.path.join(top, target), render(d)))
+        return 0
+    text = render(d, for_agent=False)
+    if not text:
+        print(
+            f"no earned rules yet: a finding becomes one after {d['threshold']} consistent answers by authorities "
+            f"(decisions.rule_threshold), confirmed within {d['decay_days']} days."
+        )
+        if d["candidates"]:
+            for r in d["candidates"]:
+                print(f"  {r['finding']}: {r['answer']} {r['count']} times (last {r['last']} by {', '.join(r['by'])})")
+        return 0
+    print(text, end="")
     return 0
 
 
@@ -411,6 +453,18 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("decisions", help="the card: open findings in this repository with evidence and the record")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_decisions)
+    s = sub.add_parser(
+        "rules", help="earned rules from the decision history; --write updates the agent instruction file"
+    )
+    s.add_argument("--json", action="store_true")
+    s.add_argument("--write", action="store_true", help="write the managed section into the instruction file")
+    s.add_argument(
+        "--agent",
+        default="claude",
+        help="which agent's instruction file (claude, codex, gemini, cursor, copilot, factory)",
+    )
+    s.add_argument("--file", help="instruction file path, overriding --agent")
+    s.set_defaults(f=cmd_rules)
     s = sub.add_parser("decide", help="record a person's answer: gitvow decide 1 accept --scope staging")
     s.add_argument("finding", help="finding number from `gitvow decisions`, or 'all'")
     s.add_argument("answer", choices=["accept", "decline"])

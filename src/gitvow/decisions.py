@@ -78,11 +78,13 @@ def identity(cwd: str, by: str | None = None) -> tuple[str, str, str]:
 
 def authority(pol: dict[str, Any], ident: str, email: str, name: str) -> str:
     """'policy' when named under decisions.authorities, 'commit-access' when no list is configured, else 'none'."""
-    auth = [str(a).lower() for a in (pol.get("decisions") or {}).get("authorities") or []]
-    if not auth:
+    listed = [str(a).lower() for a in (pol.get("decisions") or {}).get("authorities") or []]
+    if not listed:
         return "commit-access"
+    auth = set(listed) | {a.split("@", 1)[0] for a in listed if "@" in a}  # an email also names its local part
     mine = {ident.lower(), email.lower(), (email.split("@", 1)[0] if email else "").lower(), name.lower()}
-    return "policy" if mine & set(auth) else "none"
+    mine.discard("")
+    return "policy" if mine & auth else "none"
 
 
 def parse_trailers(body: str) -> list[dict[str, Any]]:
@@ -100,8 +102,34 @@ def parse_trailers(body: str) -> list[dict[str, Any]]:
     return out
 
 
-def history(cwd: str, finding: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
-    """Earlier decisions on the same finding in this branch's history, newest first."""
+SESSION_RE = re.compile(r"^Gitvow-Session:\s*(\S+)", re.M)
+
+
+def _note_decisions(cwd: str, sha: str, body: str) -> dict[str, dict[str, Any]]:
+    """finding -> note entry for a commit, when its session note is available locally."""
+    import json
+
+    m = SESSION_RE.search(body)
+    if not m:
+        return {}
+    sid = re.sub(r"[^A-Za-z0-9._-]", "_", m.group(1))
+    rc, note, _ = git(["notes", f"--ref=gitvow/{sid}", "show", sha], cwd)
+    if rc != 0 or not note.startswith("gitvow-session"):
+        return {}
+    try:
+        data = json.loads(note.split("\n", 1)[1])
+    except (json.JSONDecodeError, IndexError):
+        return {}
+    return {d.get("finding"): d for d in data.get("decisions") or [] if isinstance(d, dict)}
+
+
+def history_all(
+    cwd: str, limit: int = HISTORY_COMMITS, finding: str | None = None, pol: dict[str, Any] | None = None
+) -> list[dict[str, Any]]:
+    """Every decision (not open) in this branch's history, newest first, with authority from the note.
+
+    Without a note, authority is 'commit-access' when the trailer names someone: the person had commit access.
+    """
     rc, out, _ = git(["log", f"-{limit}", "--format=%H%x00%ad%x00%B%x01", "--date=short"], cwd)
     rows: list[dict[str, Any]] = []
     if rc != 0:
@@ -111,10 +139,33 @@ def history(cwd: str, finding: str, limit: int = HISTORY_COMMITS) -> list[dict[s
         if not rec.strip() or "Gitvow-" not in rec:
             continue
         sha, date, body = rec.split("\x00", 2)
-        for t in parse_trailers(body):
-            if t["finding"] == finding and t["answer"] != "open":
-                rows.append({**t, "sha": sha[:7], "date": date})
+        ts = [t for t in parse_trailers(body) if t["answer"] != "open" and (finding is None or t["finding"] == finding)]
+        if not ts:
+            continue
+        notes = _note_decisions(cwd, sha, body)
+        for t in ts:
+            n = notes.get(t["finding"]) or {}
+            if n.get("authority"):
+                auth = n["authority"]
+            elif not t.get("by"):
+                auth = "none"
+            else:
+                auth = authority(pol or {}, t["by"], "", "")
+            rows.append(
+                {
+                    **t,
+                    "sha": sha[:7],
+                    "date": date,
+                    "authority": auth,
+                    "kind": n.get("kind"),
+                }
+            )
     return rows
+
+
+def history(cwd: str, finding: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
+    """Earlier decisions on the same finding in this branch's history, newest first."""
+    return history_all(cwd, limit, finding)
 
 
 def proposal(hist: list[dict[str, Any]]) -> tuple[str | None, str]:
@@ -138,7 +189,12 @@ def proposal(hist: list[dict[str, Any]]) -> tuple[str | None, str]:
     return None, sentence + " Mixed record; no proposal."
 
 
-def card(cwd: str, findings: list[dict[str, Any]] | None = None, for_agent: bool = True) -> str:
+def card(
+    cwd: str,
+    findings: list[dict[str, Any]] | None = None,
+    for_agent: bool = True,
+    pol: dict[str, Any] | None = None,
+) -> str:
     """The one surface a developer meets: every open finding with its evidence and what the record proposes."""
     fs = findings if findings is not None else open_findings(cwd)
     if not fs:
@@ -169,6 +225,14 @@ def card(cwd: str, findings: list[dict[str, Any]] | None = None, for_agent: bool
         if not d:
             _, sentence = proposal(history(cwd, f["finding"]))
             lines.append(f"   record: {sentence}")
+            if pol is not None:
+                from .rules import rule_for
+
+                r = rule_for(cwd, pol, f["finding"])
+                if r:
+                    lines.append(
+                        f"   rule: {r['answer']} {r['count']} times by authorities since {r['first']}; decays {r['expires']}."
+                    )
     return "\n".join(lines) + "\n"
 
 

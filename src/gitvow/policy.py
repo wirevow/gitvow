@@ -79,6 +79,10 @@ def _validate(pol: dict[str, Any], path: str) -> None:
     for key in ("authorities", "production_branches"):
         if not isinstance(dec.get(key, []), list):
             raise PolicyError(f"{path}: decisions.{key} must be a list")
+    for key in ("rule_threshold", "rule_decay_days"):
+        v = dec.get(key, 1)
+        if not isinstance(v, int) or isinstance(v, bool) or v < 1:
+            raise PolicyError(f"{path}: decisions.{key} must be a positive integer")
     for key in ("mcp_allow", "mcp_deny"):
         for pat in pol.get(key, []):
             try:

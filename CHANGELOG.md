@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.12.1 — 2026-09-09
+- Earned rules: `gitvow rules` derives, per repository, findings answered the same way by authorities at least `decisions.rule_threshold` times (default 3), each with count, dates, people, scopes, commits and an expiry after `decisions.rule_decay_days` (default 90) without a new confirmation. A contradicting answer resets the run; answers by people outside `decisions.authorities` do not count.
+- Rules reach the agent as context: the SessionStart hook prints them to stdout (Claude Code, Codex, Gemini, Factory add it to the conversation), the card shows the rule next to the proposal, and `gitvow rules --write [--agent NAME | --file PATH]` maintains a managed section in the instruction file. Nothing is accepted on a rule's strength.
+- Authorities given as emails also match trailer identities by local part.
+
 ## 0.12.0 — 2026-09-09
 - Decisions. Confirm rules carry `when`: `immediate` (default for Bash rules) or `commit` (default for path and provider rules). At-commit findings accumulate in the session state while the agent works; `git commit` is refused once with a card naming each finding, its evidence and what the record proposes from earlier decisions on the same finding in the repository.
 - `gitvow decide <n|all> accept|decline [--scope] [--reason] [--by]` records a person's answer; `gitvow decisions` prints the card. Answers become `Gitvow-Accepted` / `Gitvow-Declined` trailers and a `decisions` array in the session note (schema 5) with authority, scope, reason and the number of user turns between the card and the answer.

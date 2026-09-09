@@ -12,7 +12,7 @@
   "llm_classifier": {"enabled": false, "command": "<program and arguments, run without a shell>"},
   "snapshots": {"enabled": true, "max_per_session": 200, "exclude": [".env*", "*.pem", "*.key", "*secret*", "*credential*", ".gitvow/**", ".claude/**"]},
   "pricing": {"<model name or prefix>": {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}},
-  "decisions": {"mode": "open", "authorities": [], "production_branches": ["main", "master", "production"]}
+  "decisions": {"mode": "open", "authorities": [], "production_branches": ["main", "master", "production"], "rule_threshold": 3, "rule_decay_days": 90}
 }
 ```
 
@@ -27,7 +27,7 @@
 | `pricing` | note, ledger, report, digest | not a gate rule; USD per million tokens by model, overriding the built-in table | |
 | `snapshots` | after each agent edit | not a gate rule; controls working-tree snapshots, see [Snapshots](../concepts/snapshots.md) | |
 | `llm_classifier` | anything not decided above | command prints `ALLOW` / `CONFIRM reason` / `DENY reason` | as printed, immediately; failure → confirm |
-| `decisions` | the card and the git hooks | not a gate rule; `mode` `open` (default) or `strict` for commits made by a person while findings are open; `authorities` names whose decisions count, matched against committer email, its local part or name; `production_branches` where scoped decisions are reopened by the report | |
+| `decisions` | the card and the git hooks | not a gate rule; `mode` `open` (default) or `strict` for commits made by a person while findings are open; `authorities` names whose decisions count, matched against committer email, its local part or name; `production_branches` where scoped decisions are reopened by the report; `rule_threshold` consistent answers by authorities before a finding becomes an earned rule; `rule_decay_days` days without a new confirmation before it lapses | |
 
 ### `when`
 `"when": "immediate"` refuses the call and asks now. `"when": "commit"` records a finding and lets the call run; the finding is put to a person when the agent commits, see [Decisions](../concepts/decisions.md). Deny rules have no `when`; a denial is always immediate. The default policy keeps edits to gitvow's own policy and hooks immediate, so a loosened policy can never take effect before a person has seen it.

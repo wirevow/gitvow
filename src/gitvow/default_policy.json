@@ -79,7 +79,9 @@
     "mode": "open",
     "authorities": [],
     "production_branches": ["main", "master", "production"],
-    "_doc": "mode: open (a person's commit records Gitvow-Open for undecided findings) or strict (pre-commit refuses until gitvow decide). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
+    "rule_threshold": 3,
+    "rule_decay_days": 90,
+    "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (a person's commit records Gitvow-Open for undecided findings) or strict (pre-commit refuses until gitvow decide). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
   },
   "llm_classifier": {
     "enabled": false,
