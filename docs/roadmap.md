@@ -33,6 +33,12 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - Codex CLI, Gemini CLI and Cursor adapters: payload normalisation, native responses (Cursor `ask` for confirm), patch parsing for Codex edits, per-agent install and uninstall.
 - Exit: a real session on each agent stopped by the gate and producing a trailer, note and snapshot. Claude Code met; the other three await users of those agents.
 
+## 0.7 — The record teaches the next session (in progress)
+- `gitvow why`, `trace`, `recall`, `handoff` over trailers, notes, snapshots and the ledger; agent skills in the common format for Claude Code, Codex, Cursor and Gemini CLI.
+- Transcript readers for Codex, Gemini and Cursor so their notes carry a plan and tool counts.
+- Copilot CLI and Factory adapters.
+- Exit: a real session on a repository with history answers "why does this file look like this" from the record, and a handoff produced by one agent is picked up by another.
+
 ## Later
 - A configuration-driven storage tier for the ledger (restricted repository, object store).
 

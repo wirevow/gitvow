@@ -48,5 +48,8 @@ Notes written by gitvow 0.1 live on the single ref `refs/notes/sessions`; `gitvo
 ### Notes follow rewrites
 Install sets `notes.rewriteRef` to the session refs, so `git commit --amend`, `git rebase` and squash merges carry each note to the rewritten commit. Trailers are in the message and survive on their own. A squash of several agent commits concatenates their trailers and keeps the notes of every squashed commit on the result.
 
+## Asking the record
+Four commands and matching agent skills let the next session consult all of this: `why`, `trace`, `recall`, `handoff`. See [Let the agent ask the record](../guides/skills.md).
+
 ## Ledger
 At the end of a session, a redacted summary is written to `~/.gitvow/ledger/<session-id>.json`: every tool call with a shortened argument, the commits made during the session, the last stated plan. It is the fullest record gitvow keeps, and it never enters a repository. See [What stays out of git](storage.md).

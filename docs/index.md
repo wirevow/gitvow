@@ -6,6 +6,7 @@
 - Every such commit gets a **session note**: what the agent said it was doing, which tools it used, which files it touched, how much of the commit it wrote. Redacted before it is written. Stored as a git note, never in the tree.
 - Every tool call passes a **gate** before it runs: destructive commands are refused, risky ones require the agent to ask you first, and edits to gate-bearing files need a human. The rules are a JSON file you own.
 - The full session summary goes to a **local ledger** in your home directory. Nothing leaves the machine unless you push it.
+- The next session can **ask the record**: why a file looks the way it does, who wrote these lines, what was tried before, what to hand off. Four commands, and skills that teach the agent to use them.
 
 No runtime dependencies. Standard-library Python and git. One command to install, one to remove.
 

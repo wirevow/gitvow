@@ -17,6 +17,10 @@ gitvow snapshots [--session ID] [--all]                   list working-tree snap
 gitvow snapshots prune [--older-than 14d] [--session ID]  delete snapshot refs
 gitvow diff <session> <n> [--full]                        what the agent had changed at snapshot n, against the HEAD of that moment
 gitvow restore <session> <n> [--to DIR]                   check a snapshot out into a detached scratch worktree
+gitvow why <path>                                         which sessions shaped a file: commits, plans, attribution
+gitvow trace <path>[:<start>-<end>]                       who wrote these lines: agent (session, step, plan) or person
+gitvow recall <words...> [--limit N]                      sessions whose notes or ledger mention the words
+gitvow handoff [--session ID]                             markdown summary for the next agent: plan, commits, files, uncommitted state, open confirmations
 gitvow push-notes [remote]                                push refs/notes/gitvow/* to the remote (default origin)
 gitvow collect [--out DIR]                                gather ledger, logs, trailers and notes into one redacted directory (default ~/Desktop)
 gitvow summarize <dir>                                    trial metrics from a collected directory

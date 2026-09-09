@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.7.0 — 2026-09-09
+- `gitvow why <path>`, `gitvow trace <path>[:a-b]`, `gitvow recall <words>`, `gitvow handoff [--session]`: the record answers the next session's questions from trailers, notes, snapshots and the ledger. Read-only, local.
+- Agent skills published in the common Agent Skills format at wirevow/gitvow-skills.
+
 ## 0.6.0 — 2026-09-09
 - Adapters for Codex CLI, Gemini CLI and Cursor: `gitvow hook --agent <name> <Event>` normalises each agent's payload and answers in its native form (exit 2 for Codex and Gemini; `permission` JSON with `ask` for confirmations in Cursor). Codex `apply_patch` edits are parsed per file for path rules, route questions, attribution and snapshots.
 - `gitvow install --user --agent <name>` / `gitvow install <repo> --agent <name>` and matching uninstall write each agent's hook configuration idempotently.

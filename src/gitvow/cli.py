@@ -9,6 +9,7 @@ import re
 import sys
 
 from . import __version__
+from . import recall as rec
 from . import snapshots as snap
 from .collect import collect, summarize_text
 from .hooks import HANDLERS, LEGACY_NOTES_REF, notes_ref
@@ -211,6 +212,26 @@ def cmd_restore(a: argparse.Namespace) -> int:
     return rc
 
 
+def cmd_why(a: argparse.Namespace) -> int:
+    print(rec.why(os.getcwd(), a.path))
+    return 0
+
+
+def cmd_trace(a: argparse.Namespace) -> int:
+    print(rec.trace(os.getcwd(), a.spec))
+    return 0
+
+
+def cmd_recall(a: argparse.Namespace) -> int:
+    print(rec.recall(os.getcwd(), a.words, None, a.limit))
+    return 0
+
+
+def cmd_handoff(a: argparse.Namespace) -> int:
+    print(rec.handoff(os.getcwd(), a.session))
+    return 0
+
+
 def cmd_push_notes(a: argparse.Namespace) -> int:
     import subprocess
 
@@ -304,6 +325,19 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("n", type=int)
     s.add_argument("--to")
     s.set_defaults(f=cmd_restore)
+    s = sub.add_parser("why", help="which sessions shaped a file: commits, plans, attribution")
+    s.add_argument("path")
+    s.set_defaults(f=cmd_why)
+    s = sub.add_parser("trace", help="who wrote these lines: gitvow trace path[:start-end]")
+    s.add_argument("spec")
+    s.set_defaults(f=cmd_trace)
+    s = sub.add_parser("recall", help="sessions whose notes or ledger mention the words")
+    s.add_argument("words", nargs="+")
+    s.add_argument("--limit", type=int, default=10)
+    s.set_defaults(f=cmd_recall)
+    s = sub.add_parser("handoff", help="markdown summary for the next agent")
+    s.add_argument("--session")
+    s.set_defaults(f=cmd_handoff)
     s = sub.add_parser("push-notes", help="push refs/notes/gitvow/* to a remote (default origin)")
     s.add_argument("remote", nargs="?", default="origin")
     s.set_defaults(f=cmd_push_notes)
