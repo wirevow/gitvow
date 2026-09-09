@@ -10,7 +10,7 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `assistant_turns_so_far` | int | assistant messages in the transcript at commit time |
 | `tool_calls_so_far` | int | tool invocations at commit time |
 | `tools_used` | string[] | distinct tool names |
-| `last_stated_plan` | string | last assistant text before the commit, redacted, at most 600 characters |
+| `last_stated_plan` | string | last assistant text before the commit, redacted, at most 600 characters; read from Claude Code, Codex and Gemini CLI transcripts, empty for Cursor |
 | `files_in_commit` | string[] | `git show --stat` lines, at most 50 |
 | `files_written_by_agent_this_session` | string[] | files in the commit that the agent edited or wrote via tools in this session |
 | `attribution` | object | see below |

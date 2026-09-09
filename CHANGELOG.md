@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.7.1 — 2026-09-09
+- Transcript readers for Codex session files and Gemini CLI chat recordings, detected from the file: session notes and ledgers for those agents now carry the stated plan, tool counts and files written. Tool output is never read in any format. Cursor's transcript remains undocumented and unread.
+
 ## 0.7.0 — 2026-09-09
 - `gitvow why <path>`, `gitvow trace <path>[:a-b]`, `gitvow recall <words>`, `gitvow handoff [--session]`: the record answers the next session's questions from trailers, notes, snapshots and the ledger. Read-only, local.
 - Agent skills published in the common Agent Skills format at wirevow/gitvow-skills.
