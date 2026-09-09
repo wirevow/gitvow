@@ -48,9 +48,6 @@ gitvow is deliberately small. These are the things it should grow into, in order
 ## 0.11 — What each session cost (shipped)
 - Tokens and estimated cost per session from the transcripts already read, with a dated default pricing table and a policy override; in the note, ledger, report, digest and handoff. Subagent side conversations counted.
 
-## 0.12 — Decisions (designed, not built)
-- One decision card per commit, decisions as commit trailers and note fields with scope, earned rules as context, the autonomy meter, revisit. Full design in [Decisions](design/decisions.md); three choices open.
-
 ## Later
 - A configuration-driven storage tier for the ledger (restricted repository, object store).
 - Real-session verification of the five built-in adapters other than Claude Code, by users of those agents.
