@@ -9,6 +9,7 @@ import re
 import time
 from typing import Any
 
+from . import decisions as dec
 from .recall import _commits, _plan
 from .state import toplevel
 
@@ -77,6 +78,12 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                 file_sessions[f["path"]].add(r["session"])
     gate: collections.Counter[str] = collections.Counter()
     reasons: collections.Counter[str] = collections.Counter()
+    now: collections.Counter[str] = collections.Counter()  # this period's cards, findings, restores, sessions
+    before: collections.Counter[str] = collections.Counter()  # the period of the same length before it
+    span_days = max((time.mktime(time.strptime(time.strftime("%Y-%m-%d"), "%Y-%m-%d")) - _day_ts(since_day)) / 86400, 1)
+    prev_day = time.strftime("%Y-%m-%d", time.localtime(_day_ts(since_day) - span_days * 86400))
+    sess_now: set[str] = set()
+    sess_before: set[str] = set()
     log = os.path.join(top, ".git", "gitvow-hooks.log")
     if os.path.exists(log):
         with open(log) as fh:
@@ -85,11 +92,34 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                     e = json.loads(ln)
                 except json.JSONDecodeError:
                     continue
-                if (e.get("ts") or "")[:10] < since_day:
+                day = (e.get("ts") or "")[:10]
+                if day < prev_day:
                     continue
-                if e.get("kind") in ("blocked", "confirm_required"):
-                    gate[e["kind"]] += 1
+                bucket, sset = (now, sess_now) if day >= since_day else (before, sess_before)
+                kind = e.get("kind")
+                if kind == "session_start" and e.get("session_id"):
+                    sset.add(e["session_id"])
+                elif kind == "card":
+                    bucket["cards"] += 1
+                    bucket["pre_answered"] += int(e.get("proposed") or 0)
+                elif kind == "finding":
+                    bucket["findings"] += int(e.get("new") or 0)
+                elif kind == "restore":
+                    bucket["restores"] += 1
+                if day < since_day:
+                    continue
+                if kind in ("blocked", "confirm_required"):
+                    gate[kind] += 1
                     reasons[e.get("reason") or "?"] += 1
+    decided = _decisions_in_period(top, since_day)
+    debt = dec.open_debt(top)
+    from .policy import PolicyError, load_policy
+    from .rules import derive
+
+    try:
+        rules_in_force: int | None = len(derive(top, load_policy(top))["rules"])
+    except PolicyError:
+        rules_in_force = None  # the digest renders without a valid policy
     sess_list = sorted(sessions.values(), key=lambda s: s["date"], reverse=True)
     total_cost = 0.0
     in_tok = out_tok = 0
@@ -125,7 +155,61 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
         },
         "files": [{"path": p, "commits": n, "sessions": len(file_sessions[p])} for p, n in files.most_common(10)],
         "human": [{"short": r["short"], "date": r["date"], "subject": r["subject"]} for r in human[:15]],
+        "decisions": {
+            **decided,
+            "debt": len(debt),
+            "debt_items": debt[:10],
+            "rules_in_force": rules_in_force,
+        },
+        "questions": {
+            "cards": now["cards"],
+            "sessions": len(sess_now) or len(sessions),
+            "per_session": round(now["cards"] / (len(sess_now) or len(sessions)), 2)
+            if (sess_now or sessions)
+            else None,
+            "per_session_before": round(before["cards"] / len(sess_before), 2) if sess_before else None,
+            "findings": now["findings"],
+            "immediate": gate["confirm_required"],
+        },
+        "payback": {
+            "snapshots_restored": now["restores"],
+            "pre_answered": now["pre_answered"],
+            "answers_matching_proposal": decided["matched_proposal"],
+        },
     }
+
+
+def _day_ts(day: str) -> float:
+    try:
+        return time.mktime(time.strptime(day, "%Y-%m-%d"))
+    except ValueError:
+        return time.time()
+
+
+def _decisions_in_period(top: str, since_day: str) -> dict[str, int]:
+    """Accepted, declined, open and revisited trailers on commits in the period; answers that matched the proposal."""
+    from .state import git
+
+    rc, out, _ = git(["log", "-5000", f"--since={since_day}", "--format=%H%x00%B%x01"], top)
+    c: collections.Counter[str] = collections.Counter()
+    if rc != 0:
+        return {"accepted": 0, "declined": 0, "open": 0, "revisited": 0, "matched_proposal": 0}
+    for rec in out.split("\x01"):
+        rec = rec.strip("\n")
+        if not rec.strip() or "Gitvow-" not in rec:
+            continue
+        sha, body = rec.split("\x00", 1)
+        if dec.REVISITS_RE.search(body):
+            c["revisited"] += 1
+        ts = dec.parse_trailers(body)
+        for t in ts:
+            c[t["answer"]] += 1
+        if any(t["answer"] != "open" for t in ts):
+            for n in dec._note_decisions(top, sha, body).values():
+                wanted = {"accept": "accepted", "decline": "declined"}.get(n.get("proposed") or "")
+                if wanted and wanted == n.get("answer"):
+                    c["matched_proposal"] += 1
+    return {k: c[k] for k in ("accepted", "declined", "open", "revisited", "matched_proposal")}
 
 
 def render(d: dict[str, Any]) -> str:
@@ -151,6 +235,33 @@ def render(d: dict[str, Any]) -> str:
         out.append(
             f"Cost: ${c['estimated_usd']:.2f} estimated · {c['input_tokens'] / 1e6:.1f}M input, {c['output_tokens'] / 1e6:.1f}M output tokens{unp}"
         )
+    ds, q, pb = d.get("decisions") or {}, d.get("questions") or {}, d.get("payback") or {}
+    if ds:
+        line = f"Decisions: {ds['accepted']} accepted · {ds['declined']} declined · {ds['open']} open"
+        if ds.get("debt"):
+            line += f" · decision debt {ds['debt']} (open findings nobody has answered)"
+        if ds.get("revisited"):
+            line += f" · {ds['revisited']} revisited"
+        if ds.get("rules_in_force") is not None:
+            line += f" · earned rules in force {ds['rules_in_force']}"
+        out.append(line)
+    if q:
+        per = "n/a" if q.get("per_session") is None else f"{q['per_session']:.2f}"
+        was = f", was {q['per_session_before']:.2f}" if q.get("per_session_before") is not None else ""
+        out.append(
+            f"Questions: {q['cards']} card{'s' if q['cards'] != 1 else ''} over {q['sessions']} session{'s' if q['sessions'] != 1 else ''} "
+            f"({per} per session{was}) · {q['findings']} findings collected · {q['immediate']} immediate confirmation{'s' if q['immediate'] != 1 else ''}"
+        )
+    if pb and any(pb.values()):
+        out.append(
+            f"Payback: {pb['snapshots_restored']} snapshot{'s' if pb['snapshots_restored'] != 1 else ''} restored · "
+            f"{pb['pre_answered']} question{'s' if pb['pre_answered'] != 1 else ''} pre-answered by the record · "
+            f"{pb['answers_matching_proposal']} answer{'s' if pb['answers_matching_proposal'] != 1 else ''} matched the proposal"
+        )
+    if ds.get("debt_items"):
+        out += ["", "### Decision debt"]
+        for o in ds["debt_items"]:
+            out.append(f"{o['sha']}  {o['date'][5:]}  {o['finding']}  · gitvow revisit {o['sha']} accept|decline")
     if d["sessions"]:
         out += ["", "### Sessions"]
         for s in d["sessions"]:

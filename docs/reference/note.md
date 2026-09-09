@@ -51,6 +51,7 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `note` | string or null | the person's reason, redacted |
 | `decided_at` | string or null | local time the answer was recorded |
 | `human_turns_after_card` | int or null | user messages in the transcript between the card and the answer; `0` means the agent answered without a person speaking |
+| `proposed` | string or null | what the record proposed on the card from earlier decisions on the same finding: `accept`, `decline` or null |
 
 The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields.
 
@@ -61,7 +62,8 @@ Gitvow-Step: <int>
 Gitvow-Accepted: <finding> by <person>[ scope=<scope>][: <reason>]
 Gitvow-Declined: <finding> by <person>[ scope=<scope>][: <reason>]
 Gitvow-Open: <finding>
+Gitvow-Revisits: <commit>
 ```
 Added by `prepare-commit-msg` when `.git/gitvow-session.json` holds a session id and a `pending_commit` timestamp younger than five minutes, which the PreToolUse gate sets when the agent runs `git commit` and PostToolUse clears afterwards. Idempotent: a message that already has `Gitvow-Session:` is left alone. A note is written only when the commit at HEAD carries the trailer.
 
-`Gitvow-Accepted` and `Gitvow-Declined` are written for every finding decided with `gitvow decide` before the commit, on agent and human commits alike. `Gitvow-Open` is written on a human commit for each finding nobody decided (policy `decisions.mode` `open`). The `post-commit` hook clears the findings the commit carried. See [Decisions](../concepts/decisions.md).
+`Gitvow-Accepted` and `Gitvow-Declined` are written for every finding decided with `gitvow decide` before the commit, on agent and human commits alike. `Gitvow-Open` is written on a human commit for each finding nobody decided (policy `decisions.mode` `open`). The `post-commit` hook clears the findings the commit carried. `Gitvow-Revisits` marks an empty commit written by `gitvow revisit`; its decision trailers answer the named commit's findings again. See [Decisions](../concepts/decisions.md).

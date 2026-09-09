@@ -83,6 +83,14 @@ A rule is context, not permission. It reaches the agent in two ways:
 
 Nothing is accepted on the strength of a rule. The gate still asks at commit. `gitvow rules` lists rules, candidates and lapsed rules; `gitvow rules --write` puts the block into the repository's agent instruction file, in a managed section you can commit and review like the policy.
 
+## The autonomy meter and payback
+
+The digest and the pull request report show, per repository and never per person: decisions accepted, declined and open; decision debt, the open findings nobody has answered; questions per session against the previous period; how many answers matched what the record proposed; snapshots restored. A repository whose questions per session fall while its accepted decisions rise is one whose agents are learning what it wants, and the numbers say so without anyone being ranked.
+
+## Revisit
+
+`gitvow revisit <commit> accept|decline` answers a decision already on the branch again, including an open one from a person's commit. It writes an empty commit carrying the new answer and `Gitvow-Revisits: <commit>`; the earlier trailer stays where it was, so the record keeps both and the debt is closed. A wrong answer costs one command, which is what makes people answer freely.
+
 ## What this is for
 
 Every answered card is a labelled pair: a situation with evidence, and a decision with a reason, made by a named person doing their normal work. Per repository, those pairs become proposals on the next card. Later they become earned rules the agent reads as context, and a payback line in the digest. Nothing in this release suppresses a question; the record has to be honest before it is allowed to be quiet.

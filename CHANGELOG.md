@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.12.2 — 2026-09-09
+- `gitvow revisit <commit> [accept|decline] [--finding N]`: answer a decision already on the branch again, including a `Gitvow-Open` finding from a person's commit. Writes an empty commit with the new answer and `Gitvow-Revisits: <commit>`; the earlier trailer stays. Open findings a revisit has answered stop counting as debt.
+- Digest: decisions accepted, declined, open and revisited; decision debt with the command to close each item; earned rules in force; questions per session against the previous period; findings collected and immediate confirmations; payback (snapshots restored, questions pre-answered, answers that matched the proposal). Per repository only.
+- The card stores what the record proposed on each finding; the note carries it as `proposed`, and the report marks answers that matched the proposal. `gitvow restore` is logged so the digest can count it.
+- Earned rules: first and last dates are by date, not history position.
+
 ## 0.12.1 — 2026-09-09
 - Earned rules: `gitvow rules` derives, per repository, findings answered the same way by authorities at least `decisions.rule_threshold` times (default 3), each with count, dates, people, scopes, commits and an expiry after `decisions.rule_decay_days` (default 90) without a new confirmation. A contradicting answer resets the run; answers by people outside `decisions.authorities` do not count.
 - Rules reach the agent as context: the SessionStart hook prints them to stdout (Claude Code, Codex, Gemini, Factory add it to the conversation), the card shows the rule next to the proposal, and `gitvow rules --write [--agent NAME | --file PATH]` maintains a managed section in the instruction file. Nothing is accepted on a rule's strength.

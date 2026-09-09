@@ -169,6 +169,7 @@ def restore(cwd: str, ref: str, to: str | None = None) -> tuple[int, str]:
     rc, _, err = git(["worktree", "add", "--detach", to, ref], top)
     if rc != 0:
         return 1, err
+    log_event(top, "restore", {"ref": ref, "to": to})
     return 0, to
 
 

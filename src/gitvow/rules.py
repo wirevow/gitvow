@@ -52,7 +52,8 @@ def derive(cwd: str, pol: dict[str, Any], today: str | None = None) -> dict[str,
             if h["answer"] != answer:
                 break
             run.append(h)
-        last = _dt.date.fromisoformat(run[0]["date"])
+        dates = sorted(h["date"] for h in run)  # history order is not date order once commits are rebased or backdated
+        last = _dt.date.fromisoformat(dates[-1])
         expires = last + _dt.timedelta(days=decay)
         entry = {
             "finding": finding,
@@ -60,8 +61,8 @@ def derive(cwd: str, pol: dict[str, Any], today: str | None = None) -> dict[str,
             "answer": answer,
             "count": len(run),
             "threshold": threshold,
-            "first": run[-1]["date"],
-            "last": run[0]["date"],
+            "first": dates[0],
+            "last": dates[-1],
             "by": sorted({h["by"] for h in run if h.get("by")}),
             "scopes": sorted({h["scope"] for h in run if h.get("scope")}),
             "commits": [h["sha"] for h in run[:5]],

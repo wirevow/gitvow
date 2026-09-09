@@ -60,6 +60,8 @@ def _decisions(
         r["authority"] = n.get("authority")
         r["evidence"] = n.get("evidence") or []
         r["human_turns_after_card"] = n.get("human_turns_after_card")
+        wanted = {"accept": "accepted", "decline": "declined"}.get(n.get("proposed") or "")
+        r["pre_answered"] = bool(wanted) and wanted == r["answer"]
         r["reopen"] = bool(
             r.get("scope")
             and tgt
@@ -135,6 +137,7 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             "declined": sum(1 for d in alld if d["answer"] == "declined"),
             "open": sum(1 for d in alld if d["answer"] == "open"),
             "reopened": sum(1 for d in alld if d.get("reopen")),
+            "pre_answered": sum(1 for d in alld if d.get("pre_answered")),
         },
         "agent_commits": len(agent),
         "human_commits": len(commits) - len(agent),
@@ -161,6 +164,8 @@ def render_markdown(r: dict[str, Any]) -> str:
             bits.append(f"**{ds['open']} open**")
         if ds.get("reopened"):
             bits.append(f"**{ds['reopened']} to reopen for {r.get('target')}**")
+        if ds.get("pre_answered"):
+            bits.append(f"{ds['pre_answered']} matched the record's proposal")
         lines += [f"**Decisions:** {' · '.join(bits)}", ""]
     for c in r["commits"]:
         if c["kind"] == "human":
@@ -213,6 +218,8 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
         scope = f", scope {d['scope']}" if d.get("scope") else ""
         note = f": {d['note']}" if d.get("note") else ""
         line = f"**{d['answer'].capitalize()}:** {d['finding']} by {who}{auth}{scope}{note}"
+        if d.get("pre_answered"):
+            line += " · matched the record's proposal"
         if d.get("human_turns_after_card") == 0:
             line += " · **answered without a user message in the transcript**"
         if d.get("reopen"):

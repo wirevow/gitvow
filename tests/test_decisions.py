@@ -160,7 +160,7 @@ def test_report_lists_decisions_reopens_scope_and_summarises(repo, home, payload
     (repo / "a.txt").write_text("y\n")
     git(repo, "commit", "-qam", "human commit")  # Gitvow-Open
     r = build(str(repo), base, "HEAD", target="main")
-    assert r["decisions"] == {"accepted": 1, "declined": 0, "open": 1, "reopened": 1}
+    assert r["decisions"] == {"accepted": 1, "declined": 0, "open": 1, "reopened": 1, "pre_answered": 0}
     md = render_markdown(r)
     assert "**Decisions:** 1 accepted · 0 declined · **1 open** · **1 to reopen for main**" in md
     assert "accepted for staging; this pull request targets main. Accept for main?" in md
@@ -174,3 +174,50 @@ def test_report_lists_decisions_reopens_scope_and_summarises(repo, home, payload
     monkeypatch.chdir(repo)
     assert cli.main(["report", "--base", base, "--decisions-summary"]) == 0
     assert capsys.readouterr().out == summary
+
+
+def test_proposal_recorded_and_revisit_keeps_both(repo, home, payload, transcript, monkeypatch, capsys):
+    f = "edit core/authz_rules.go"
+    (repo / "a.txt").write_text("p\n")
+    git(repo, "commit", "-qam", f"prior\n\nGitvow-Accepted: {f} by nikhil")
+    session_start(payload("SessionStart"), str(home))
+    pre_tool_use(payload("PreToolUse", "Edit", {"file_path": "core/authz_rules.go"}, transcript), str(home))
+    code, msg = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
+    assert code == 2 and "Proposed: accept." in msg
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert st["findings"][0]["proposed"] == "accept"
+    assert '"kind": "card", "findings": 1, "proposed": 1' in (repo / ".git" / "gitvow-hooks.log").read_text()
+    dec.decide(str(repo), "1", "accept", {}, user_turns=2)
+    pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
+    _install_hooks(repo)
+    (repo / "a.txt").write_text("q\n")
+    git(repo, "commit", "-qam", "agent")
+    post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
+    note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
+    assert note["decisions"][0]["proposed"] == "accept"
+    base = git(repo, "rev-parse", "HEAD~1")
+    r = build(str(repo), base, "HEAD")
+    assert r["decisions"]["pre_answered"] == 1 and "matched the record's proposal" in render_markdown(r)
+    # a human commit leaves an open finding; revisit closes the debt and keeps the earlier trailer
+    pre_tool_use(payload("PreToolUse", "Edit", {"file_path": ".github/workflows/ci.yml"}), str(home))
+    (repo / "a.txt").write_text("r\n")
+    git(repo, "commit", "-qam", "human")
+    open_sha = git(repo, "rev-parse", "--short", "HEAD")
+    assert dec.open_debt(str(repo)) == [
+        {"sha": open_sha, "date": dec.open_debt(str(repo))[0]["date"], "finding": "edit .github/workflows/ci.yml"}
+    ]
+    monkeypatch.chdir(repo)
+    assert cli.main(["revisit", open_sha]) == 0
+    assert "1. open: edit .github/workflows/ci.yml" in capsys.readouterr().out
+    assert cli.main(["revisit", open_sha, "accept", "--reason", "seen it"]) == 0
+    out = capsys.readouterr().out
+    assert out.strip() == f"Gitvow-Accepted: edit .github/workflows/ci.yml by t: seen it (revisits {open_sha})"
+    body = git(repo, "log", "-1", "--format=%B")
+    assert f"Gitvow-Revisits: {git(repo, 'rev-parse', open_sha)}" in body and "Was: open" in body
+    assert "Gitvow-Open: edit .github/workflows/ci.yml" in git(repo, "log", "-1", "--format=%B", open_sha)
+    assert dec.open_debt(str(repo)) == []
+    assert git(repo, "diff", "HEAD~1", "HEAD") == ""  # an empty commit
+    assert cli.main(["revisit", "HEAD", "decline", "--finding", "9"]) == 1
+    assert "no decision 9" in capsys.readouterr().err
+    # history now counts the revisit as the latest answer on that finding
+    assert dec.history(str(repo), "edit .github/workflows/ci.yml")[0]["answer"] == "accepted"

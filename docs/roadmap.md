@@ -48,11 +48,11 @@ gitvow is deliberately small. These are the things it should grow into, in order
 ## 0.11 — What each session cost (shipped)
 - Tokens and estimated cost per session from the transcripts already read, with a dated default pricing table and a policy override; in the note, ledger, report, digest and handoff. Subagent side conversations counted.
 
-## 0.12 — Decisions (in progress)
+## 0.12 — Decisions (shipped, real-session verification of human-commit and fork paths pending)
 - Two classes of confirm rule: immediate, and at commit. At-commit findings accumulate while the agent works and are put to a person on one card when the agent commits, with evidence and the record's proposal from earlier decisions on the same finding.
 - Answers written as `Gitvow-Accepted`, `Gitvow-Declined` and `Gitvow-Open` trailers and as a `decisions` array in the note (schema 5), with the person, their authority under the policy, scope and reason. `gitvow decisions`, `gitvow decide`. Human commits: open by default, strict as an option. The pull request report lists decisions, reopens scoped ones at production branches, and writes a summary into the description of squash-merging repositories.
 - Earned rules (0.12.1): findings answered the same way by authorities `rule_threshold` times become rules with evidence, dates and a decay window; handed to the agent at session start and on the card as context, never as permission. `gitvow rules [--write]`.
-- Still to come in 0.12: the autonomy meter and payback line in the digest and report, `gitvow revisit`.
+- Autonomy meter, payback and revisit (0.12.2): the digest shows decisions, debt, questions per session against the previous period, answers that matched the proposal and snapshots restored; the report marks decisions the record pre-answered; `gitvow revisit` answers a past decision again with an empty commit and closes open debt.
 - Exit: a real session accepts one finding and declines another; a person's commit records an open finding; a branch forked afterwards sees the earlier decision on its card; a scoped decision is reopened on a pull request to main.
 
 ## Later

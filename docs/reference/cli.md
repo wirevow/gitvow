@@ -11,6 +11,8 @@ gitvow check --mcp <tool-name>                            dry-run against an MCP
 gitvow show [commit]                                      print a commit's message, trailers and session note (default HEAD)
 gitvow decisions [--json]                                 the card: open findings in this repository, numbered, with evidence and what the record proposes
 gitvow rules [--json] [--write [--agent NAME | --file PATH]]  earned rules from the decision history, with candidates and lapsed rules; --write updates the managed section of an agent instruction file
+gitvow revisit <commit> [accept|decline] [--finding N] [--scope S] [--reason R] [--by WHO]
+                                                          list a commit's decisions, or answer one again with an empty commit carrying Gitvow-Revisits; the earlier trailer stays
 gitvow decide <n|all> accept|decline [--scope S] [--reason R] [--by WHO]
                                                           record a person's answer to finding n (or every open finding); written as trailers on the next commit
 gitvow redact <text>                                      apply the built-in layers plus your rules files to text and print the result

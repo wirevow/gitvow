@@ -131,7 +131,8 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
                 ]
                 st["card_shown_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                 save_state(cwd, st)
-            log_event(cwd, "card", {"findings": len(pending), "session_id": h.get("session_id")})
+            proposed = dec.mark_proposals(cwd, pol)
+            log_event(cwd, "card", {"findings": len(pending), "proposed": proposed, "session_id": h.get("session_id")})
             return 2, dec.card(cwd, pol=pol)
         st = load_state(cwd)
         st["session_id"] = h.get("session_id") or st.get("session_id")

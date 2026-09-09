@@ -178,6 +178,39 @@ def cmd_rules(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_revisit(a: argparse.Namespace) -> int:
+    """Answer a decision already on the branch again; the record keeps both."""
+    cwd = os.getcwd()
+    try:
+        pol = load_policy(cwd)
+        rules = load_rules(cwd, os.path.expanduser("~"))
+    except (PolicyError, RedactionError) as e:
+        print(str(e), file=sys.stderr)
+        return 2
+    if not a.answer:
+        try:
+            ds = dec.decisions_of(cwd, a.commit)
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        if not ds:
+            print(f"{a.commit}: no decision trailers")
+            return 0
+        for d in ds:
+            extra = (f" by {d['by']}" if d.get("by") else "") + (f" scope={d['scope']}" if d.get("scope") else "")
+            print(f"{d['n']}. {d['answer']}: {d['finding']}{extra}")
+        print("revisit with: gitvow revisit <commit> accept|decline [--finding n]", file=sys.stderr)
+        return 0
+    try:
+        head, line = dec.revisit(cwd, a.commit, a.answer, pol, a.finding, a.scope, a.reason, a.by, rules)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(line)
+    print(f"recorded as an empty commit {head[:7]}; the earlier trailer stays on {a.commit}", file=sys.stderr)
+    return 0
+
+
 def cmd_decide(a: argparse.Namespace) -> int:
     """Record a person's answer to one finding or all of them."""
     cwd = os.getcwd()
@@ -465,6 +498,14 @@ def main(argv: list[str] | None = None) -> int:
     )
     s.add_argument("--file", help="instruction file path, overriding --agent")
     s.set_defaults(f=cmd_rules)
+    s = sub.add_parser("revisit", help="answer a decision already on the branch again: gitvow revisit <commit> accept")
+    s.add_argument("commit")
+    s.add_argument("answer", nargs="?", choices=["accept", "decline"])
+    s.add_argument("--finding", help="which decision on the commit, when it carries several")
+    s.add_argument("--scope")
+    s.add_argument("--reason")
+    s.add_argument("--by")
+    s.set_defaults(f=cmd_revisit)
     s = sub.add_parser("decide", help="record a person's answer: gitvow decide 1 accept --scope staging")
     s.add_argument("finding", help="finding number from `gitvow decisions`, or 'all'")
     s.add_argument("answer", choices=["accept", "decline"])

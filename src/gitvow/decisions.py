@@ -14,6 +14,7 @@ from .redact import redact
 from .state import git, load_state, save_state
 
 TRAILER_RE = re.compile(r"^Gitvow-(Accepted|Declined|Open):\s*(.+?)(?: by (\S+))?(?: scope=(\S+))?(?:: (.*))?$", re.M)
+REVISITS_RE = re.compile(r"^Gitvow-Revisits:\s*([0-9a-f]{7,40})\b", re.M)
 MAX_EVIDENCE = 8
 HISTORY_COMMITS = 3000
 
@@ -189,6 +190,20 @@ def proposal(hist: list[dict[str, Any]]) -> tuple[str | None, str]:
     return None, sentence + " Mixed record; no proposal."
 
 
+def mark_proposals(cwd: str, pol: dict[str, Any] | None = None) -> int:
+    """Store what the record proposes on each undecided finding, so the note can say whether the answer matched."""
+    st = load_state(cwd)
+    n = 0
+    for f in st.get("findings") or []:
+        if f.get("decision") or "proposed" in f:
+            continue
+        p, _ = proposal(history(cwd, f["finding"]))
+        f["proposed"] = p
+        n += 1 if p else 0
+    save_state(cwd, st)
+    return n
+
+
 def card(
     cwd: str,
     findings: list[dict[str, Any]] | None = None,
@@ -319,6 +334,7 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
                 "note": d.get("note"),
                 "decided_at": d.get("decided_at"),
                 "human_turns_after_card": turns,
+                "proposed": f.get("proposed"),
             }
         )
     return out
@@ -335,3 +351,88 @@ def take_committed(cwd: str, head: str) -> list[dict[str, Any]] | None:
     st.pop("last_commit", None)
     save_state(cwd, st)
     return lc.get("findings") or []
+
+
+def decisions_of(cwd: str, sha: str) -> list[dict[str, Any]]:
+    """Decision trailers on one commit, numbered from 1."""
+    rc, body, _ = git(["log", "-1", "--format=%B", sha], cwd)
+    if rc != 0:
+        raise ValueError(f"no such commit: {sha}")
+    return [{"n": i, **t} for i, t in enumerate(parse_trailers(body), 1)]
+
+
+def revisit(
+    cwd: str,
+    sha: str,
+    answer: str,
+    pol: dict[str, Any],
+    which: str | None = None,
+    scope: str | None = None,
+    reason: str | None = None,
+    by: str | None = None,
+    rules: list[tuple[str, str]] | None = None,
+) -> tuple[str, str]:
+    """Answer a decision already on the branch again.
+
+    Writes an empty commit carrying the new answer and `Gitvow-Revisits: <sha>`; the earlier trailer stays
+    where it was, so the record keeps both.
+    """
+    if answer not in ("accept", "decline"):
+        raise ValueError("answer must be accept or decline")
+    ds = decisions_of(cwd, sha)
+    if not ds:
+        raise ValueError(f"{sha[:7]} carries no decision trailers")
+    if which is None:
+        if len(ds) > 1:
+            listing = "\n".join(f"  {d['n']}. {d['answer']}: {d['finding']}" for d in ds)
+            raise ValueError("several decisions on this commit; pass --finding <n>:\n" + listing)
+        target = ds[0]
+    else:
+        try:
+            target = ds[int(which) - 1]
+        except (ValueError, IndexError) as e:
+            raise ValueError(f"no decision {which} on {sha[:7]}") from e
+    ident, _email, _name = identity(cwd, by)
+    note = redact(reason, rules)[:200] if reason and rules is not None else (reason or None)
+    f = {
+        "finding": target["finding"],
+        "decision": {
+            "answer": "accepted" if answer == "accept" else "declined",
+            "by": ident,
+            "scope": (scope or "").strip() or None,
+            "note": note,
+        },
+    }
+    _, full, _ = git(["rev-parse", sha], cwd)
+    msg = (
+        f"gitvow: revisit decision on {full[:7]}\n\n"
+        f"Was: {target['answer']} ({target['finding']}). Now: {f['decision']['answer']} by {ident}.\n\n"
+        f"Gitvow-Revisits: {full}\n{trailer_line(f)}\n"
+    )
+    rc, _, err = git(["-c", "core.hooksPath=/dev/null", "commit", "-q", "--allow-empty", "-m", msg], cwd)
+    if rc != 0:
+        raise ValueError(err or "commit failed")
+    _, head, _ = git(["rev-parse", "HEAD"], cwd)
+    return head, trailer_line(f) + f" (revisits {full[:7]})"
+
+
+def open_debt(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
+    """Gitvow-Open findings on the branch that no later revisit has answered."""
+    rc, out, _ = git(["log", f"-{limit}", "--format=%H%x00%ad%x00%B%x01", "--date=short"], cwd)
+    if rc != 0:
+        return []
+    revisited: set[tuple[str, str]] = set()
+    opens: list[dict[str, Any]] = []
+    for rec in out.split("\x01"):
+        rec = rec.strip("\n")
+        if not rec.strip() or "Gitvow-" not in rec:
+            continue
+        sha, date, body = rec.split("\x00", 2)
+        m = REVISITS_RE.search(body)
+        if m:
+            for t in parse_trailers(body):
+                revisited.add((m.group(1)[:7], t["finding"]))
+        for t in parse_trailers(body):
+            if t["answer"] == "open":
+                opens.append({"sha": sha[:7], "date": date, "finding": t["finding"]})
+    return [o for o in opens if (o["sha"], o["finding"]) not in revisited]

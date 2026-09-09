@@ -89,4 +89,24 @@ Rules are handed to the agent at the start of every session, so writing them int
 
 ## Changing your mind
 
-A decision is a row, not a lock. `gitvow decide` on the same finding again records the new answer; the trailer on the earlier commit remains, the new commit carries the new one, and `gitvow show` on each tells the story. A dedicated `gitvow revisit` for commits already on the branch follows in a later release.
+A decision is a row, not a lock.
+
+```sh
+gitvow revisit 4f2a9c1                      # list the decisions that commit carries
+gitvow revisit 4f2a9c1 decline --reason "should not have gone to staging either"
+gitvow revisit 4f2a9c1 accept --finding 2   # when the commit carries several
+```
+
+Revisiting writes an empty commit with the new answer and a `Gitvow-Revisits` trailer pointing at the original. The old trailer stays on the old commit, so `git log` shows both, the new answer is what the card and the earned rules see from then on, and an open finding from a person's commit stops counting as debt. The digest lists the debt with the exact command to close each item.
+
+## What the digest shows
+
+`gitvow digest` gains three lines per repository:
+
+```
+Decisions: 5 accepted · 1 declined · 2 open · decision debt 2 · 1 revisited · earned rules in force 1
+Questions: 3 cards over 4 sessions (0.75 per session, was 1.50) · 7 findings collected · 6 immediate confirmations
+Payback: 2 snapshots restored · 3 questions pre-answered by the record · 4 answers matched the proposal
+```
+
+Questions per session against the previous period is the autonomy meter. Nothing in it is about a person; accept rates are never broken down by who answered.
