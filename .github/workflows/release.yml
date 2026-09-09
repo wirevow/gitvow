@@ -1,7 +1,7 @@
 name: release
 on:
   push:
-    tags: ["v*"]
+    tags: ["v[0-9]+.[0-9]+.[0-9]+"]
 permissions: {contents: read}
 jobs:
   build:
@@ -37,3 +37,8 @@ jobs:
         with: {name: dist, path: dist/}
       - run: gh release create "${GITHUB_REF_NAME}" dist/* --title "${GITHUB_REF_NAME}" --notes-file <(awk -v v="${GITHUB_REF_NAME#v}" '$0 ~ "^## "v {f=1; next} /^## /{f=0} f' CHANGELOG.md)
         env: {GH_TOKEN: "${{ github.token }}"}
+      - name: Move the vMAJOR.MINOR tag used by the GitHub Action
+        run: |
+          minor="${GITHUB_REF_NAME%.*}"
+          git config user.name github-actions && git config user.email github-actions@github.com
+          git tag -f "$minor" "$GITHUB_SHA" && git push -f origin "refs/tags/$minor"

@@ -27,7 +27,7 @@ mkdocs serve   # docs at http://127.0.0.1:8000
 - CI must be green: lint, tests on 3.9–3.12 across Linux and macOS, bandit, pip-audit, CodeQL.
 
 ## Releasing
-Bump `version` in `pyproject.toml`, move the Unreleased section of `CHANGELOG.md` under the new version with today's date, commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow builds, checks that the tag matches the version, publishes to PyPI through trusted publishing (no tokens stored anywhere), and creates the GitHub release with the changelog section as notes.
+Bump `version` in `pyproject.toml`, move the Unreleased section of `CHANGELOG.md` under the new version with today's date, commit, then `git tag vX.Y.Z && git push origin vX.Y.Z`. The release workflow builds, checks that the tag matches the version, publishes to PyPI through trusted publishing (no tokens stored anywhere), creates the GitHub release with the changelog section as notes, and moves the `vMAJOR.MINOR` tag that workflows reference as `wirevow/gitvow@vX.Y`.
 
 ## Code of conduct
 Be kind, be specific, assume good intent. Report conduct issues to the maintainers listed in `pyproject.toml`.
