@@ -19,7 +19,7 @@ A provider is a command. gitvow runs it once per question with a JSON object on 
 |---|---|
 | `protocol` | protocol version, currently 1 |
 | `question` | `gate_bearing`, `route_gate` or `route_callers` |
-| `subject` | the file path (repo-relative) for `gate_bearing`; the route literal for the route questions |
+| `subject` | the file path (repo-relative) for `gate_bearing`; the route literal **as written in the edit** for the route questions. A method-level `@Path("/export")` arrives as `/export`; combining it with a class-level prefix is the provider's job, using `path` to find the enclosing class |
 | `repo` | absolute path of the repository's top level |
 | `path` | the file being edited, repo-relative |
 | `tool_name` | the tool the agent is about to run |
