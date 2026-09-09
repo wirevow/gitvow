@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.11.0 — 2026-09-09
+- Usage per session: input, output, cache and reasoning tokens, models seen and an estimated cost in USD, from Claude Code, Codex and Gemini transcripts. Default pricing table dated 2026-09, overridable under `pricing` in the policy. Shown in the session note (schema 4), ledger, `report`, `digest` and `handoff`.
+- Subagent side conversations counted in the note; Cursor subagent events recorded in the hook log.
+
 ## 0.10.0 — 2026-09-09
 - External adapter protocol: `gitvow-agent-<name>` executables on the PATH (or in `~/.gitvow/agents/`) with `info`, `normalize` and `respond` subcommands are discovered by `hook`, `install`, `uninstall` and `selftest --agent`. Missing or broken adapters block during PreToolUse and log otherwise. Example adapter under `examples/agents/`.
 

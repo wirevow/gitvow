@@ -38,12 +38,29 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
     for r in agent:
         s = sessions.setdefault(
             r["session"],
-            {"session": r["session"], "date": r["date"], "commits": 0, "plan": "", "shares": [], "human_after": 0},
+            {
+                "session": r["session"],
+                "date": r["date"],
+                "commits": 0,
+                "plan": "",
+                "shares": [],
+                "human_after": 0,
+                "cost": None,
+                "tokens": 0,
+                "unpriced": False,
+            },
         )
         s["commits"] += 1
         s["date"] = min(s["date"], r["date"])
         note = r["note"] or {}
         s["plan"] = s["plan"] or _plan(note)
+        u = note.get("usage") or {}
+        if u.get("total_tokens") and (s["cost"] is None or u["total_tokens"] >= s["tokens"]):
+            s["tokens"] = u["total_tokens"]  # notes carry running totals; the latest note is the session's figure
+            s["cost"] = u.get("estimated_cost_usd")
+            s["unpriced"] = bool(u.get("unpriced_models"))
+            s["_in"] = u.get("input_tokens", 0) + u.get("cache_read_tokens", 0) + u.get("cache_write_tokens", 0)
+            s["_out"] = u.get("output_tokens", 0) + u.get("reasoning_tokens", 0)
         att = note.get("attribution") or {}
         la = att.get("lines_added_in_commit") or 0
         share = att.get("agent_share")
@@ -74,9 +91,17 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                     gate[e["kind"]] += 1
                     reasons[e.get("reason") or "?"] += 1
     sess_list = sorted(sessions.values(), key=lambda s: s["date"], reverse=True)
+    total_cost = 0.0
+    in_tok = out_tok = 0
+    unpriced = 0
     for s in sess_list:
         s["share"] = round(sum(s["shares"]) / len(s["shares"]), 2) if s["shares"] else None
         del s["shares"]
+        if s["cost"] is not None:
+            total_cost += s["cost"]
+        in_tok += s.pop("_in", 0)
+        out_tok += s.pop("_out", 0)
+        unpriced += 1 if s["unpriced"] else 0
     return {
         "repo": os.path.basename(top),
         "since": since_day,
@@ -91,6 +116,12 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
             "confirmations": gate["confirm_required"],
             "denials": gate["blocked"],
             "top_reasons": reasons.most_common(5),
+        },
+        "cost": {
+            "estimated_usd": round(total_cost, 2),
+            "input_tokens": in_tok,
+            "output_tokens": out_tok,
+            "unpriced_sessions": unpriced,
         },
         "files": [{"path": p, "commits": n, "sessions": len(file_sessions[p])} for p, n in files.most_common(10)],
         "human": [{"short": r["short"], "date": r["date"], "subject": r["subject"]} for r in human[:15]],
@@ -110,6 +141,16 @@ def render(d: dict[str, Any]) -> str:
     out.append(
         f"Gate: {g['confirmations']} confirmation{'s' if g['confirmations'] != 1 else ''} asked, {g['denials']} denial{'s' if g['denials'] != 1 else ''} · top reasons: {top}"
     )
+    c = d.get("cost") or {}
+    if c.get("input_tokens") or c.get("output_tokens"):
+        unp = (
+            f" · {c['unpriced_sessions']} session{'s' if c['unpriced_sessions'] != 1 else ''} unpriced"
+            if c.get("unpriced_sessions")
+            else ""
+        )
+        out.append(
+            f"Cost: ${c['estimated_usd']:.2f} estimated · {c['input_tokens'] / 1e6:.1f}M input, {c['output_tokens'] / 1e6:.1f}M output tokens{unp}"
+        )
     if d["sessions"]:
         out += ["", "### Sessions"]
         for s in d["sessions"]:
@@ -120,8 +161,9 @@ def render(d: dict[str, Any]) -> str:
                 if s["human_after"]
                 else ""
             )
+            cost = f"  ${s['cost']:.2f}" if s.get("cost") is not None else ""
             out.append(
-                f"{s['session'][:8]}  {s['date'][5:]}  {s['commits']} commit{'s' if s['commits'] != 1 else ' '}  share {sh}{plan}{after}"
+                f"{s['session'][:8]}  {s['date'][5:]}  {s['commits']} commit{'s' if s['commits'] != 1 else ' '}  share {sh}{cost}{plan}{after}"
             )
     if d["files"]:
         out += ["", "### Files most changed by agents"]

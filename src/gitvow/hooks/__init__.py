@@ -10,13 +10,14 @@ from typing import Any
 
 from .. import snapshots
 from ..policy import PolicyError, evaluate, load_policy, message_for
+from ..pricing import estimate
 from ..redact import RedactionError, load_rules, redact
 from ..state import git, load_state, log_event, save_state, toplevel
 from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 3
+NOTE_SCHEMA = 4
 COMMIT_RE = re.compile(r"\bgit\s+commit\b")
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 REDACTION_UNAVAILABLE = "redaction rules invalid; nothing written for this event"
@@ -45,6 +46,29 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     st.pop("pending_commit", None)
     save_state(cwd, st)
     log_event(cwd, "session_start", {"session_id": h.get("session_id")})
+    return 0, ""
+
+
+def _policy_or_empty(cwd: str, home: str | None) -> dict[str, Any]:
+    try:
+        return load_policy(cwd, home)
+    except PolicyError:
+        return {}
+
+
+def subagent_event(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
+    """Record a subagent lifecycle event from agents that announce them through hooks (Cursor)."""
+    cwd = h.get("cwd") or os.getcwd()
+    log_event(
+        cwd,
+        "subagent",
+        {
+            "session_id": h.get("session_id"),
+            "status": h.get("status", ""),
+            "type": h.get("subagent_type", ""),
+            "tool_calls": h.get("tool_call_count", 0),
+        },
+    )
     return 0, ""
 
 
@@ -207,6 +231,8 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "files_in_commit": [ln.strip() for ln in files.splitlines()[:-1]][:50] if files else [],
         "files_written_by_agent_this_session": [f["path"] for f in attribution["files"] if f["agent_wrote"]][:50],
         "attribution": attribution,
+        "usage": estimate(summ["usage"], _policy_or_empty(cwd, home)),
+        "subagents": summ["subagents"],
         "snapshot": st.get("last_snapshot"),
         "transcript": "kept local; see ledger",
         "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time",
@@ -241,6 +267,8 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         "tool_calls": summ["tool_calls"],
         "commits_during_session": commits,
         "last_stated_plan": summ["last_assistant_text"],
+        "usage": estimate(summ["usage"], _policy_or_empty(cwd, home)),
+        "subagents": summ["subagents"],
     }
     with open(os.path.join(led, f"{h.get('session_id') or 'unknown'}.json"), "w") as fh:
         json.dump(rec, fh, indent=1)
@@ -248,4 +276,10 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     return 0, ""
 
 
-HANDLERS = {"SessionStart": session_start, "PreToolUse": pre_tool_use, "PostToolUse": post_tool_use, "Stop": stop}
+HANDLERS = {
+    "SessionStart": session_start,
+    "PreToolUse": pre_tool_use,
+    "PostToolUse": post_tool_use,
+    "Stop": stop,
+    "Subagent": subagent_event,
+}

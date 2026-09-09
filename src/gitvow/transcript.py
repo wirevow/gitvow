@@ -84,12 +84,17 @@ def summarize(path: str | None, max_tools: int = 500, rules: Iterable[tuple[str,
         "last_assistant_text": "",
         "files_written": [],
         "format": "claude",
+        "usage": _empty_usage(),
+        "subagents": {"count": 0, "tool_calls": 0},
     }
     if not path or not os.path.exists(path):
+        _finish_usage(out["usage"])
         return out
     rules = list(rules)
     written: set[str] = set()
     fmt: str | None = None
+    out["_seen_requests"] = set()
+    out["_side_ids"] = set()
     with open(path, errors="ignore") as fh:
         for line in fh:
             try:
@@ -108,7 +113,57 @@ def summarize(path: str | None, max_tools: int = 500, rules: Iterable[tuple[str,
             else:
                 _claude_event(ev, out, written, rules, max_tools)
     out["files_written"] = sorted(written)
+    out.pop("_codex_model", None)
+    out.pop("_seen_requests", None)
+    out.pop("_side_ids", None)
+    _finish_usage(out["usage"])
     return out
+
+
+def _empty_usage() -> dict[str, Any]:
+    return {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "cache_read_tokens": 0,
+        "cache_write_tokens": 0,
+        "reasoning_tokens": 0,
+        "models": {},
+        "by_model": {},
+    }
+
+
+def _bump(
+    usage: dict[str, Any],
+    model: str,
+    input_t: int = 0,
+    output_t: int = 0,
+    cache_read: int = 0,
+    cache_write: int = 0,
+    reasoning: int = 0,
+) -> None:
+    usage["input_tokens"] += input_t
+    usage["output_tokens"] += output_t
+    usage["cache_read_tokens"] += cache_read
+    usage["cache_write_tokens"] += cache_write
+    usage["reasoning_tokens"] += reasoning
+    m = model or "unknown"
+    usage["models"][m] = usage["models"].get(m, 0) + 1
+    b = usage["by_model"].setdefault(m, {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0, "reasoning": 0})
+    b["input"] += input_t
+    b["output"] += output_t
+    b["cache_read"] += cache_read
+    b["cache_write"] += cache_write
+    b["reasoning"] += reasoning
+
+
+def _finish_usage(usage: dict[str, Any]) -> None:
+    usage["total_tokens"] = (
+        usage["input_tokens"]
+        + usage["output_tokens"]
+        + usage["cache_read_tokens"]
+        + usage["cache_write_tokens"]
+        + usage["reasoning_tokens"]
+    )
 
 
 def _add_tool(out: dict[str, Any], tool: str, brief: str, rules: list[tuple[str, str]], max_tools: int) -> None:
@@ -123,6 +178,32 @@ def _claude_event(
     role = msg.get("role") or ev.get("type")
     content = msg.get("content")
     if role != "assistant":
+        return
+    side = bool(ev.get("isSidechain"))
+    if side:
+        sid = ev.get("agentId") or ev.get("sessionId") or ev.get("parentUuid") or "side"
+        if sid not in out["_side_ids"]:
+            out["_side_ids"].add(sid)
+            out["subagents"]["count"] += 1
+        if isinstance(content, list):
+            out["subagents"]["tool_calls"] += sum(
+                1 for c in content if isinstance(c, dict) and c.get("type") == "tool_use"
+            )
+    u = msg.get("usage") if isinstance(msg, dict) else None
+    if isinstance(u, dict):
+        # streamed chunks of one response repeat the same usage: count each request once
+        req = ev.get("requestId") or ev.get("uuid")
+        if req not in out["_seen_requests"]:
+            out["_seen_requests"].add(req)
+            _bump(
+                out["usage"],
+                str(msg.get("model") or ""),
+                int(u.get("input_tokens") or 0),
+                int(u.get("output_tokens") or 0),
+                int(u.get("cache_read_input_tokens") or 0),
+                int(u.get("cache_creation_input_tokens") or 0),
+            )
+    if side:
         return
     out["turns"] += 1
     if isinstance(content, str):
@@ -163,11 +244,32 @@ def _codex_event(
             tool, brief, files = _codex_tool(name, arguments)
             _add_tool(out, tool, brief, rules, max_tools)
             written.update(files)
+    elif t == "turn_context":
+        if p.get("model"):
+            out["_codex_model"] = str(p["model"])
     elif t == "event_msg":
         pt = p.get("type")
         if pt == "agent_message" and p.get("message"):
             out["turns"] += 1
             out["last_assistant_text"] = redact(str(p["message"]), rules)[:600]
+        elif pt == "token_count":
+            info = p.get("info") or {}
+            tot = info.get("total_token_usage") or info.get("total") or {}
+            if isinstance(tot, dict) and tot:
+                # running totals: replace rather than add
+                model = out.get("_codex_model") or str(p.get("model") or "codex")
+                out["usage"] = _empty_usage()
+                inp = int(tot.get("input_tokens") or 0)
+                cached = int(tot.get("cached_input_tokens") or 0)
+                _bump(
+                    out["usage"],
+                    model,
+                    max(inp - cached, 0),
+                    int(tot.get("output_tokens") or 0),
+                    cached,
+                    0,
+                    int(tot.get("reasoning_output_tokens") or 0),
+                )
 
 
 def _gemini_event(
@@ -176,6 +278,17 @@ def _gemini_event(
     if ev.get("type") != "gemini":
         return
     out["turns"] += 1
+    tk = ev.get("tokens")
+    if isinstance(tk, dict):
+        _bump(
+            out["usage"],
+            str(ev.get("model") or "gemini"),
+            int(tk.get("input") or 0),
+            int(tk.get("output") or 0) + int(tk.get("tool") or 0),
+            int(tk.get("cached") or 0),
+            0,
+            int(tk.get("thoughts") or 0),
+        )
     text = _text_of(ev.get("content"))
     if text.strip():
         out["last_assistant_text"] = redact(text, rules)[:600]

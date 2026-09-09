@@ -47,6 +47,7 @@ EVENT_MAP: dict[str, dict[str, str]] = {
         "beforeMCPExecution": "PreToolUse",
         "afterFileEdit": "PostToolUse",
         "afterShellExecution": "PostToolUse",
+        "subagentStop": "Subagent",
         "stop": "Stop",
     },
 }
@@ -134,6 +135,18 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
     }
     if gv_event in ("SessionStart", "Stop"):
         return [(gv_event, base)]
+    if gv_event == "Subagent":
+        return [
+            (
+                gv_event,
+                {
+                    **base,
+                    "status": payload.get("status", ""),
+                    "subagent_type": payload.get("subagent_type", ""),
+                    "tool_call_count": payload.get("tool_call_count", 0),
+                },
+            )
+        ]
     tool = str(payload.get("tool_name") or payload.get("toolName") or "")
     raw_in = payload.get("tool_input")
     if raw_in is None:
@@ -294,7 +307,7 @@ def external_normalize(exe: str, event: str, payload: dict[str, Any]) -> list[tu
     result: list[tuple[str, dict[str, Any]]] = []
     for c in calls:
         ev, p = (c or {}).get("event"), (c or {}).get("payload")
-        if ev not in ("SessionStart", "PreToolUse", "PostToolUse", "Stop") or not isinstance(p, dict):
+        if ev not in ("SessionStart", "PreToolUse", "PostToolUse", "Stop", "Subagent") or not isinstance(p, dict):
             raise AdapterError(f"{os.path.basename(exe)} normalize: bad call {c!r}"[:160])
         p.setdefault("hook_event_name", ev)
         result.append((ev, p))

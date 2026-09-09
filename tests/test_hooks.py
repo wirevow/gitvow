@@ -43,7 +43,7 @@ def test_commit_flow_trailer_note_and_attribution(repo, home, payload, transcrip
     note = git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD")
     assert note.startswith("gitvow-session")
     data = json.loads(note.split("\n", 1)[1])
-    assert data["schema"] == 3 and data["step"] == 1 and data["tools_used"] == ["Bash", "Edit"]
+    assert data["schema"] == 4 and data["step"] == 1 and data["tools_used"] == ["Bash", "Edit"]
     assert "[github-token]" in data["last_stated_plan"] and "[email:" in data["last_stated_plan"]
     assert "ghp_" not in note and "ops@example.com" not in note
     att = data["attribution"]

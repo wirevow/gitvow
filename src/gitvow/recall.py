@@ -278,6 +278,12 @@ def handoff(cwd: str, session_id: str | None = None, home: str | None = None) ->
     )
     if rec.get("tool_calls"):
         out.append(f"Tool calls in session: {len(rec['tool_calls'])}")
+    u = rec.get("usage") or next(
+        ((r["note"] or {}).get("usage") for r in commits if (r["note"] or {}).get("usage")), None
+    )
+    if u and u.get("total_tokens"):
+        cost = f" · ${u['estimated_cost_usd']:.2f} estimated" if u.get("estimated_cost_usd") is not None else ""
+        out.append(f"Tokens so far: {u['total_tokens'] / 1e3:.0f}k{cost}")
     out += [
         "",
         "Next agent: read `gitvow why <file>` for any file above before changing it; snapshots hold the exact versions this session produced.",

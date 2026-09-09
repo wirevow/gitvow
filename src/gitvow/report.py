@@ -81,6 +81,10 @@ def build(cwd: str, base: str, head: str = "HEAD") -> dict[str, Any]:
                         "lines_changed_by_human_after_agent": att.get("lines_changed_by_human_after_agent"),
                     },
                     "said_vs_did": said_vs_did(plan, entry["files"]),
+                    "usage": {
+                        "total_tokens": (note.get("usage") or {}).get("total_tokens"),
+                        "estimated_cost_usd": (note.get("usage") or {}).get("estimated_cost_usd"),
+                    },
                 }
             )
         commits.append(entry)
@@ -121,7 +125,10 @@ def render_markdown(r: dict[str, Any]) -> str:
         plan = c["plan"].strip().replace("\n", " ")
         lines.append(f"**Plan:** {plan[:400] if plan else '(none stated before committing)'}")
         tools = ", ".join(c["tools_used"]) or "none recorded"
-        lines.append(f"**Tools:** {tools} · {c['tool_calls']} tool calls · {c['turns']} turns")
+        u = c.get("usage") or {}
+        cost = f" · ${u['estimated_cost_usd']:.2f} est." if u.get("estimated_cost_usd") is not None else ""
+        toks = f" · {u['total_tokens'] / 1e3:.0f}k tokens so far" if u.get("total_tokens") else ""
+        lines.append(f"**Tools:** {tools} · {c['tool_calls']} tool calls · {c['turns']} turns{toks}{cost}")
         a = c["attribution"]
         share = "n/a" if a["agent_share"] is None else f"{a['agent_share']:.2f}"
         lines.append(

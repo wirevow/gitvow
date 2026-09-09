@@ -14,8 +14,10 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `files_in_commit` | string[] | `git show --stat` lines, at most 50 |
 | `files_written_by_agent_this_session` | string[] | files in the commit that the agent edited or wrote via tools in this session |
 | `attribution` | object | see below |
+| `usage` | object | tokens by kind, models seen, `estimated_cost_usd`, pricing table used; see [What each session cost](../guides/cost.md) |
+| `subagents` | object | `count` and `tool_calls` of side conversations in the session |
 | `snapshot` | string or null | the last snapshot ref taken before this commit, e.g. `refs/gitvow/snapshots/<session>/7` |
-| `schema` | int | note schema version, currently 3 |
+| `schema` | int | note schema version, currently 4 |
 | `transcript` | string | always "kept local; see ledger" |
 | `redaction` | string | statement of what redaction ran |
 

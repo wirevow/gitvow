@@ -45,6 +45,9 @@ gitvow is deliberately small. These are the things it should grow into, in order
 ## 0.10 — Any agent (shipped)
 - External adapter protocol: a `gitvow-agent-<name>` executable on the PATH with `info`, `normalize` and `respond` subcommands makes a new agent work with hook, install and selftest without changing gitvow. Fails closed during PreToolUse.
 
+## 0.11 — What each session cost (shipped)
+- Tokens and estimated cost per session from the transcripts already read, with a dated default pricing table and a policy override; in the note, ledger, report, digest and handoff. Subagent side conversations counted.
+
 ## Later
 - A configuration-driven storage tier for the ledger (restricted repository, object store).
 - Real-session verification of the five built-in adapters other than Claude Code, by users of those agents.
