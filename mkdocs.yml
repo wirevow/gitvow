@@ -4,11 +4,18 @@ repo_url: https://github.com/wirevow/gitvow
 site_url: https://wirevow.dev/gitvow/
 theme:
   name: material
-  features: [navigation.sections, navigation.expand, content.code.copy, search.suggest]
+  logo: assets/mark.svg
+  favicon: assets/favicon.svg
+  font: false
   palette:
-    - scheme: default
-      primary: indigo
+    scheme: slate
+    primary: custom
+    accent: custom
+  features: [navigation.sections, navigation.expand, content.code.copy, search.suggest, navigation.footer]
+extra_css: [stylesheets/wirevow.css]
+
 markdown_extensions: [admonition, tables, toc, pymdownx.superfences, pymdownx.details]
+copyright: © 2026 Wirevow · <a href='https://wirevow.com'>wirevow.com</a>
 nav:
   - Home: index.md
   - Quick start: quickstart.md

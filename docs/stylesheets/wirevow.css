@@ -1,0 +1,36 @@
+/* Wirevow docs theme: the same identity as wirevow.com. Carbon ground, bone type, one amber accent. */
+@import url("https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Onest:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap");
+:root, [data-md-color-scheme="slate"]{
+  --md-default-bg-color:#08090C; --md-default-fg-color:#F2EFE9; --md-default-fg-color--light:#B8BCC6; --md-default-fg-color--lighter:#8E96A3; --md-default-fg-color--lightest:rgba(242,239,233,.12);
+  --md-primary-fg-color:#08090C; --md-primary-bg-color:#F2EFE9; --md-primary-fg-color--dark:#08090C;
+  --md-accent-fg-color:#EBBA66; --md-accent-fg-color--transparent:rgba(235,186,102,.12);
+  --md-typeset-a-color:#EBBA66; --md-code-bg-color:#0D0F14; --md-code-fg-color:#E6E1D8; --md-code-hl-color:rgba(235,186,102,.18);
+  --md-footer-bg-color:#08090C; --md-footer-bg-color--dark:#08090C; --md-footer-fg-color:#8E96A3;
+  --md-admonition-fg-color:#F2EFE9; --md-typeset-table-color:rgba(242,239,233,.12);
+  --md-text-font:"Onest",system-ui,sans-serif; --md-code-font:"JetBrains Mono",ui-monospace,monospace;
+}
+body{-webkit-font-smoothing:antialiased}
+.md-header{background:linear-gradient(180deg,rgba(8,9,12,.96),rgba(8,9,12,.86));backdrop-filter:blur(14px);border-bottom:1px solid rgba(242,239,233,.10);box-shadow:none}
+.md-header::after{content:"";position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(92deg,#F27A5C,#EBBA66 34%,#55C7BC 68%,#7C8DEB);opacity:.35}
+.md-header__button.md-logo img{height:1.35rem;width:auto}
+.md-header__title{font-family:"Bricolage Grotesque",sans-serif;font-weight:700;letter-spacing:-.02em}
+.md-tabs{background:#08090C;border-bottom:1px solid rgba(242,239,233,.08)}
+.md-typeset h1,.md-typeset h2,.md-typeset h3{font-family:"Bricolage Grotesque",sans-serif;font-weight:500;letter-spacing:-.025em;color:#F2EFE9}
+.md-typeset h1{font-size:2.6rem;line-height:1.02;margin-bottom:1rem}
+.md-typeset h2{font-size:1.6rem;margin-top:2.4em;padding-top:.6em;border-top:1px solid rgba(242,239,233,.10)}
+.md-typeset{font-size:.82rem;line-height:1.65}
+.md-typeset a{text-decoration:none;border-bottom:1px solid rgba(235,186,102,.35)}
+.md-typeset a:hover{border-bottom-color:#EBBA66}
+.md-typeset code{border-radius:3px;padding:.05em .35em}
+.md-typeset pre>code{border:1px solid rgba(242,239,233,.10);border-radius:6px}
+.md-typeset table:not([class]){border:1px solid rgba(242,239,233,.10);border-radius:6px;font-size:.74rem}
+.md-typeset table:not([class]) th{background:#0D0F14;font-family:"JetBrains Mono",monospace;font-size:.62rem;letter-spacing:.12em;text-transform:uppercase;color:#8E96A3;font-weight:400}
+.md-typeset .admonition,.md-typeset details{border:1px solid rgba(242,239,233,.12);border-left:2px solid #EBBA66;background:#0D0F14;box-shadow:none}
+.md-nav__title,.md-nav__item .md-nav__link--active{color:#F2EFE9}
+.md-nav__link:hover{color:#EBBA66}
+.md-sidebar__scrollwrap::-webkit-scrollbar-thumb{background:rgba(242,239,233,.18)}
+.md-search__form{background:rgba(242,239,233,.06);border-radius:999px}
+.md-search__input::placeholder{color:#8E96A3}
+.md-footer-meta{border-top:1px solid rgba(242,239,233,.08)}
+.md-source{font-family:"JetBrains Mono",monospace;font-size:.62rem}
+.md-content__button{color:#8E96A3}
