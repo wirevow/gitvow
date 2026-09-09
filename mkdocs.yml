@@ -29,6 +29,7 @@ nav:
       - Restore what the agent had: guides/snapshots.md
       - Codex, Gemini and Cursor: guides/other-agents.md
       - Let the agent ask the record: guides/skills.md
+      - A period in one page: guides/digest.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

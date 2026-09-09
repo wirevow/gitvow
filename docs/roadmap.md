@@ -39,6 +39,9 @@ gitvow is deliberately small. These are the things it should grow into, in order
 - Copilot CLI and Factory adapters (done, real-session verification pending).
 - Exit: a real session on a repository with history answers "why does this file look like this" from the record, and a handoff produced by one agent is picked up by another.
 
+## 0.9 — A period in one page (shipped)
+- `gitvow digest --since`: agent and human commit counts, sessions with plans and attribution, lines changed by people after agents, gate activity and most-changed files for a time window, from the record alone.
+
 ## Later
 - A configuration-driven storage tier for the ledger (restricted repository, object store).
 

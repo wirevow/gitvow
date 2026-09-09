@@ -9,6 +9,7 @@ import re
 import sys
 
 from . import __version__
+from . import digest as dg
 from . import recall as rec
 from . import snapshots as snap
 from .collect import collect, summarize_text
@@ -232,6 +233,12 @@ def cmd_handoff(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_digest(a: argparse.Namespace) -> int:
+    d = dg.build(os.getcwd(), a.since)
+    print(json.dumps(d, indent=1) if a.json else dg.render(d), end="\n" if a.json else "")
+    return 0
+
+
 def cmd_push_notes(a: argparse.Namespace) -> int:
     import subprocess
 
@@ -338,6 +345,10 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("handoff", help="markdown summary for the next agent")
     s.add_argument("--session")
     s.set_defaults(f=cmd_handoff)
+    s = sub.add_parser("digest", help="period summary: agent vs human commits, sessions, attribution, gate activity")
+    s.add_argument("--since", default="7d")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_digest)
     s = sub.add_parser("push-notes", help="push refs/notes/gitvow/* to a remote (default origin)")
     s.add_argument("remote", nargs="?", default="origin")
     s.set_defaults(f=cmd_push_notes)

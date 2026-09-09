@@ -21,6 +21,7 @@ gitvow why <path>                                         which sessions shaped 
 gitvow trace <path>[:<start>-<end>]                       who wrote these lines: agent (session, step, plan) or person
 gitvow recall <words...> [--limit N]                      sessions whose notes or ledger mention the words
 gitvow handoff [--session ID]                             markdown summary for the next agent: plan, commits, files, uncommitted state, open confirmations
+gitvow digest [--since 7d|YYYY-MM-DD] [--json]              period summary: agent vs human commits, sessions with plans and attribution, gate activity, most-changed files
 gitvow push-notes [remote]                                push refs/notes/gitvow/* to the remote (default origin)
 gitvow collect [--out DIR]                                gather ledger, logs, trailers and notes into one redacted directory (default ~/Desktop)
 gitvow summarize <dir>                                    trial metrics from a collected directory

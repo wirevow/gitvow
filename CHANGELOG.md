@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.9.0 — 2026-09-09
+- `gitvow digest [--since 7d|date] [--json]`: a period summary of the current branch from trailers, notes and the hook log: agent versus human commits, sessions with plans and attribution, human edits after agents, gate confirmations and denials by reason, files most changed by agents.
+
 ## 0.8.0 — 2026-09-09
 - Adapters for GitHub Copilot CLI (camelCase payloads, `permissionDecision` JSON with `ask` for confirmations, hooks under `~/.copilot/hooks/`) and Factory Droid (Claude-compatible payloads, `Execute`/`Edit`/`Create`/`ApplyPatch` tools, `~/.factory/hooks.json`). Built against vendor documentation; real-session verification pending.
 
