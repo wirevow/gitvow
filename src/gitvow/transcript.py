@@ -86,6 +86,7 @@ def summarize(path: str | None, max_tools: int = 500, rules: Iterable[tuple[str,
         "format": "claude",
         "usage": _empty_usage(),
         "subagents": {"count": 0, "tool_calls": 0},
+        "user_turns": 0,
     }
     if not path or not os.path.exists(path):
         _finish_usage(out["usage"])
@@ -166,6 +167,15 @@ def _finish_usage(usage: dict[str, Any]) -> None:
     )
 
 
+def _is_person_text(content: Any) -> bool:
+    """A user message typed by a person, not a tool_result the harness sent back."""
+    if isinstance(content, str):
+        return bool(content.strip())
+    if isinstance(content, list):
+        return any(isinstance(c, dict) and c.get("type") == "text" and str(c.get("text", "")).strip() for c in content)
+    return False
+
+
 def _add_tool(out: dict[str, Any], tool: str, brief: str, rules: list[tuple[str, str]], max_tools: int) -> None:
     if len(out["tool_calls"]) < max_tools:
         out["tool_calls"].append({"tool": tool, "arg": redact(str(brief), rules)[:160]})
@@ -177,6 +187,9 @@ def _claude_event(
     msg = ev.get("message") or {}
     role = msg.get("role") or ev.get("type")
     content = msg.get("content")
+    if role == "user" and not ev.get("isSidechain") and _is_person_text(content):
+        out["user_turns"] += 1
+        return
     if role != "assistant":
         return
     side = bool(ev.get("isSidechain"))
@@ -233,7 +246,9 @@ def _codex_event(
         return
     if t == "response_item":
         pt = p.get("type")
-        if pt == "message" and p.get("role") == "assistant":
+        if pt == "message" and p.get("role") == "user" and _is_person_text(p.get("content")):
+            out["user_turns"] += 1
+        elif pt == "message" and p.get("role") == "assistant":
             out["turns"] += 1
             text = _text_of(p.get("content"))
             if text.strip():
@@ -275,6 +290,9 @@ def _codex_event(
 def _gemini_event(
     ev: dict[str, Any], out: dict[str, Any], written: set[str], rules: list[tuple[str, str]], max_tools: int
 ) -> None:
+    if ev.get("type") == "user":
+        out["user_turns"] += 1
+        return
     if ev.get("type") != "gemini":
         return
     out["turns"] += 1

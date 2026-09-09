@@ -5,13 +5,16 @@ gitvow hook [--agent claude|codex|gemini|cursor|copilot|factory] <Event>  run as
 gitvow install --user | install [repo] [--agent NAME]     install per user or into a repository (default: current directory); --agent codex|gemini|cursor|copilot|factory configures that agent instead of Claude Code
 gitvow uninstall --user [--agent NAME] [--purge-policy] [--purge-ledger] remove the user install (for one agent when --agent is given)
 gitvow uninstall [repo] [--purge-notes] [--purge-snapshots]  remove a repository install; --purge-notes deletes local refs/notes/gitvow/*, --purge-snapshots deletes refs/gitvow/snapshots/*
-gitvow check -- <command...>                              dry-run the policy against a Bash command; exit 0 allow, 2 blocked
+gitvow check -- <command...>                              dry-run the policy against a Bash command; exit 0 allow or confirm at commit, 2 blocked
 gitvow check --path <file>                                dry-run against an edited path
 gitvow check --mcp <tool-name>                            dry-run against an MCP tool name
 gitvow show [commit]                                      print a commit's message, trailers and session note (default HEAD)
+gitvow decisions [--json]                                 the card: open findings in this repository, numbered, with evidence and what the record proposes
+gitvow decide <n|all> accept|decline [--scope S] [--reason R] [--by WHO]
+                                                          record a person's answer to finding n (or every open finding); written as trailers on the next commit
 gitvow redact <text>                                      apply the built-in layers plus your rules files to text and print the result
-gitvow report --base <rev> [--head <rev>] [--json] [--require-notes]
-                                                          per-commit report (trailers, notes, attribution, said vs did) for base..head; exit 1 if --require-notes and a trailered commit has no note
+gitvow report --base <rev> [--head <rev>] [--json] [--require-notes] [--target BRANCH] [--decisions-summary]
+                                                          per-commit report (trailers, notes, attribution, said vs did, decisions) for base..head; --target reopens decisions whose scope does not cover a production branch; --decisions-summary prints only the trailer block for a pull request description; exit 1 if --require-notes and a trailered commit has no note
 gitvow ask <question> <subject> [--path <file>]         ask every configured provider and print the gate's decision
 gitvow snapshots [--session ID] [--all]                   list working-tree snapshots taken after agent edits
 gitvow snapshots prune [--older-than 14d] [--session ID]  delete snapshot refs

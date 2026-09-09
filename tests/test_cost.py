@@ -199,7 +199,7 @@ def test_usage_flows_to_note_ledger_report_digest_handoff(repo, home, payload, t
     post_tool_use({**p, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, str(home))
     stop(p, str(home))
     note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
-    assert note["schema"] == 4 and note["usage"]["total_tokens"] == 13815 and note["subagents"]["count"] == 1
+    assert note["schema"] == 5 and note["usage"]["total_tokens"] == 13815 and note["subagents"]["count"] == 1
     assert "overrides" in note["usage"]["pricing"] and note["usage"]["estimated_cost_usd"] > 0
     led = json.loads((home / ".gitvow" / "ledger" / "sess-1.json").read_text())
     assert led["usage"]["total_tokens"] == 13815

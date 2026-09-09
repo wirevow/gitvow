@@ -1,5 +1,5 @@
 {
-  "_doc": "Default gitvow policy. Regex (Python re) on Bash command text, edited file paths, or MCP tool names. Order: deny \u2192 confirm \u2192 allow; unmatched calls are allowed and logged. Copy to <repo>/.gitvow/policy.json or ~/.gitvow/policy.json to customise.",
+  "_doc": "Default gitvow policy. Regex (Python re) on Bash command text, edited file paths, or MCP tool names. Order: deny \u2192 confirm \u2192 allow; unmatched calls are allowed and logged. Confirm rules take 'when': 'immediate' (Bash default) or 'commit' (path default; asked on one card when the agent commits). Copy to <repo>/.gitvow/policy.json or ~/.gitvow/policy.json to customise.",
   "bash_deny": [
     {
       "pattern": "\\brm\\s+-rf?\\s+(/|~|\\$HOME)(\\s|$)",
@@ -63,7 +63,8 @@
     },
     {
       "pattern": "(^|/)\\.gitvow/(policy\\.json|redact-rules\\.json|hooks/|git-hooks/)|(^|/)\\.claude/settings.*\\.json",
-      "reason": "edits gitvow's own policy, redaction rules or hooks"
+      "reason": "edits gitvow's own policy, redaction rules or hooks",
+      "when": "immediate"
     },
     {
       "pattern": "(^|/)(auth|authz|authorization|gate|whitelist|allowlist)[^/]*\\.(java|go|py|ts|js|ya?ml)$",
@@ -74,6 +75,12 @@
   "mcp_deny": [
     "mcp__.*__(delete|remove|destroy|drop)_.*"
   ],
+  "decisions": {
+    "mode": "open",
+    "authorities": [],
+    "production_branches": ["main", "master", "production"],
+    "_doc": "mode: open (a person's commit records Gitvow-Open for undecided findings) or strict (pre-commit refuses until gitvow decide). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
+  },
   "llm_classifier": {
     "enabled": false,
     "command": "",

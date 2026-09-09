@@ -20,6 +20,26 @@ if [ -f "$STATE" ]; then
   SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;print(s.get('session_id') or '' if time.time()-p<300 else '')" 2>/dev/null)
   STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
   if [ -n "$SID" ] && ! grep -q "^Gitvow-Session:" "$1"; then printf "\\nGitvow-Session: %s\\nGitvow-Step: %s\\n" "$SID" "$STEP" >> "$1"; fi
+  # Decisions recorded with `gitvow decide` become Gitvow-Accepted/Declined trailers; findings nobody decided
+  # become Gitvow-Open, on agent and human commits alike.
+  if ! grep -q "^Gitvow-\\(Accepted\\|Declined\\|Open\\):" "$1"; then
+    python3 - "$STATE" "$1" <<'PY' 2>/dev/null
+import json, sys
+st = json.load(open(sys.argv[1])); out = []
+for f in st.get("findings") or []:
+    d = f.get("decision")
+    if not d:
+        out.append("Gitvow-Open: " + f["finding"]); continue
+    line = ("Gitvow-Accepted: " if d["answer"] == "accepted" else "Gitvow-Declined: ") + f["finding"] + " by " + str(d["by"])
+    if d.get("scope"): line += " scope=" + d["scope"]
+    if d.get("note"): line += ": " + d["note"]
+    out.append(line)
+if out:
+    msg = open(sys.argv[2]).read()
+    with open(sys.argv[2], "a") as fh:
+        fh.write(("" if msg.endswith("\\n") else "\\n") + ("\\n" if "Gitvow-Session:" not in msg else "") + "\\n".join(out) + "\\n")
+PY
+  fi
 fi
 SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
 [ -x "$GD/hooks/prepare-commit-msg" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/prepare-commit-msg" "$@"
@@ -34,6 +54,63 @@ if [ -z "$GITVOW_PUSHING_NOTES" ] && [ -n "$REMOTE" ] && git for-each-ref --coun
 fi
 GD="$(git rev-parse --git-dir)"; SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
 [ -x "$GD/hooks/pre-push" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/pre-push" "$@"
+exit 0
+"""
+PRE_COMMIT_HOOK = """#!/bin/sh
+# gitvow: a person committing while the agent's findings are open. Default: say so and let the commit through
+# (the trailer hook records Gitvow-Open). Policy decisions.mode "strict": refuse until every finding is decided.
+GD="$(git rev-parse --git-dir)"; STATE="$GD/gitvow-session.json"; TOP="$(git rev-parse --show-toplevel)"
+if [ -f "$STATE" ]; then
+  python3 - "$STATE" "$TOP" <<'PY'
+import json, os, sys, time
+st = json.load(open(sys.argv[1]))
+open_ = [f for f in st.get("findings") or [] if not f.get("decision")]
+if not open_:
+    sys.exit(0)
+fresh = time.time() - (st.get("pending_commit") or 0) < 300  # the agent's own commit: the gate already asked
+if fresh:
+    sys.exit(0)
+mode = "open"
+for p in (os.path.join(sys.argv[2], ".gitvow", "policy.json"), os.path.expanduser("~/.gitvow/policy.json")):
+    if os.path.exists(p):
+        try:
+            mode = (json.load(open(p)).get("decisions") or {}).get("mode", "open")
+        except Exception:
+            pass
+        break
+n = len(open_)
+sys.stderr.write("gitvow: %d open finding%s from an agent session:\\n" % (n, "" if n == 1 else "s"))
+for i, f in enumerate(open_, 1):
+    sys.stderr.write("  %d. %s\\n     why: %s\\n" % (i, f["finding"], f.get("reason", "")))
+if mode == "strict":
+    sys.stderr.write("decisions.mode is strict: record an answer with `gitvow decide <n> accept|decline`, then commit again.\\n")
+    sys.exit(1)
+sys.stderr.write("recorded as Gitvow-Open on this commit; `gitvow decide` closes them.\\n")
+PY
+  [ $? -ne 0 ] && exit 1
+fi
+SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/pre-commit" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/pre-commit" "$@"
+exit 0
+"""
+POST_COMMIT_HOOK = """#!/bin/sh
+# gitvow: the commit now carries the findings; move them out of the open list so the note can record them
+# and the next commit starts clean.
+GD="$(git rev-parse --git-dir)"; STATE="$GD/gitvow-session.json"
+if [ -f "$STATE" ]; then
+  HEAD="$(git rev-parse HEAD 2>/dev/null)"
+  python3 - "$STATE" "$HEAD" <<'PY' 2>/dev/null
+import json, sys, time
+st = json.load(open(sys.argv[1]))
+fs = st.get("findings") or []
+if fs:
+    st["last_commit"] = {"sha": sys.argv[2], "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "findings": fs}
+    st["findings"] = []
+    json.dump(st, open(sys.argv[1], "w"), indent=1)
+PY
+fi
+SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/post-commit" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/post-commit" "$@"
 exit 0
 """
 MARKER = "gitvow hook "
@@ -288,7 +365,12 @@ def unmerge_settings(path: str) -> None:
 
 def _write_git_hook(dirpath: str) -> str:
     os.makedirs(dirpath, exist_ok=True)
-    for name, body in (("prepare-commit-msg", GIT_HOOK), ("pre-push", PRE_PUSH_HOOK)):
+    for name, body in (
+        ("prepare-commit-msg", GIT_HOOK),
+        ("pre-push", PRE_PUSH_HOOK),
+        ("pre-commit", PRE_COMMIT_HOOK),
+        ("post-commit", POST_COMMIT_HOOK),
+    ):
         p = os.path.join(dirpath, name)
         with open(p, "w") as fh:
             fh.write(body)

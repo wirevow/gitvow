@@ -7,6 +7,7 @@
 - Every tool call passes a **gate** before it runs: destructive commands are refused, risky ones require the agent to ask you first, and edits to gate-bearing files need a human. The rules are a JSON file you own.
 - The full session summary goes to a **local ledger** in your home directory. Nothing leaves the machine unless you push it.
 - Every session carries its **tokens and estimated cost**, priced with a table you control, so the digest answers what agents cost this month as well as what they changed.
+- Findings that are not live until committed wait for the commit, then reach a person on **one card** with evidence and the record's proposal. The answer is written into the commit: **who agreed**, to what, with what scope and reason.
 - The next session can **ask the record**: why a file looks the way it does, who wrote these lines, what was tried before, what to hand off. Four commands, and skills that teach the agent to use them.
 
 No runtime dependencies. Standard-library Python and git. One command to install, one to remove.

@@ -11,6 +11,9 @@ inputs:
   version:
     description: gitvow version to install (pip specifier). Defaults to the action's own tag.
     default: ""
+  pr-description:
+    description: Write the decisions trailer block into the pull request description so a squash commit inherits it. auto (only when the repository allows squash merges alone), always, never.
+    default: "auto"
 runs:
   using: composite
   steps:
@@ -34,9 +37,11 @@ runs:
         base="${{ github.event.pull_request.base.sha }}"; head="${{ github.event.pull_request.head.sha }}"
         git fetch --quiet origin "$base" "$head" || true
         set +e
-        gitvow report --base "$base" --head "$head" $([ "${{ inputs.require-notes }}" = "true" ] && echo --require-notes) > gitvow-report.md
+        target="${{ github.event.pull_request.base.ref }}"
+        gitvow report --base "$base" --head "$head" ${target:+--target "$target"} $([ "${{ inputs.require-notes }}" = "true" ] && echo --require-notes) > gitvow-report.md
         rc=$?
         set -e
+        gitvow report --base "$base" --head "$head" --decisions-summary > gitvow-decisions.txt || true
         cat gitvow-report.md >> "$GITHUB_STEP_SUMMARY"
         cat gitvow-report.md
         echo "rc=$rc" >> "$GITHUB_OUTPUT"
@@ -49,6 +54,23 @@ runs:
           else
             gh api -X POST "repos/${{ github.repository }}/issues/$pr/comments" -F body=@body.md --silent
           fi
+        fi
+        mode="${{ inputs.pr-description }}"
+        if [ "$mode" = "auto" ]; then
+          allow=$(gh api "repos/${{ github.repository }}" --jq '[.allow_squash_merge, .allow_merge_commit, .allow_rebase_merge] | map(tostring) | join(",")' 2>/dev/null || echo "")
+          [ "$allow" = "true,false,false" ] && mode=always || mode=never
+        fi
+        if [ "$mode" = "always" ] && [ -n "${{ github.event.pull_request.number }}" ] && [ -s gitvow-decisions.txt ]; then
+          pr=${{ github.event.pull_request.number }}
+          gh api "repos/${{ github.repository }}/pulls/$pr" --jq '.body // ""' > pr-body.md
+          python3 - pr-body.md gitvow-decisions.txt <<'PY'
+        import re, sys
+        body = open(sys.argv[1]).read(); block = open(sys.argv[2]).read().rstrip("\n")
+        pat = re.compile(r"<!-- gitvow-decisions -->.*?<!-- /gitvow-decisions -->", re.S)
+        new = pat.sub(lambda m: block, body) if pat.search(body) else (body.rstrip("\n") + "\n\n" + block + "\n")
+        open(sys.argv[1], "w").write(new)
+        PY
+          gh api -X PATCH "repos/${{ github.repository }}/pulls/$pr" -F body=@pr-body.md --silent
         fi
         exit $rc
       env:

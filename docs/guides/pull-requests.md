@@ -50,6 +50,24 @@ Inputs, all optional:
 | `require-notes` | `true` | fail when a trailered commit has no note |
 | `comment` | `true` | post or update the pull request comment |
 | `version` | the action's own tag | gitvow version to install |
+| `pr-description` | `auto` | write the decisions summary into the pull request description: `auto` when the repository allows only squash merges, `always`, `never` |
+
+## Decisions on the pull request
+
+Each agent commit's report lists the decisions it carries: what was accepted or declined, by whom, with what scope and reason, and any `Gitvow-Open` finding nobody decided. When a decision's scope does not cover the branch the pull request targets and that branch is in `decisions.production_branches`, the report reopens it: "accepted for staging; this pull request targets main". The check does not fail on it; the reviewer decides.
+
+### Squash merges
+
+A squash merge writes one new commit whose message GitHub takes from the pull request title and description. The original commits' trailers do not reach the target branch unless they are in that message. With `pr-description` at `auto`, the action detects a repository that allows only squash merging and writes a block into the pull request description:
+
+```
+<!-- gitvow-decisions -->
+Gitvow-Accepted: edit auth/AuthorizeWhitelistedPaths.java by nikhil scope=staging
+Gitvow-Declined: route /v1/orders/export in src/api/orders.py by nikhil: needs security review
+<!-- /gitvow-decisions -->
+```
+
+The block is updated on every push and can be edited around. The squash commit inherits the trailers; the session notes do not follow, so the comment stays as the evidence. Where evidence should reach history, prefer merge commits or rebase merging. To produce the block by hand: `gitvow report --base origin/main --decisions-summary`.
 
 ## Getting notes to the remote
 

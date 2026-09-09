@@ -10,6 +10,7 @@ import sys
 import tempfile
 from typing import Any
 
+from . import decisions as dec
 from .hooks import post_tool_use, pre_tool_use, session_start, stop
 from .install import _write_git_hook
 
@@ -225,8 +226,9 @@ def run() -> int:
         results.append(
             (
                 pre_tool_use({**base, "tool_name": "Edit", "tool_input": {"file_path": "x/authz_rules.py"}}, home)[0]
-                == 2,
-                "confirm: gate-bearing file edit",
+                == 0
+                and len(dec.undecided(repo)) == 1,
+                "at commit: gate-bearing file edit recorded as a finding",
             )
         )
         results.append(
@@ -251,7 +253,12 @@ def run() -> int:
             },
             home,
         )
-        results.append((code == 2 and "route not covered" in msg, "confirm: provider says new route is unauthorised"))
+        results.append(
+            (
+                code == 0 and len(dec.undecided(repo)) == 2,
+                "at commit: provider says new route is unauthorised, recorded",
+            )
+        )
         os.remove(os.path.join(repo, ".gitvow", "policy.json"))
         with open(os.path.join(repo, "a.txt"), "a") as fh:
             fh.write("b\n")
@@ -268,17 +275,42 @@ def run() -> int:
         )
         with open(os.path.join(repo, "a.txt"), "a") as fh:
             fh.write("human\n")
-        pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
+        code, msg = pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
+        results.append(
+            (code == 2 and "DECISIONS REQUIRED" in msg and "2 findings" in msg, "card: commit waits for decisions")
+        )
+        dec.decide(repo, "1", "accept", {}, scope="staging", reason="selftest")
+        dec.decide(repo, "2", "decline", {}, reason="selftest")
+        code, _ = pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
+        results.append((code == 0, "card: commit proceeds once every finding is decided"))
         hooks_dir = os.path.join(repo, ".gitvow", "git-hooks")
         _write_git_hook(hooks_dir)
         g("config", "core.hooksPath", ".gitvow/git-hooks")
         g("config", "notes.rewriteRef", "refs/notes/gitvow/*")
         g("commit", "-qam", "selftest commit")
-        results.append(("Gitvow-Session:" in g("log", "-1", "--format=%B"), "commit trailer added"))
+        body = g("log", "-1", "--format=%B")
+        results.append(("Gitvow-Session:" in body, "commit trailer added"))
+        results.append(
+            (
+                "Gitvow-Accepted: edit x/authz_rules.py by selftest scope=staging: selftest" in body
+                and "Gitvow-Declined: route /v1/new in api.py by selftest: selftest" in body,
+                "decision trailers added",
+            )
+        )
         post_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
         note = g("notes", "--ref=gitvow/selftest-session", "show", "HEAD")
         results.append((note.startswith("gitvow-session"), "session note attached on the session's own ref"))
-        att = json.loads(note.split("\n", 1)[1])["attribution"] if note else {}
+        data = json.loads(note.split("\n", 1)[1]) if note else {}
+        att = data.get("attribution", {})
+        results.append(
+            (
+                len(data.get("decisions", [])) == 2
+                and data["decisions"][0]["answer"] == "accepted"
+                and data["decisions"][0]["authority"] == "commit-access"
+                and not dec.open_findings(repo),
+                "note carries the decisions; open list cleared",
+            )
+        )
         results.append(
             (att.get("lines_changed_by_human_after_agent") == 1 and att.get("agent_share") == 0.5, "line attribution")
         )

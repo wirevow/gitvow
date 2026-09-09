@@ -146,15 +146,18 @@ def test_hook_and_cli_ask_end_to_end(repo, home, payload, tmp_path, monkeypatch,
         ),
         str(home),
     )
-    assert code == 2 and "CONFIRMATION REQUIRED" in msg and "AuthorizeWhitelistedPaths.java" in msg
+    assert code == 0 and msg == ""  # a provider yes is an at-commit finding: the agent keeps working
     log = (repo / ".git" / "gitvow-hooks.log").read_text()
-    assert '"kind": "confirm_required"' in log and "provider facts" in log
+    assert '"kind": "finding"' in log and "provider facts" in log
+    code, msg = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}), str(home))
+    assert code == 2 and "DECISIONS REQUIRED" in msg and "route /v1/orders/export in src/Orders.java" in msg
+    assert "AuthorizeWhitelistedPaths.java" in msg  # the provider's evidence travels to the card
     monkeypatch.chdir(repo)
-    assert cli.main(["ask", "route_gate", "/v1/orders/export", "--path", "src/Orders.java"]) == 2
+    assert cli.main(["ask", "route_gate", "/v1/orders/export", "--path", "src/Orders.java"]) == 0
     out = capsys.readouterr().out
-    assert "facts: yes" in out and "decision: CONFIRM" in out
+    assert "facts: yes" in out and "decision: CONFIRM AT COMMIT" in out
     assert cli.main(["ask", "route_gate", "/v1/orders"]) == 0
     assert "decision: ALLOW" in capsys.readouterr().out
-    assert cli.main(["ask", "gate_bearing", "auth/AuthorizeWhitelistedPaths.java"]) == 2
+    assert cli.main(["ask", "gate_bearing", "auth/AuthorizeWhitelistedPaths.java"]) == 0
     (repo / ".gitvow" / "policy.json").write_text("{}")
     assert cli.main(["ask", "gate_bearing", "x"]) == 1

@@ -25,6 +25,7 @@ nav:
       - What stays out of git: concepts/storage.md
       - Snapshots, the code as the agent left it: concepts/snapshots.md
       - Providers, policy from facts: concepts/providers.md
+      - Decisions, who agreed: concepts/decisions.md
   - Guides:
       - Install per user or per repo: guides/install.md
       - Write a policy: guides/policy.md
@@ -38,6 +39,7 @@ nav:
       - Let the agent ask the record: guides/skills.md
       - A period in one page: guides/digest.md
       - What each session cost: guides/cost.md
+      - Answer the card: guides/decisions.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

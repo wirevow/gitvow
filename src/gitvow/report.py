@@ -7,6 +7,7 @@ import os
 import re
 from typing import Any
 
+from .decisions import parse_trailers
 from .hooks import LEGACY_NOTES_REF, notes_ref
 from .state import git
 
@@ -44,7 +45,39 @@ def said_vs_did(plan: str, files: list[str]) -> dict[str, list[str]]:
     return {"mentioned": mentioned, "unmentioned": unmentioned}
 
 
-def build(cwd: str, base: str, head: str = "HEAD") -> dict[str, Any]:
+DEFAULT_PRODUCTION = ("main", "master", "production")
+
+
+def _decisions(
+    body: str, note: dict[str, Any] | None, target: str | None, production: tuple[str, ...]
+) -> list[dict[str, Any]]:
+    """Decisions a commit carries: trailers, enriched from the note, with scope reopened at a production branch."""
+    rows = parse_trailers(body)
+    by_finding = {d.get("finding"): d for d in (note or {}).get("decisions") or []}
+    tgt = (target or "").split("/")[-1] if target else ""
+    for r in rows:
+        n = by_finding.get(r["finding"]) or {}
+        r["authority"] = n.get("authority")
+        r["evidence"] = n.get("evidence") or []
+        r["human_turns_after_card"] = n.get("human_turns_after_card")
+        r["reopen"] = bool(
+            r.get("scope")
+            and tgt
+            and tgt in production
+            and r["scope"].split("/")[-1] != tgt
+            and r["answer"] == "accepted"
+        )
+    return rows
+
+
+def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) -> dict[str, Any]:
+    from .policy import PolicyError, load_policy
+
+    production: tuple[str, ...] = DEFAULT_PRODUCTION
+    try:
+        production = tuple((load_policy(cwd).get("decisions") or {}).get("production_branches") or DEFAULT_PRODUCTION)
+    except PolicyError:
+        production = DEFAULT_PRODUCTION  # the report must render without a valid policy
     rc, out, err = git(["log", "--reverse", "--format=%H%x00%s%x00%B%x01", f"{base}..{head}"], cwd)
     if rc != 0:
         raise ValueError(err or f"cannot list {base}..{head}")
@@ -58,6 +91,7 @@ def build(cwd: str, base: str, head: str = "HEAD") -> dict[str, Any]:
         entry: dict[str, Any] = {"sha": sha, "short": sha[:7], "subject": subject, "files": _changed_files(cwd, sha)}
         if not m:
             entry["kind"] = "human"
+            entry["decisions"] = _decisions(body, None, target, production)
             commits.append(entry)
             continue
         sid = m.group(1)
@@ -65,6 +99,7 @@ def build(cwd: str, base: str, head: str = "HEAD") -> dict[str, Any]:
         entry.update({"kind": "agent", "session_id": sid, "step": int(sm.group(1)) if sm else None})
         note = _note_for(cwd, sha, sid)
         entry["note_found"] = note is not None
+        entry["decisions"] = _decisions(body, note, target, production)
         if note:
             plan = note.get("last_stated_plan") or ""
             att = note.get("attribution") or {}
@@ -89,10 +124,18 @@ def build(cwd: str, base: str, head: str = "HEAD") -> dict[str, Any]:
             )
         commits.append(entry)
     agent = [c for c in commits if c["kind"] == "agent"]
+    alld = [d for c in commits for d in c.get("decisions", [])]
     return {
         "base": base,
         "head": head,
+        "target": target,
         "commits": commits,
+        "decisions": {
+            "accepted": sum(1 for d in alld if d["answer"] == "accepted"),
+            "declined": sum(1 for d in alld if d["answer"] == "declined"),
+            "open": sum(1 for d in alld if d["answer"] == "open"),
+            "reopened": sum(1 for d in alld if d.get("reopen")),
+        },
         "agent_commits": len(agent),
         "human_commits": len(commits) - len(agent),
         "missing_notes": [c["short"] for c in agent if not c["note_found"]],
@@ -111,9 +154,19 @@ def render_markdown(r: dict[str, Any]) -> str:
             "The author's notes were not pushed; run `gitvow push-notes` or `git push origin 'refs/notes/gitvow/*'`.",
             "",
         ]
+    ds = r.get("decisions") or {}
+    if any(ds.values()):
+        bits = [f"{ds['accepted']} accepted", f"{ds['declined']} declined"]
+        if ds.get("open"):
+            bits.append(f"**{ds['open']} open**")
+        if ds.get("reopened"):
+            bits.append(f"**{ds['reopened']} to reopen for {r.get('target')}**")
+        lines += [f"**Decisions:** {' · '.join(bits)}", ""]
     for c in r["commits"]:
         if c["kind"] == "human":
-            lines += [f"### {c['short']} {c['subject']} — no session trailer (made by a person)", ""]
+            lines += [f"### {c['short']} {c['subject']} — no session trailer (made by a person)"]
+            lines += _decision_lines(c.get("decisions") or [], r.get("target"))
+            lines.append("")
             continue
         sid = c["session_id"][:8]
         lines.append(
@@ -143,5 +196,46 @@ def render_markdown(r: dict[str, Any]) -> str:
             parts.append(", ".join(svd["unmentioned"]) + " **not mentioned in plan**")
         if not plan:
             parts.append("no plan to compare")
-        lines += ["**Said vs did:** " + " · ".join(parts), ""]
+        lines.append("**Said vs did:** " + " · ".join(parts))
+        lines += _decision_lines(c.get("decisions") or [], r.get("target"))
+        lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
+    out = []
+    for d in ds:
+        if d["answer"] == "open":
+            out.append(f"**Open:** {d['finding']} — nobody decided; `gitvow decide` closes it")
+            continue
+        who = d.get("by") or "unknown"
+        auth = f" ({d['authority']})" if d.get("authority") in ("none",) else ""
+        scope = f", scope {d['scope']}" if d.get("scope") else ""
+        note = f": {d['note']}" if d.get("note") else ""
+        line = f"**{d['answer'].capitalize()}:** {d['finding']} by {who}{auth}{scope}{note}"
+        if d.get("human_turns_after_card") == 0:
+            line += " · **answered without a user message in the transcript**"
+        if d.get("reopen"):
+            line += f" · **accepted for {d['scope']}; this pull request targets {target}. Accept for {target}?**"
+        out.append(line)
+    return out
+
+
+def decisions_summary(r: dict[str, Any]) -> str:
+    """Trailer block for a pull request description, so a squash commit inherits the decisions."""
+    seen: list[str] = []
+    for c in r["commits"]:
+        for d in c.get("decisions") or []:
+            key = {"accepted": "Gitvow-Accepted", "declined": "Gitvow-Declined", "open": "Gitvow-Open"}[d["answer"]]
+            line = f"{key}: {d['finding']}"
+            if d["answer"] != "open":
+                line += f" by {d.get('by') or 'unknown'}"
+                if d.get("scope"):
+                    line += f" scope={d['scope']}"
+                if d.get("note"):
+                    line += f": {d['note']}"
+            if line not in seen:
+                seen.append(line)
+    if not seen:
+        return ""
+    return "<!-- gitvow-decisions -->\n" + "\n".join(seen) + "\n<!-- /gitvow-decisions -->\n"

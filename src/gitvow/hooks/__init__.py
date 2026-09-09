@@ -8,6 +8,7 @@ import re
 import time
 from typing import Any
 
+from .. import decisions as dec
 from .. import snapshots
 from ..policy import PolicyError, evaluate, load_policy, message_for
 from ..pricing import estimate
@@ -17,7 +18,7 @@ from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 4
+NOTE_SCHEMA = 5
 COMMIT_RE = re.compile(r"\bgit\s+commit\b")
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 REDACTION_UNAVAILABLE = "redaction rules invalid; nothing written for this event"
@@ -99,7 +100,26 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
             payload["detail"] = redact(d.detail, rules)[:200]
         log_event(cwd, "blocked" if d.outcome == "deny" else "confirm_required", payload)
         return 2, message_for(d)
+    if d.deferred:
+        st = load_state(cwd)
+        new = dec.add(cwd, list(d.findings), st.get("steps", 0) + 1, tool, rules)
+        log_event(
+            cwd,
+            "finding",
+            {"tool": tool, "reason": d.reason[:200], "new": new, "session_id": h.get("session_id")},
+        )
     if tool == "Bash" and COMMIT_RE.search(inp.get("command", "")):
+        pending = dec.undecided(cwd)
+        if pending:
+            st = load_state(cwd)
+            if rules is not None and st.get("card_user_turns") is None:
+                st["card_user_turns"] = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)[
+                    "user_turns"
+                ]
+                st["card_shown_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
+                save_state(cwd, st)
+            log_event(cwd, "card", {"findings": len(pending), "session_id": h.get("session_id")})
+            return 2, dec.card(cwd)
         st = load_state(cwd)
         st["session_id"] = h.get("session_id") or st.get("session_id")
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")
@@ -219,6 +239,12 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     _, files, _ = git(["show", "--stat", "--format=", head], cwd)
     attribution = _attribution(cwd, head, st.get("agent_blobs", {}), summ["files_written"])
     session_id = h.get("session_id") or st.get("session_id")
+    committed = dec.take_committed(cwd, head)
+    st = load_state(cwd)
+    card_turns = st.pop("card_user_turns", None)
+    st.pop("card_shown_at", None)
+    save_state(cwd, st)
+    decisions = dec.note_entries(committed, card_turns) if committed else []
     note = {
         "schema": NOTE_SCHEMA,
         "session_id": session_id,
@@ -234,14 +260,20 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "usage": estimate(summ["usage"], _policy_or_empty(cwd, home)),
         "subagents": summ["subagents"],
         "snapshot": st.get("last_snapshot"),
+        "decisions": decisions,
         "transcript": "kept local; see ledger",
         "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time",
     }
     ref = notes_ref(session_id)
     body = "gitvow-session\n" + json.dumps(note, indent=1)
     git(["notes", f"--ref={ref}", "add", "-f", "-m", body, head], cwd)
-    log_event(cwd, "note_added", {"commit": head[:12], "session_id": session_id, "step": note["step"]})
-    return 0, f"session note attached to {head[:12]} (refs/notes/{ref})"
+    log_event(
+        cwd,
+        "note_added",
+        {"commit": head[:12], "session_id": session_id, "step": note["step"], "decisions": len(decisions)},
+    )
+    extra = f", {len(decisions)} decision{'s' if len(decisions) != 1 else ''} recorded" if decisions else ""
+    return 0, f"session note attached to {head[:12]} (refs/notes/{ref}){extra}"
 
 
 def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:

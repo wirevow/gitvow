@@ -55,7 +55,9 @@ def test_cli_check_and_version(capsys, monkeypatch, repo):
     assert cli.main(["check", "--", "git", "push", "--force"]) == 2
     assert "DENY" in capsys.readouterr().out
     assert cli.main(["check", "--", "ls"]) == 0
-    assert cli.main(["check", "--path", "x/authz.py"]) == 2
+    assert cli.main(["check", "--path", "x/authz.py"]) == 0  # at-commit: recorded, asked on the card
+    assert "CONFIRM AT COMMIT" in capsys.readouterr().out
+    assert cli.main(["check", "--path", ".gitvow/policy.json"]) == 2  # gitvow's own policy stays immediate
     assert cli.main(["check", "--mcp", "mcp__a__delete_b"]) == 2
 
 

@@ -10,6 +10,9 @@ Before Claude Code runs a tool, it asks gitvow. gitvow answers in one of three w
 
 The decision is made from a policy file of regular expressions, evaluated in the order deny, confirm, allow. Anything the policy does not mention is allowed and logged, so the log tells you what your policy has never considered.
 
+## Two moments to confirm
+A confirm rule is either **immediate** or **at commit**. Immediate rules stop the call at once: pushes, cluster and infrastructure mutations, anything that cannot be undone. At-commit rules let the agent keep working and collect the finding; when the agent runs `git commit`, every open finding is put to a person on one card, and the answers are written into the commit. Bash rules default to immediate, path and provider rules to commit. See [Decisions](decisions.md).
+
 ## What the gate looks at
 - **Bash**: the full command text.
 - **Edit, Write, MultiEdit, NotebookEdit**: the file path.

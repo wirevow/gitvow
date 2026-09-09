@@ -273,6 +273,15 @@ def handoff(cwd: str, session_id: str | None = None, home: str | None = None) ->
     out.append(
         f"Uncommitted now: {dirty.strip() or 'clean'}" + (f" · last snapshot {snaps[-1]['ref']}" if snaps else "")
     )
+    from .decisions import undecided
+
+    pending = undecided(top)
+    if pending:
+        out.append(
+            f"Open findings awaiting a decision: {len(pending)} ("
+            + "; ".join(f["finding"] for f in pending[:5])
+            + "). Run `gitvow decisions` before committing."
+        )
     out.append(
         f"Open confirmations: {len(confirms)}" + ("".join(f"\n  - {c}" for c in confirms[-5:]) if confirms else "")
     )

@@ -141,7 +141,15 @@ def test_cli_hook_per_agent_end_to_end(repo, home, monkeypatch, capsys):
         "PreToolUse",
         {"session_id": "c1", "cwd": str(repo), "tool_name": "apply_patch", "tool_input": {"command": patch}},
     )
-    assert code == 2 and "CONFIRMATION REQUIRED" in err and "[file: core/authz_rules.go]" in err
+    assert code == 0 and err == ""  # a gate-file edit is an at-commit finding
+    code, out, err = _run_hook(
+        monkeypatch,
+        capsys,
+        "codex",
+        "PreToolUse",
+        {"session_id": "c1", "cwd": str(repo), "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}},
+    )
+    assert code == 2 and "DECISIONS REQUIRED" in err and "edit core/authz_rules.go" in err
     # gemini: allowed shell command exits 0 silently
     code, out, err = _run_hook(
         monkeypatch,

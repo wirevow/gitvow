@@ -9,6 +9,7 @@ import re
 import sys
 
 from . import __version__
+from . import decisions as dec
 from . import digest as dg
 from . import recall as rec
 from . import snapshots as snap
@@ -120,8 +121,50 @@ def cmd_check(a: argparse.Namespace) -> int:
         d = evaluate(pol, a.mcp, {})
     else:
         d = evaluate(pol, "Bash", {"command": " ".join(a.command)})
-    print(d.outcome.upper() + (f": {d.reason}" if d.reason else ""))
+    label = "CONFIRM AT COMMIT" if d.deferred else d.outcome.upper()
+    print(label + (f": {d.reason}" if d.reason else ""))
     return 2 if d.blocks else 0
+
+
+def cmd_decisions(a: argparse.Namespace) -> int:
+    """The card: open findings in this repository."""
+    cwd = os.getcwd()
+    if a.json:
+        print(json.dumps(dec.open_findings(cwd), indent=1))
+        return 0
+    print(dec.card(cwd, for_agent=False), end="")
+    return 0
+
+
+def cmd_decide(a: argparse.Namespace) -> int:
+    """Record a person's answer to one finding or all of them."""
+    cwd = os.getcwd()
+    try:
+        pol = load_policy(cwd)
+    except PolicyError as e:
+        print(f"policy error: {e}", file=sys.stderr)
+        return 2
+    try:
+        rules = load_rules(cwd, os.path.expanduser("~"))
+    except RedactionError as e:
+        print(f"redaction rules invalid: {e}", file=sys.stderr)
+        return 2
+    from .state import load_state
+    from .transcript import summarize
+
+    st = load_state(cwd)
+    turns = summarize(st.get("transcript_path"), rules=rules)["user_turns"] if st.get("transcript_path") else None
+    try:
+        done = dec.decide(cwd, a.finding, a.answer, pol, a.scope, a.reason, a.by, rules, turns)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    for f in done:
+        print(dec.trailer_line(f))
+    if done and done[0]["decision"]["authority"] == "none":
+        print("recorded; the committer is not named under decisions.authorities", file=sys.stderr)
+    print("written as trailers on the next commit", file=sys.stderr)
+    return 0
 
 
 def cmd_ask(a: argparse.Namespace) -> int:
@@ -139,9 +182,10 @@ def cmd_ask(a: argparse.Namespace) -> int:
     for ans in answers:
         ev = " — " + "; ".join(ans.evidence) if ans.evidence else ""
         print(f"{ans.provider}: {ans.answer}{ev}")
-    blocked = any(x.blocks for x in answers)
-    print("decision: " + ("CONFIRM" if blocked else "ALLOW"))
-    return 2 if blocked else 0
+    failed = any(x.answer == "failed" for x in answers)
+    yes = any(x.answer == "yes" for x in answers)
+    print("decision: " + ("CONFIRM" if failed else "CONFIRM AT COMMIT" if yes else "ALLOW"))
+    return 2 if failed else 0
 
 
 def cmd_show(a: argparse.Namespace) -> int:
@@ -176,10 +220,15 @@ def cmd_redact(a: argparse.Namespace) -> int:
 def cmd_report(a: argparse.Namespace) -> int:
     """Per-commit report for base..head; exit 1 when --require-notes and a trailered commit has no note."""
     try:
-        r = build(os.getcwd(), a.base, a.head)
+        r = build(os.getcwd(), a.base, a.head, a.target)
     except ValueError as e:
         print(f"report error: {e}", file=sys.stderr)
         return 1
+    if a.decisions_summary:
+        from .report import decisions_summary
+
+        print(decisions_summary(r), end="")
+        return 0
     print(json.dumps(r, indent=1) if a.json else render_markdown(r), end="" if not a.json else "\n")
     if a.require_notes and r["missing_notes"]:
         print(f"missing session notes for: {', '.join(r['missing_notes'])}", file=sys.stderr)
@@ -356,7 +405,19 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--head", default="HEAD")
     s.add_argument("--json", action="store_true")
     s.add_argument("--require-notes", action="store_true")
+    s.add_argument("--target", help="branch the change is going to; scoped decisions not covering it are reopened")
+    s.add_argument("--decisions-summary", action="store_true", help="print only the trailer block for a PR description")
     s.set_defaults(f=cmd_report)
+    s = sub.add_parser("decisions", help="the card: open findings in this repository with evidence and the record")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_decisions)
+    s = sub.add_parser("decide", help="record a person's answer: gitvow decide 1 accept --scope staging")
+    s.add_argument("finding", help="finding number from `gitvow decisions`, or 'all'")
+    s.add_argument("answer", choices=["accept", "decline"])
+    s.add_argument("--scope", help="environment or branch the answer is limited to")
+    s.add_argument("--reason", help="one phrase, optional")
+    s.add_argument("--by", help="who decided, when not the committer")
+    s.set_defaults(f=cmd_decide)
     s = sub.add_parser(
         "snapshots", help="list working-tree snapshots taken after agent edits; 'snapshots prune' deletes"
     )
