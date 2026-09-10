@@ -10,6 +10,8 @@ import shutil
 import subprocess
 from typing import Any
 
+from .decisions import CARD_HEADER
+
 AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory")
 
 # agent event -> gitvow handler
@@ -218,6 +220,10 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
         if event == "beforeMCPExecution":
             name = _cursor_mcp(tool, payload)
             return [(gv_event, {**base, "tool_name": name, "tool_input": inp})]
+        # generic preToolUse: Cursor fires this alongside the specific hook for shells and MCP calls,
+        # which would gate and log the same call twice; the specific hook carries the command, so it wins.
+        if tool in ("Shell", "shell", "run_terminal_cmd") and event == "preToolUse":
+            return []
         # generic preToolUse: Cursor's own tool names
         if tool.startswith("MCP:") or tool.startswith("mcp__"):
             return [(gv_event, {**base, "tool_name": _cursor_mcp(tool, payload), "tool_input": inp})]
@@ -249,16 +255,27 @@ def _cursor_mcp(tool: str, payload: dict[str, Any]) -> str:
     return f"mcp__{server}__{name}"
 
 
+def _refuse(msg: str) -> bool:
+    """Agents with a native permission prompt must refuse, not ask, for these.
+
+    A denial is never negotiable, and the decision card is not a question about running the command:
+    it asks the agent to record the person's answers with `gitvow decide` and run the commit again.
+    Delivered as `ask`, a click on the agent's own approve button would run the commit with the
+    findings still open and no decision recorded anywhere.
+    """
+    return msg.startswith("BLOCKED") or msg.startswith(CARD_HEADER)
+
+
 def respond(agent: str, code: int, msg: str) -> tuple[int, str, str]:
     """(exit code, stdout, stderr) in the agent's form. gitvow's code 2 means blocked; the message says DENY or CONFIRM."""
     if agent == "cursor":
         if code == 2:
-            perm = "deny" if msg.startswith("BLOCKED") else "ask"
+            perm = "deny" if _refuse(msg) else "ask"
             return 0, json.dumps({"permission": perm, "user_message": msg, "agent_message": msg}), ""
         return 0, json.dumps({"permission": "allow"}), msg
     if agent == "copilot":
         if code == 2:
-            perm = "deny" if msg.startswith("BLOCKED") else "ask"
+            perm = "deny" if _refuse(msg) else "ask"
             return 0, json.dumps({"permissionDecision": perm, "permissionDecisionReason": msg}), ""
         return 0, json.dumps({"permissionDecision": "allow"}), msg
     return code, "", msg

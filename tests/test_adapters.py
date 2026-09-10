@@ -409,3 +409,52 @@ def test_cursor_pretooluse_matches_the_documented_payload(repo, home):
             0
         ]
         assert p["tool_name"] == expected
+
+
+def test_the_card_is_refused_not_asked(repo, home):
+    """On agents with their own approve button, the card must not be clickable past."""
+    from gitvow.adapters import respond
+    from gitvow.decisions import CARD_HEADER
+
+    card = f"{CARD_HEADER} before this commit: 1 finding from this session."
+    for agent, key in (("cursor", "permission"), ("copilot", "permissionDecision")):
+        assert json.loads(respond(agent, 2, card)[1])[key] == "deny"
+        assert json.loads(respond(agent, 2, "BLOCKED by policy (force push).")[1])[key] == "deny"
+        # an immediate confirm rule is a real question for the person, so it stays their prompt
+        assert json.loads(respond(agent, 2, "CONFIRMATION REQUIRED (pushing to a remote).")[1])[key] == "ask"
+
+
+def test_cursor_shell_is_gated_once(repo, home):
+    """Cursor fires preToolUse and beforeShellExecution for the same command."""
+    from gitvow.adapters import normalize
+
+    base = {"conversation_id": "cu", "workspace_roots": [str(repo)]}
+    assert (
+        normalize("cursor", "preToolUse", {**base, "tool_name": "Shell", "tool_input": {"command": "git commit -m x"}})
+        == []
+    )
+    calls = normalize("cursor", "beforeShellExecution", {**base, "command": "git commit -m x"})
+    assert len(calls) == 1 and calls[0][1]["tool_input"]["command"] == "git commit -m x"
+
+
+def test_unused_events_still_answer_in_the_agents_form(repo, home, monkeypatch, capsys):
+    """gitvow's hooks are installed fail-closed; on Cursor and Copilot a silent hook is a failed hook."""
+    import io
+    import sys
+
+    from gitvow import cli
+
+    monkeypatch.chdir(repo)
+    payload = {
+        "conversation_id": "cu",
+        "workspace_roots": [str(repo)],
+        "tool_name": "Shell",
+        "tool_input": {"command": "git commit -m x"},
+    }
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps(payload)))
+    assert cli.main(["hook", "--agent", "cursor", "preToolUse"]) == 0
+    assert json.loads(capsys.readouterr().out)["permission"] == "allow"
+    monkeypatch.setattr(sys, "stdin", io.StringIO(json.dumps({**payload, "hook_event_name": "beforeReadFile"})))
+    assert cli.main(["hook", "--agent", "copilot", "sessionStart"]) == 0
+    out = capsys.readouterr().out
+    assert not out or json.loads(out).get("permissionDecision") in (None, "allow")

@@ -31,7 +31,7 @@ gitvow is deliberately small. These are the things it should grow into, in order
 
 ## 0.6 — Adapters for other agents (shipped, real-session verification pending)
 - Codex CLI, Gemini CLI and Cursor adapters: payload normalisation, native responses (Cursor `ask` for confirm), patch parsing for Codex edits, per-agent install and uninstall.
-- Exit: a real session on each agent stopped by the gate and producing a trailer, note and snapshot. Claude Code and Codex CLI met (Codex verified 2026-09-10, including its hook-trust and `.git` sandbox requirements, now documented); Gemini CLI and Cursor await users of those agents.
+- Exit: a real session on each agent stopped by the gate and producing a trailer, note and snapshot. Claude Code, Codex CLI and Cursor met (Codex and Cursor verified 2026-09-10; each real session exposed defects the vendor documentation could not, from Codex's hook trust and `.git` sandbox to Cursor's clickable-past card and silent-hook block); Gemini CLI awaits a user of that agent.
 
 ## 0.7 — The record teaches the next session (in progress)
 - `gitvow why`, `trace`, `recall`, `handoff` over trailers, notes, snapshots and the ledger; agent skills in the common format for Claude Code, Codex, Cursor and Gemini CLI.

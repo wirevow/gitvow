@@ -125,10 +125,9 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         pending = dec.undecided(cwd)
         if pending:
             st = load_state(cwd)
-            if rules is not None and st.get("card_user_turns") is None:
-                st["card_user_turns"] = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)[
-                    "user_turns"
-                ]
+            tp = h.get("transcript_path") or st.get("transcript_path")
+            if rules is not None and tp and st.get("card_user_turns") is None:
+                st["card_user_turns"] = summarize(tp, rules=rules)["user_turns"]
                 st["card_shown_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
                 save_state(cwd, st)
             proposed = dec.mark_proposals(cwd, pol)

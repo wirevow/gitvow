@@ -15,6 +15,7 @@ from .state import git, load_state, save_state
 
 TRAILER_RE = re.compile(r"^Gitvow-(Accepted|Declined|Open):\s*(.+?)(?: by (\S+))?(?: scope=(\S+))?(?:: (.*))?$", re.M)
 REVISITS_RE = re.compile(r"^Gitvow-Revisits:\s*([0-9a-f]{7,40})\b", re.M)
+CARD_HEADER = "DECISIONS REQUIRED"
 MAX_EVIDENCE = 8
 HISTORY_COMMITS = 3000
 
@@ -218,7 +219,7 @@ def card(
     lines = []
     if for_agent:
         lines += [
-            f"DECISIONS REQUIRED before this commit: {len(pending)} finding{'s' if len(pending) != 1 else ''} from this session.",
+            f"{CARD_HEADER} before this commit: {len(pending)} finding{'s' if len(pending) != 1 else ''} from this session.",
             "Put this card to the user. Record each answer with",
             '  gitvow decide <n> accept|decline [--scope <env-or-branch>] [--reason "<phrase>"]',
             "then run the commit again.",

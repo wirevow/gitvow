@@ -44,7 +44,17 @@ def cmd_hook(a: argparse.Namespace) -> int:
         print(str(e), file=sys.stderr)
         return 1
     if not calls:
-        return 0  # an event this adapter does not use
+        # An event this adapter does not use. Agents whose contract is a JSON permission object treat
+        # a silent hook as a failed hook, and gitvow installs its hooks fail-closed, so say "allow"
+        # explicitly rather than printing nothing.
+        try:
+            exit_code, out, err = external_respond(exe, 0, "") if exe else respond(agent, 0, "")
+        except AdapterError as e:
+            print(f"BLOCKED: agent adapter failed ({e}).", file=sys.stderr)
+            return 2
+        if out:
+            print(out)
+        return exit_code
     worst, messages = 0, []
     for gv_event, p in calls:
         handler = HANDLERS.get(gv_event)
