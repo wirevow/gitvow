@@ -139,6 +139,18 @@ def cmd_check(a: argparse.Namespace) -> int:
     return 2 if d.blocks else 0
 
 
+def cmd_status(a: argparse.Namespace) -> int:
+    """Is the record actually being written here? Reports what is missing and the line that fixes it."""
+    from .status import build, render
+
+    checks = build(os.getcwd(), os.path.expanduser("~"))
+    if a.json:
+        print(json.dumps([{"state": s, "what": w, "fix": f} for s, w, f in checks], indent=1))
+    else:
+        print(render(checks), end="")
+    return 1 if any(s == "fail" for s, _, _ in checks) else 0
+
+
 def cmd_decisions(a: argparse.Namespace) -> int:
     """The card: open findings in this repository."""
     cwd = os.getcwd()
@@ -493,6 +505,9 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--target", help="branch the change is going to; scoped decisions not covering it are reopened")
     s.add_argument("--decisions-summary", action="store_true", help="print only the trailer block for a PR description")
     s.set_defaults(f=cmd_report)
+    s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_status)
     s = sub.add_parser("decisions", help="the card: open findings in this repository with evidence and the record")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_decisions)

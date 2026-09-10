@@ -8,6 +8,7 @@ gitvow uninstall [repo] [--purge-notes] [--purge-snapshots]  remove a repository
 gitvow check -- <command...>                              dry-run the policy against a Bash command; exit 0 allow or confirm at commit, 2 blocked
 gitvow check --path <file>                                dry-run against an edited path
 gitvow check --mcp <tool-name>                            dry-run against an MCP tool name
+gitvow status [--json]                                    check the install is live: hooks reachable from the agent, policy and redaction rules load, git hooks in place, plus each agent's manual steps; exit 1 if anything is failing
 gitvow show [commit]                                      print a commit's message, trailers and session note (default HEAD)
 gitvow decisions [--json]                                 the card: open findings in this repository, numbered, with evidence and what the record proposes
 gitvow rules [--json] [--write [--agent NAME | --file PATH]]  earned rules from the decision history, with candidates and lapsed rules; --write updates the managed section of an agent instruction file

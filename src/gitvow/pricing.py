@@ -37,15 +37,20 @@ def table(pol: dict[str, Any] | None) -> tuple[dict[str, dict[str, float]], str]
     return merged, f"{PRICING_LABEL} + policy overrides"
 
 
-def price_for(model: str, tbl: dict[str, dict[str, float]]) -> dict[str, float] | None:
-    """Exact name first, then the longest prefix match (claude-fable matches claude-fable-5-1)."""
+def match_for(model: str, tbl: dict[str, dict[str, float]]) -> tuple[str | None, dict[str, float] | None]:
+    """(the table entry used, its prices). Exact name first, then the longest prefix match."""
     if model in tbl:
-        return tbl[model]
+        return model, tbl[model]
     best = None
     for k in tbl:
         if (model.startswith(k) or k.startswith(model)) and (best is None or len(k) > len(best)):
             best = k
-    return tbl[best] if best else None
+    return (best, tbl[best]) if best else (None, None)
+
+
+def price_for(model: str, tbl: dict[str, dict[str, float]]) -> dict[str, float] | None:
+    """Prices for a model, exact or by longest prefix. Prefer match_for, which says which entry was used."""
+    return match_for(model, tbl)[1]
 
 
 def estimate(usage: dict[str, Any], pol: dict[str, Any] | None) -> dict[str, Any]:
@@ -53,11 +58,16 @@ def estimate(usage: dict[str, Any], pol: dict[str, Any] | None) -> dict[str, Any
     tbl, label = table(pol)
     cost = 0.0
     unpriced: list[str] = []
+    inferred: dict[str, str] = {}
     for model, buckets in (usage.get("by_model") or {}).items():
-        p = price_for(model, tbl)
-        if not p:
+        key, p = match_for(model, tbl)
+        if not p or key is None:
             unpriced.append(model)
             continue
+        if key != model:
+            # A model the table does not name, priced from a same-family entry. Say so rather than
+            # presenting a guess as a figure: a new generation has cost twice its predecessor before.
+            inferred[model] = key
         cost += buckets.get("input", 0) / 1e6 * p.get("input", 0)
         cost += buckets.get("output", 0) / 1e6 * p.get("output", 0)
         cost += buckets.get("reasoning", 0) / 1e6 * p.get("output", 0)  # reasoning is billed as output where reported
@@ -68,4 +78,6 @@ def estimate(usage: dict[str, Any], pol: dict[str, Any] | None) -> dict[str, Any
     out["pricing"] = label
     if unpriced:
         out["unpriced_models"] = sorted(unpriced)
+    if inferred:
+        out["inferred_pricing"] = inferred
     return out

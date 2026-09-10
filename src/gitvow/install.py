@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import json
 import os
-import re
 import shutil
 import sys
 from typing import Any
@@ -318,18 +317,6 @@ def unmerge_agent_settings(path: str) -> None:
         os.remove(path)
 
 
-def codex_hooks_enabled_hint(home: str) -> str | None:
-    """Codex hooks are opt-in on some versions; point at the config line if it is absent."""
-    cfg = os.path.join(home, ".codex", "config.toml")
-    txt = ""
-    if os.path.exists(cfg):
-        with open(cfg) as fh:
-            txt = fh.read()
-    if re.search(r"^\s*hooks\s*=\s*true", txt, re.M) or re.search(r"^\s*codex_hooks\s*=\s*true", txt, re.M):
-        return None
-    return f"Codex hooks may need enabling: add `hooks = true` under [features] in {cfg}"
-
-
 def merge_settings(path: str, cmd_prefix: str) -> None:
     cur: dict[str, Any] = {}
     if os.path.exists(path):
@@ -361,6 +348,34 @@ def unmerge_settings(path: str) -> None:
             json.dump(cur, fh, indent=2)
     else:
         os.remove(path)
+
+
+def agent_next_steps(agent: str, home: str, repo: str | None = None) -> list[str]:
+    """What gitvow cannot do for you, per agent. Each of these otherwise leaves the gate installed but inert."""
+    if agent != "codex":
+        return []
+    out = [
+        "codex: hooks are skipped until trusted. Start codex, run `/hooks`, review the gitvow entries and "
+        "trust them; until then codex runs your tools with no gate and says nothing.",
+    ]
+    gd = os.path.join(repo, ".git") if repo else "<repo>/.git"
+    cfg = os.path.join(home, ".codex", "config.toml")
+    text = ""
+    if os.path.exists(cfg):
+        try:
+            with open(cfg) as fh:
+                text = fh.read()
+        except OSError:
+            text = ""
+    if "hooks = false" in text:
+        out.append("codex: hooks are switched off in ~/.codex/config.toml; remove `hooks = false`.")
+    if "writable_roots" not in text:
+        out.append(
+            "codex: its sandbox refuses writes inside .git, so the agent cannot commit at all. Add to "
+            f'~/.codex/config.toml:  [sandbox_workspace_write] writable_roots = ["{gd}"]'
+        )
+    out.append("check it with `gitvow status`.")
+    return out
 
 
 def _write_git_hook(dirpath: str) -> str:
@@ -398,10 +413,6 @@ def install_user(home: str, cmd_prefix: str | None = None, agent: str = "claude"
         merge_external_settings(os.path.join(home, settings_rel), ext[1], cmd_prefix)
     else:
         merge_agent_settings(os.path.join(home, settings_rel), agent, cmd_prefix)
-        if agent == "codex":
-            hint = codex_hooks_enabled_hint(home)
-            if hint:
-                done.append(hint)
     git(["config", "--global", "core.hooksPath", os.path.join(base, "git-hooks")], home)
     _set_notes_config(home, ["--global"])
     done += [
@@ -409,7 +420,7 @@ def install_user(home: str, cmd_prefix: str | None = None, agent: str = "claude"
         "global core.hooksPath → ~/.gitvow/git-hooks",
         f"global notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
     ]
-    return done
+    return done + agent_next_steps(agent, home)
 
 
 def uninstall_user(
@@ -464,6 +475,7 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -
         "core.hooksPath → .gitvow/git-hooks",
         f"notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",
         "commit .gitvow/ and .claude/settings.json to share; teammates run: git config core.hooksPath .gitvow/git-hooks",
+        *agent_next_steps(agent, os.path.expanduser("~"), repo),
     ]
 
 

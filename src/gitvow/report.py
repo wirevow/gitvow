@@ -121,6 +121,8 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
                     "usage": {
                         "total_tokens": (note.get("usage") or {}).get("total_tokens"),
                         "estimated_cost_usd": (note.get("usage") or {}).get("estimated_cost_usd"),
+                        "inferred_pricing": (note.get("usage") or {}).get("inferred_pricing") or {},
+                        "unpriced_models": (note.get("usage") or {}).get("unpriced_models") or [],
                     },
                 }
             )
@@ -185,6 +187,11 @@ def render_markdown(r: dict[str, Any]) -> str:
         tools = ", ".join(c["tools_used"]) or "none recorded"
         u = c.get("usage") or {}
         cost = f" · ${u['estimated_cost_usd']:.2f} est." if u.get("estimated_cost_usd") is not None else ""
+        if u.get("inferred_pricing"):
+            pairs = ", ".join(f"{m} priced as {k}" for m, k in u["inferred_pricing"].items())
+            cost += f" (**{pairs}**)"
+        if u.get("unpriced_models"):
+            cost += f" (**{', '.join(u['unpriced_models'])} not priced**)"
         toks = f" · {u['total_tokens'] / 1e3:.0f}k tokens so far" if u.get("total_tokens") else ""
         lines.append(f"**Tools:** {tools} · {c['tool_calls']} tool calls · {c['turns']} turns{toks}{cost}")
         a = c["attribution"]

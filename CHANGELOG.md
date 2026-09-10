@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.13.0 — 2026-09-10
+- `gitvow status`: proves the install is live rather than merely present. It checks that the hook command each agent will run actually resolves (an absolute path, or a warning that a desktop agent may not share your shell's PATH), that the policy and redaction rules load, that all four git hooks are present and executable, that the notes refs are configured, and whether any session has been recorded in this repository yet. Every failure prints the line that fixes it; exit 1 when anything fails. `--json` for scripts.
+- `gitvow install` now ends with the steps it cannot do for you. For Codex that is trusting the hooks once through `/hooks` and adding the repository's `.git` to `sandbox_workspace_write.writable_roots`, either of which otherwise leaves the gate installed and inert.
+- Cost is no longer presented as fact when it was guessed. A model the pricing table does not name is priced from the nearest same-family entry and now reported as `inferred_pricing` in the note and marked in the pull request report, e.g. "gpt-5.6-terra priced as gpt-5". A new generation has cost twice its predecessor before, so a silent prefix match was a figure nobody could trust.
+- Removed the Codex "enable hooks" hint: hooks are on by default, and the hint told users to add a line they do not need.
+
 ## 0.12.4 — 2026-09-10
 - Cursor verified in a real session, end to end: the gate collected an at-commit finding from a file edit, refused the commit with the card, and after `gitvow decide` the commit carried the trailer and a note with the decision, scope, reason and attribution. Four defects that session exposed are fixed below; none of them were visible from the vendor documentation alone.
 - **The decision card is refused, not asked.** On agents with their own permission prompt the card came back as `ask`, so a click on Cursor's approve button ran the commit with the findings still open and nothing recorded but a `Gitvow-Open` trailer. On Cursor and Copilot CLI a denial and a card are now both `deny`; an immediate confirm rule such as pushing to a remote is still delivered as the person's own prompt, which is what it is for.

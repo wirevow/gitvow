@@ -21,6 +21,14 @@ gitvow install --user                   # Claude Code, as before
 
 Each install merges gitvow's entries into that agent's configuration file, idempotently, and `gitvow uninstall --user --agent <name>` removes exactly those entries.
 
+Then prove it is live:
+
+```sh
+gitvow status
+```
+
+It checks that the hook command the agent will run actually resolves, that the policy and redaction rules load, that the git hooks are in place, and it repeats whatever each agent still needs by hand. Exit code 1 means something is failing. Run it inside a repository.
+
 ### Two extra steps for Codex CLI
 
 Both were found in a real session; without them the gate is installed but does nothing.

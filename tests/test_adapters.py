@@ -224,7 +224,10 @@ def test_install_per_agent_idempotent_and_reversible(home, repo):
         )
         assert f"hook --agent {agent}" in cmd
         if agent == "codex":
-            assert any("hooks = true" in x for x in out)
+            # hooks are on by default; what install must say is that they are skipped until trusted
+            assert any("/hooks" in x and "trust" in x for x in out)
+            assert any("writable_roots" in x for x in out)
+            assert any("gitvow status" in x for x in out)
         if agent == "cursor":
             assert s["version"] == 1 and s["hooks"][key][0]["failClosed"] is True
         if agent == "gemini":
