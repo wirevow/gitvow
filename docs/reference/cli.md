@@ -2,8 +2,9 @@
 
 ```
 gitvow hook [--agent claude|codex|gemini|cursor|copilot|factory] <Event>  run as an agent hook; reads the agent's JSON payload on stdin; answers in the agent's form
-gitvow install --user | install [repo] [--agent NAME]     install per user or into a repository (default: current directory); --agent codex|gemini|cursor|copilot|factory configures that agent instead of Claude Code
-gitvow uninstall --user [--agent NAME] [--purge-policy] [--purge-ledger] remove the user install (for one agent when --agent is given)
+gitvow install --user | install [repo] [--agent NAME] [--check]
+                                                          install per user or into a repository (default: current directory); with no --agent, configures every agent found on this machine; --check runs the self-check afterwards
+gitvow uninstall --user [--agent NAME] [--purge-policy] [--purge-ledger] remove the user install; with no --agent, removes gitvow from every agent configured there
 gitvow uninstall [repo] [--purge-notes] [--purge-snapshots]  remove a repository install; --purge-notes deletes local refs/notes/gitvow/*, --purge-snapshots deletes refs/gitvow/snapshots/*
 gitvow check -- <command...>                              dry-run the policy against a Bash command; exit 0 allow or confirm at commit, 2 blocked
 gitvow check --path <file>                                dry-run against an edited path

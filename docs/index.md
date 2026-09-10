@@ -14,8 +14,8 @@ No runtime dependencies. Standard-library Python and git. One command to install
 
 ```sh
 pip install gitvow
-gitvow install --user
-gitvow selftest
+gitvow install --user --check   # configures every agent found here, then proves the gate works
+gitvow status                   # is the record actually being written in this repository?
 ```
 
 ## Why git, and why not a service

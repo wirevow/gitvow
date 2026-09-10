@@ -15,9 +15,11 @@ gitvow's record and gate are agent-neutral: trailers, notes, snapshots and the l
 
 ```sh
 pip install gitvow
-gitvow install --user --agent codex     # or gemini, cursor, copilot, factory; repeat per agent you use
-gitvow install --user                   # Claude Code, as before
+gitvow install --user            # configures every agent found on this machine
+gitvow install --user --check    # the same, then runs the self-check so you see the gate work
 ```
+
+`install` looks for each agent's configuration directory and command, prints what it found, and configures all of them. Pass `--agent codex` (or gemini, cursor, copilot, factory, or an external adapter name) to pick one. `uninstall` with no `--agent` removes gitvow from every agent it configured, leaving any hooks of your own in place.
 
 Each install merges gitvow's entries into that agent's configuration file, idempotently, and `gitvow uninstall --user --agent <name>` removes exactly those entries.
 

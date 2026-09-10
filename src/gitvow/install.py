@@ -374,18 +374,115 @@ def agent_next_steps(agent: str, home: str, repo: str | None = None) -> list[str
             "codex: its sandbox refuses writes inside .git, so the agent cannot commit at all. Add to "
             f'~/.codex/config.toml:  [sandbox_workspace_write] writable_roots = ["{gd}"]'
         )
-    out.append("check it with `gitvow status`.")
+    return out
+
+
+GIT_HOOKS_EXPECTED = ("prepare-commit-msg", "pre-push", "pre-commit", "post-commit")
+GIT_HOOK_BODIES = {
+    "prepare-commit-msg": GIT_HOOK,
+    "pre-push": PRE_PUSH_HOOK,
+    "pre-commit": PRE_COMMIT_HOOK,
+    "post-commit": POST_COMMIT_HOOK,
+}
+
+# How to tell an agent is on this machine: a configuration directory under $HOME, an absolute path, or a
+# command on the PATH. Detection only decides what install offers; it never changes what a hook does.
+AGENT_PROBES: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]] = {
+    "claude": ((".claude",), (), ("claude",)),
+    "codex": ((".codex",), (), ("codex",)),
+    "gemini": ((".gemini",), (), ("gemini",)),
+    "cursor": ((".cursor",), ("/Applications/Cursor.app",), ("cursor-agent", "cursor")),
+    "copilot": ((".copilot",), (), ("copilot",)),
+    "factory": ((".factory",), (), ("droid",)),
+}
+
+
+def detect_agents(home: str) -> list[str]:
+    """Agents that look installed here, built-in first, then any external gitvow-agent-<name> found."""
+    found = [
+        agent
+        for agent, (dirs, paths, bins) in AGENT_PROBES.items()
+        if any(os.path.isdir(os.path.join(home, d)) for d in dirs)
+        or any(os.path.exists(p) for p in paths)
+        or any(shutil.which(b) for b in bins)
+    ]
+    seen = set(found)
+    for d in [os.path.join(home, ".gitvow", "agents"), *os.environ.get("PATH", "").split(os.pathsep)]:
+        try:
+            names = os.listdir(d)
+        except OSError:
+            continue
+        for n in names:
+            if n.startswith("gitvow-agent-") and os.access(os.path.join(d, n), os.X_OK):
+                name = n[len("gitvow-agent-") :]
+                if name not in seen:
+                    seen.add(name)
+                    found.append(name)
+    return found
+
+
+def hook_commands(path: str) -> list[str]:
+    """Every gitvow hook command in an agent settings file, whatever the schema around it."""
+    if not os.path.exists(path):
+        return []
+    try:
+        with open(path) as fh:
+            data = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return []
+    out: list[str] = []
+
+    def walk(node: Any) -> None:
+        if isinstance(node, dict):
+            cmd = node.get("command")
+            if isinstance(cmd, str) and MARKER in cmd:
+                out.append(cmd)
+            for v in node.values():
+                walk(v)
+        elif isinstance(node, list):
+            for v in node:
+                walk(v)
+
+    walk(data)
+    return out
+
+
+def installed_agents(home: str, repo: str | None = None) -> list[tuple[str, str, str]]:
+    """(agent, scope, path) for every agent settings file that already carries gitvow hooks."""
+    out: list[tuple[str, str, str]] = []
+    for agent, (user_rel, repo_rel) in AGENT_FILES.items():
+        for scope, path in (("user", os.path.join(home, user_rel)), ("repo", os.path.join(repo or "", repo_rel))):
+            if scope == "repo" and not repo:
+                continue
+            if hook_commands(path):
+                out.append((agent, scope, path))
+    return out
+
+
+def expected_events(agent: str) -> set[str]:
+    """The hook events this version of gitvow installs for an agent."""
+    if agent not in AGENT_FILES:
+        return set()
+    return set(_agent_entries(agent, "gitvow"))
+
+
+def stale_git_hooks(dirpath: str) -> list[str]:
+    """Hooks whose contents are not what this version writes: an install left behind by an older gitvow."""
+    out = []
+    for name, body in GIT_HOOK_BODIES.items():
+        p = os.path.join(dirpath, name)
+        try:
+            with open(p) as fh:
+                if fh.read() != body:
+                    out.append(name)
+        except OSError:
+            continue  # missing hooks are reported separately
     return out
 
 
 def _write_git_hook(dirpath: str) -> str:
     os.makedirs(dirpath, exist_ok=True)
-    for name, body in (
-        ("prepare-commit-msg", GIT_HOOK),
-        ("pre-push", PRE_PUSH_HOOK),
-        ("pre-commit", PRE_COMMIT_HOOK),
-        ("post-commit", POST_COMMIT_HOOK),
-    ):
+    for name, body in GIT_HOOK_BODIES.items():
         p = os.path.join(dirpath, name)
         with open(p, "w") as fh:
             fh.write(body)

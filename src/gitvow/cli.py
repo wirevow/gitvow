@@ -97,18 +97,57 @@ def _check_agent(agent: str) -> int:
 
 
 def cmd_install(a: argparse.Namespace) -> int:
-    agent = a.agent or "claude"
-    if _check_agent(agent):
-        return 1
-    if a.user:
-        done = install_user(os.path.expanduser("~"), agent=agent)
+    """Without --agent, configure every agent found on this machine: not passing a flag should not
+    silently leave an agent ungated."""
+    from .install import detect_agents
+
+    home = os.path.expanduser("~")
+    repo = os.path.abspath(a.repo)
+    if a.agent:
+        agents, detected = [a.agent], False
     else:
-        done = install_repo(os.path.abspath(a.repo), agent=agent)
-    print("\n".join(done))
+        agents, detected = detect_agents(home), True
+        if not agents:
+            agents = ["claude"]
+    for agent in agents:
+        if _check_agent(agent):
+            return 1
+    lines: list[str] = []
+    if detected:
+        lines.append(f"agents found here: {', '.join(agents)}  (use --agent to pick one)")
+    for agent in agents:
+        lines += install_user(home, agent=agent) if a.user else install_repo(repo, agent=agent)
+    seen: set[str] = set()
+    for ln in lines:
+        if ln not in seen:
+            seen.add(ln)
+            print(ln)
+    print("next: run `gitvow status` inside a repository to check the record is actually being written.")
+    if a.check:
+        from .selftest import run, run_agent
+
+        print()
+        worst = 0
+        for agent in agents:
+            worst = max(worst, run() if agent == "claude" else run_agent(agent))
+        if worst:
+            print("the self-check failed; `gitvow status` says what is missing", file=sys.stderr)
     return 0
 
 
 def cmd_uninstall(a: argparse.Namespace) -> int:
+    from .install import installed_agents
+
+    if not a.agent:
+        home = os.path.expanduser("~")
+        repo = os.path.abspath(a.repo)
+        found = [ag for ag, scope, _ in installed_agents(home, repo) if (scope == "user") == bool(a.user)]
+        if len(found) > 1:
+            worst = 0
+            for ag in dict.fromkeys(found):
+                worst = max(worst, cmd_uninstall(argparse.Namespace(**{**vars(a), "agent": ag})))
+            return worst
+        a.agent = found[0] if found else None
     agent = a.agent or "claude"
     if _check_agent(agent):
         return 1
@@ -464,9 +503,10 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--user", action="store_true")
     s.add_argument(
         "--agent",
-        default="claude",
-        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>",
+        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>; "
+        "omit to configure every agent found on this machine",
     )
+    s.add_argument("--check", action="store_true", help="run the self-check afterwards and show it working")
     s.set_defaults(f=cmd_install)
     s = sub.add_parser("uninstall", help="remove what install added")
     s.add_argument("repo", nargs="?", default=".")
@@ -477,8 +517,8 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--purge-snapshots", action="store_true")
     s.add_argument(
         "--agent",
-        default="claude",
-        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>",
+        help="claude|codex|gemini|cursor|copilot|factory or an external gitvow-agent-<name>; "
+        "omit to remove gitvow from every agent configured here",
     )
     s.set_defaults(f=cmd_uninstall)
     s = sub.add_parser("check", help="dry-run the policy: gitvow check -- git push --force")

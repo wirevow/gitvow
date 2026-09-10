@@ -7,44 +7,23 @@ worst outcome, so this exists to make that state loud.
 
 from __future__ import annotations
 
-import json
 import os
 import shutil
-from typing import Any
 
-from .install import AGENT_FILES, MARKER, NOTES_GLOB, agent_next_steps
+from .install import (
+    AGENT_FILES,
+    GIT_HOOKS_EXPECTED,
+    NOTES_GLOB,
+    agent_next_steps,
+    expected_events,
+    hook_commands,
+    stale_git_hooks,
+)
 from .policy import PolicyError, load_policy
 from .redact import RedactionError, load_rules
 from .state import git, git_dir, toplevel
 
-GIT_HOOKS = ("prepare-commit-msg", "pre-commit", "post-commit", "pre-push")
 Check = tuple[str, str, str]  # (state: ok|fail|note, what, fix or detail)
-
-
-def _hook_commands(path: str) -> list[str]:
-    """Every gitvow hook command in an agent settings file, whatever the schema around it."""
-    if not os.path.exists(path):
-        return []
-    try:
-        with open(path) as fh:
-            data = json.load(fh)
-    except (OSError, json.JSONDecodeError):
-        return []
-    out: list[str] = []
-
-    def walk(node: Any) -> None:
-        if isinstance(node, dict):
-            cmd = node.get("command")
-            if isinstance(cmd, str) and MARKER in cmd:
-                out.append(cmd)
-            for v in node.values():
-                walk(v)
-        elif isinstance(node, list):
-            for v in node:
-                walk(v)
-
-    walk(data)
-    return out
 
 
 def _executable(cmd: str) -> tuple[bool, str, bool]:
@@ -65,7 +44,7 @@ def _agent_checks(home: str, cwd: str) -> list[Check]:
         for scope, path in (("user", os.path.join(home, user_rel)), ("repo", os.path.join(top or cwd, repo_rel))):
             if scope == "repo" and not top:
                 continue
-            cmds = _hook_commands(path)
+            cmds = hook_commands(path)
             if not cmds:
                 continue
             found_any = True
@@ -91,6 +70,15 @@ def _agent_checks(home: str, cwd: str) -> list[Check]:
                 )
             else:
                 checks.append(("ok", f"{agent} ({scope}): {len(cmds)} hooks in {where} → {resolved}", ""))
+            missing = sorted(e for e in expected_events(agent) if not any(f" {e}" in c for c in cmds))
+            if missing:
+                checks.append(
+                    (
+                        "fail",
+                        f"{agent} ({scope}): installed by an older gitvow, missing {', '.join(missing)}",
+                        f"re-run `gitvow install {'--user ' if scope == 'user' else ''}--agent {agent}`",
+                    )
+                )
             checks += _agent_notes(agent, home, top)
     if not found_any:
         checks.append(
@@ -121,7 +109,7 @@ def _git_checks(cwd: str, home: str) -> list[Check]:
         checks.append(("fail", "core.hooksPath is not set, so no commit gets a trailer", "run `gitvow install --user`"))
         return checks
     hooks_dir = hp if os.path.isabs(hp) else os.path.join(top, hp)
-    missing = [h for h in GIT_HOOKS if not os.access(os.path.join(hooks_dir, h), os.X_OK)]
+    missing = [h for h in GIT_HOOKS_EXPECTED if not os.access(os.path.join(hooks_dir, h), os.X_OK)]
     if missing:
         checks.append(
             (
@@ -131,7 +119,17 @@ def _git_checks(cwd: str, home: str) -> list[Check]:
             )
         )
     else:
-        checks.append(("ok", f"git hooks in {hp}: {', '.join(GIT_HOOKS)}", ""))
+        stale = stale_git_hooks(hooks_dir)
+        if stale:
+            checks.append(
+                (
+                    "fail",
+                    f"git hooks written by an older gitvow: {', '.join(stale)}",
+                    "re-run `gitvow install` here; behaviour added since that install is not active",
+                )
+            )
+        else:
+            checks.append(("ok", f"git hooks in {hp}: {', '.join(GIT_HOOKS_EXPECTED)}", ""))
     rc, refs, _ = git(["config", "--get-all", "notes.displayRef"], top)
     if NOTES_GLOB not in (refs or ""):
         checks.append(
@@ -179,9 +177,12 @@ def render(checks: list[Check]) -> str:
         if fix:
             lines.append("         " + fix)
     fails = sum(1 for s, _, _ in checks if s == "fail")
-    notes = sum(1 for s, _, _ in checks if s == "note")
-    lines += [
-        "",
-        f"{fails} failing, {notes} to check by hand." if fails else f"nothing failing, {notes} to check by hand.",
-    ]
+    notes = sum(1 for s, _, fix in checks if s == "note" and fix)  # only notes that ask something of you
+    tail = f" {notes} step{'s' if notes != 1 else ''} left to you above." if notes else ""
+    if fails:
+        lines += ["", f"{fails} failing: the record is not being written until those are fixed.{tail}"]
+    elif any(s == "note" and "no hook log" in w for s, w, _ in checks):
+        lines += ["", f"Ready: run a session and commit, or `gitvow selftest` to see it work now.{tail}"]
+    else:
+        lines += ["", f"The record is live here.{tail}"]
     return "\n".join(lines) + "\n"

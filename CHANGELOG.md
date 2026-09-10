@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.13.1 — 2026-09-10
+- `gitvow install` with no `--agent` now finds every agent on the machine (by configuration directory, application path or command) and configures all of them, printing what it found. Forgetting a flag no longer leaves an agent silently ungated. `--check` runs the self-check straight afterwards, so the first thing a new user sees is the gate working in their own terminal.
+- `gitvow uninstall` with no `--agent` removes gitvow from every agent configured in that scope, leaving any hooks of your own in place. Previously both commands silently assumed Claude Code.
+- `gitvow status` detects an install left behind by an older gitvow: git hook scripts whose contents differ from what this version writes, and agent settings missing events this version installs. Either means behaviour you have upgraded to is not actually running.
+- Both commands end with the next thing to do: install points at `gitvow status`, and status says plainly whether the record is live here, is ready and waiting for a first session, or is not being written at all.
+
 ## 0.13.0 — 2026-09-10
 - `gitvow status`: proves the install is live rather than merely present. It checks that the hook command each agent will run actually resolves (an absolute path, or a warning that a desktop agent may not share your shell's PATH), that the policy and redaction rules load, that all four git hooks are present and executable, that the notes refs are configured, and whether any session has been recorded in this repository yet. Every failure prints the line that fixes it; exit 1 when anything fails. `--json` for scripts.
 - `gitvow install` now ends with the steps it cannot do for you. For Codex that is trusting the hooks once through `/hooks` and adding the repository's `.git` to `sandbox_workspace_write.writable_roots`, either of which otherwise leaves the gate installed and inert.
