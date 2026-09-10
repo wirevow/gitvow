@@ -34,3 +34,17 @@ body{-webkit-font-smoothing:antialiased}
 .md-footer-meta{border-top:1px solid rgba(242,239,233,.08)}
 .md-source{font-family:"JetBrains Mono",monospace;font-size:.62rem}
 .md-content__button{color:#8E96A3}
+
+/* Crisper interaction, matched to wirevow.com: fast transitions, amber on hover, a visible focus ring. */
+.md-typeset a{transition:border-color .12s,color .12s}
+.md-typeset a:hover{border-bottom-color:#EBBA66;color:#EBBA66}
+.md-nav__link{transition:color .12s}
+.md-nav__link:hover,.md-nav__link:focus-visible{color:#EBBA66;outline:none}
+.md-nav__item .md-nav__link--active{box-shadow:inset 2px 0 0 #EBBA66;padding-left:.4rem}
+a:focus-visible,button:focus-visible,.md-search__input:focus-visible{outline:2px solid #EBBA66;outline-offset:2px}
+.md-header__button:hover{opacity:1;color:#EBBA66}
+.md-typeset .md-button:hover{border-color:#EBBA66;background:rgba(235,186,102,.10);color:#F2EFE9}
+.md-clipboard:hover{color:#EBBA66}
+.md-footer__link:hover .md-footer__title{color:#EBBA66}
+/* the eyebrow dash the company site uses before small uppercase labels */
+.md-typeset table:not([class]) th:first-child::before{content:"";display:inline-block;width:12px;height:1px;background:linear-gradient(92deg,#F27A5C,#EBBA66);vertical-align:middle;margin-right:8px}
