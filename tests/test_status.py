@@ -1,5 +1,6 @@
 import json
 import os
+import subprocess
 from pathlib import Path
 
 from gitvow import cli
@@ -126,3 +127,47 @@ def test_an_old_install_is_reported_as_stale(repo, home, monkeypatch):
     (repo / ".claude" / "settings.json").write_text(json.dumps(settings))
     c = _first(build(str(repo), str(home)), "installed by an older gitvow")
     assert c and c[0] == "fail" and "Stop" in c[1]
+
+
+def _signed_commit(repo, name, body):
+    (repo / name).write_text("x\n")
+    subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", body], cwd=repo, check=True, capture_output=True)
+
+
+def test_an_agent_commit_since_the_install_with_no_session_fails(repo, home, monkeypatch):
+    """The miss this check exists for: hooks are read at start-up, so a session already open is ungated."""
+    monkeypatch.chdir(repo)
+    install_repo(str(repo))
+    _signed_commit(repo, "one.txt", "made by an ungated session\n\nCo-authored-by: Claude <x@y>")
+    c = _first(build(str(repo), str(home)), "since the install")
+    assert c and c[0] == "fail"
+    assert "1 agent commit" in c[1] and "carries no session" in c[1]
+    assert "already open when you installed" in c[2] and "Cursor reloads by itself" in c[2]
+    assert "the record is not being written" in render(build(str(repo), str(home)))
+
+
+def test_a_recorded_commit_since_the_install_is_silent(repo, home, monkeypatch):
+    monkeypatch.chdir(repo)
+    install_repo(str(repo))
+    _signed_commit(repo, "one.txt", "recorded\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1\nGitvow-Step: 1")
+    checks = build(str(repo), str(home))
+    assert _first(checks, "since the install") is None
+    assert not [c for c in checks if c[0] == "fail"], checks
+
+
+def test_commits_before_the_install_are_not_blamed_on_it(repo, home, monkeypatch):
+    """Existing history is uncovered by construction; only what happens after the install is a signal."""
+    monkeypatch.chdir(repo)
+    _signed_commit(repo, "old.txt", "before gitvow existed here\n\nCo-authored-by: Claude <x@y>")
+    install_repo(str(repo))
+    assert _first(build(str(repo), str(home)), "since the install") is None
+
+
+def test_status_no_longer_repeats_the_restart_advice(repo, home, monkeypatch):
+    """It is install-time guidance, and status can test for the real thing instead."""
+    monkeypatch.chdir(repo)
+    out = install_repo(str(repo), agent="codex")
+    assert any("restart it if a session is already open" in x for x in out)
+    assert not [c for c in build(str(repo), str(home)) if "restart it if a session" in c[1]]
+    assert not [x for x in install_repo(str(repo), agent="cursor") if "restart it" in x]

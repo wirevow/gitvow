@@ -350,11 +350,23 @@ def unmerge_settings(path: str) -> None:
         os.remove(path)
 
 
+# Agents that re-read their hook configuration while running. Everything else reads it once, at start-up,
+# so a session that was already open when gitvow was installed is not gated and says nothing about it.
+RELOADS_HOOKS = ("cursor",)
+
+
 def agent_next_steps(agent: str, home: str, repo: str | None = None) -> list[str]:
     """What gitvow cannot do for you, per agent. Each of these otherwise leaves the gate installed but inert."""
+    steps: list[str] = []
+    if agent not in RELOADS_HOOKS:
+        steps.append(
+            f"{agent}: restart it if a session is already open. Hooks are read at start-up, so a session "
+            "that began before this install is not gated and will not say so."
+        )
     if agent != "codex":
-        return []
+        return steps
     out = [
+        *steps,
         "codex: hooks are skipped until trusted. Start codex, run `/hooks`, review the gitvow entries and "
         "trust them; until then codex runs your tools with no gate and says nothing.",
     ]

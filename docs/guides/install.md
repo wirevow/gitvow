@@ -50,6 +50,18 @@ gitvow uninstall /path/to/repo [--purge-notes]
 
 Removes exactly what install added, including the git config keys when they still hold gitvow's values. Leaves commit trailers already in history, notes already pushed, and the ledger unless asked. `--purge-notes` deletes every local `refs/notes/gitvow/*` ref.
 
+## Restart any session that was already open
+
+Every agent except Cursor reads its hook configuration once, when the session starts. Install gitvow while a session is open and that session keeps working, ungated, and says nothing about it. Cursor watches its hook file and reloads on its own.
+
+`install` says this per agent, and `gitvow status` tests for the real thing rather than repeating the advice: if a commit made *after* the install carries an agent's signature but no session, it fails and tells you to restart. Commits from before the install are ignored, because they are uncovered by construction.
+
+```
+FAIL 1 agent commit since the install (2026-09-10 13:46) carries no session: 401205c
+       an agent session that was already open when you installed is not gated, because hooks
+       are read at start-up. Restart it, then `gitvow coverage` to confirm.
+```
+
 ## If hooks silently do nothing
 Most agents treat a hook command they cannot run as a non-blocking error and carry on, which switches the gate off with no visible failure. That is the worst outcome, so there is a command for exactly this:
 

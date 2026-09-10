@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import os
 import shutil
+import time
 
 from .install import (
     AGENT_FILES,
@@ -91,12 +92,46 @@ def _agent_notes(agent: str, home: str, top: str | None) -> list[Check]:
     """The same per-agent steps install prints, restated as checks."""
     out: list[Check] = []
     for step in agent_next_steps(agent, home, top):
-        if step.startswith("check it with"):
-            continue
+        if "restart it if a session is already open" in step:
+            continue  # tested for directly below, per repository, from the commits themselves
         what, _, fix = step.partition(". ")
         state = "fail" if "switched off" in step else "note"
         out.append((state, what, fix.strip()))
     return out
+
+
+def _since_install_checks(cwd: str, hooks_dir: str) -> list[Check]:
+    """Has an agent committed here since gitvow was installed, without being recorded?
+
+    This is the question process-sniffing tries to answer badly. A commit made after the install that
+    carries an agent's signature but no session means the gate is not firing right now: usually a session
+    that was already open when gitvow went in, since agents read hooks at start-up.
+    """
+    stamp = os.path.join(hooks_dir, "prepare-commit-msg")
+    try:
+        installed = os.path.getmtime(stamp)
+    except OSError:
+        return []
+    stamp_iso = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(installed))
+    try:
+        from .scan import coverage
+
+        d = coverage(cwd, since=stamp_iso)
+    except (ValueError, OSError):
+        return []
+    if not d["signed"] or not d["uncovered"]:
+        return []
+    when = time.strftime("%Y-%m-%d %H:%M", time.localtime(installed))
+    holes = ", ".join(h["sha"] for h in d["holes"][:4])
+    return [
+        (
+            "fail",
+            f"{d['uncovered']} agent commit{'s' if d['uncovered'] != 1 else ''} since the install "
+            f"({when}) {'carry' if d['uncovered'] != 1 else 'carries'} no session: {holes}",
+            "an agent session that was already open when you installed is not gated, because hooks are "
+            "read at start-up. Restart it, then `gitvow coverage` to confirm. Cursor reloads by itself.",
+        )
+    ]
 
 
 def _git_checks(cwd: str, home: str) -> list[Check]:
@@ -141,6 +176,7 @@ def _git_checks(cwd: str, home: str) -> list[Check]:
         )
     else:
         checks.append(("ok", f"notes.displayRef / rewriteRef → {NOTES_GLOB}", ""))
+    checks += _since_install_checks(top, hooks_dir)
     gd = git_dir(top)
     if gd and os.path.exists(os.path.join(gd, "gitvow-hooks.log")):
         checks.append(("ok", "this repository has a hook log, so the hooks have run here", ""))

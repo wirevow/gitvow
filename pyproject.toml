@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gitvow"
-version = "0.15.0"
+version = "0.15.1"
 description = "Provenance and policy gate for AI-agent coding sessions: session trailers on commits, redacted session notes in git, a tool-call gate, and a local ledger. No runtime dependencies."
 readme = "README.md"
 license = {text = "Apache-2.0"}

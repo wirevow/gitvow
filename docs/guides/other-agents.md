@@ -31,6 +31,10 @@ gitvow status
 
 It checks that the hook command the agent will run actually resolves, that the policy and redaction rules load, that the git hooks are in place, and it repeats whatever each agent still needs by hand. Exit code 1 means something is failing. Run it inside a repository.
 
+### Restarting after an install
+
+All of these read their hook configuration when a session starts, so a session already running when you install is not gated. Cursor is the exception: it watches its hook file and reloads by itself. `gitvow status` detects the consequence directly, by looking for agent commits made after the install that carry no session.
+
 ### One thing to know about desktop agents
 
 Cursor runs as a desktop application, so it does not inherit the PATH of your terminal. A per-repository install records the bare command `gitvow`, which a desktop agent frequently cannot find; the hook then fails, and because gitvow installs Cursor's hooks fail-closed, Cursor blocks the tool and reports that the hook returned no output. Install per user as well, so the absolute path is recorded, and run `gitvow status`, which resolves the exact command each agent will run and says which of them depends on PATH.

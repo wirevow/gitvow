@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.15.1 — 2026-09-10
+- Fixed a real hole found by installing gitvow in its own repository: every agent except Cursor reads its hook configuration once at session start, so installing while a session is open leaves that session ungated and silent, and `status` cheerfully reported the install as healthy. `install` now says so per agent, and `status` tests for the consequence rather than repeating the advice: an agent-signed commit made after the install that carries no session is a failure, with the instruction to restart. Commits from before the install are ignored, since they are uncovered by construction.
+- gitvow now gates its own repository, configured for all six supported agents because contributors use different ones, with a workflow that publishes `scan` and `coverage` on every push and the pull request action running on itself.
+
 ## 0.15.0 — 2026-09-10
 - `gitvow coverage [--who] [--fail-under N]`: is the record complete? A commit carrying an agent's signature but no `Gitvow-Session` trailer is a coverage hole, meaning that machine was never configured or its hooks were disabled for that command. Computed from history alone, so it trusts no client and cannot be improved by deleting anything locally. `--fail-under` exits non-zero, for a required pull request check.
 - Coverage is stated as install health rather than anybody's performance, and as a floor rather than a total: an agent that signs nothing is invisible to it, while a session is recorded from the hook whether or not the agent signs.
