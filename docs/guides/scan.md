@@ -39,6 +39,31 @@ The count is a floor, not a total. An agent that leaves no trailer in the commit
 
 It also says nothing about whether those commits were correct. A commit that changed an authorization file with nobody's judgment attached may have been completely right. The scan tells you that the judgment was not recorded, not that it was absent.
 
+## Is the record complete?
+
+```sh
+gitvow coverage                      # this repository, last 90 days
+gitvow coverage --who                # which machines still need configuring
+gitvow coverage --fail-under 90      # exit 1 below 90 per cent; for CI
+```
+
+A commit that carries an agent's signature but no `Gitvow-Session` trailer is a coverage hole: that machine was never configured, or its hooks were disabled for that command. Coverage is computed from history alone, so it trusts no client and cannot be improved by deleting anything locally.
+
+```
+your-service · coverage over the last 90 days
+
+    42  commits carry an agent's signature
+    38  of those are recorded by gitvow          90%
+     4  are not
+
+  Uncovered commits, newest first:
+    a1b2c3d  09-02  ci: bump the workflow  (Claude)
+```
+
+Two things this is not. It is not a measure of anybody's performance: an uncovered commit means a machine needs configuring, and `--who` exists to find that machine, not to rank the person. And it is a floor, not a total, for the same reason the scan is: an agent that signs nothing at all is invisible to it. A session is recorded from the hook whether or not the agent signs its commits, so coverage understates a healthy install and never overstates it.
+
+**Why this matters more than deletion.** The record lives inside your commits, so it is exactly as durable as the code it describes. What a laptop can do is never produce a record in the first place, and coverage is how you see that from the outside. Put `gitvow coverage --fail-under` in the pull request check and the hole closes.
+
 ## Options
 
 ```sh

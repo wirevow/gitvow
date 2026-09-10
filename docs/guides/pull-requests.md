@@ -50,6 +50,7 @@ Inputs, all optional:
 | `require-notes` | `true` | fail when a trailered commit has no note |
 | `comment` | `true` | post or update the pull request comment |
 | `version` | the action's own tag | gitvow version to install |
+| `fail-under` | none | fail when `gitvow coverage` is below this percentage: agent-signed commits in the range that carry no session |
 | `pr-description` | `always` | write the decisions trailer block into the pull request description so a squash commit inherits it; `never` to skip; `auto` writes it only when the workflow token can read the merge settings and the repository is squash-only, which default tokens cannot |
 
 ## Decisions on the pull request

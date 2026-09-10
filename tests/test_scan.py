@@ -95,3 +95,58 @@ def test_cli_scan_text_and_json(repo, home, monkeypatch, capsys):
     assert d["repo"] == "repo" and d["agent_commits"] == 1 and d["window"] == "1y"
     assert cli.main(["scan", "/nonexistent-path-for-scan"]) == 1
     assert "not a git repository" in capsys.readouterr().err
+
+
+def test_coverage_counts_agent_signed_commits_without_a_session(repo, home):
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "covered\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1\nGitvow-Step: 1")
+    _commit(repo, "b.txt", "also covered\n\nCo-authored-by: Cursor <x@y>\nGitvow-Session: s2")
+    _commit(repo, "c.txt", "not covered\n\nCo-authored-by: Claude <x@y>")
+    _commit(repo, "d.txt", "a person, so not counted at all")
+    d = coverage(str(repo))
+    assert d["signed"] == 3 and d["covered"] == 2 and d["uncovered"] == 1
+    assert d["coverage"] == round(2 / 3, 3)
+    assert [h["subject"] for h in d["holes"]] == ["not covered"]
+    assert d["holes"][0]["agents"] == ["Claude"] and d["by_author"] == {"t": 1}
+    text = render_coverage(d)
+    assert "3  commits carry an agent's signature" in text
+    assert "2  of those are recorded by gitvow" in text and "67%" in text
+    assert "not covered" in text and "gitvow install --user --check" in text
+    assert "Coverage is a floor." in text
+    assert "Install health, not performance" not in text  # only with --who
+    assert "Install health, not performance" in render_coverage(d, who=True)
+
+
+def test_full_coverage_says_nothing_to_fix(repo, home):
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "one\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1")
+    d = coverage(str(repo))
+    assert d["uncovered"] == 0 and d["coverage"] == 1.0
+    assert "Nothing to fix." in render_coverage(d)
+
+
+def test_coverage_with_no_agent_commits(repo, home):
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "a person wrote this")
+    d = coverage(str(repo))
+    assert d["signed"] == 0 and d["coverage"] is None
+    assert "nothing to cover" in render_coverage(d)
+
+
+def test_cli_coverage_fail_under_is_a_ci_gate(repo, home, monkeypatch, capsys):
+    _commit(repo, "a.txt", "covered\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1")
+    _commit(repo, "b.txt", "not covered\n\nCo-authored-by: Claude <x@y>")
+    monkeypatch.chdir(repo)
+    assert cli.main(["coverage"]) == 0  # reporting alone never fails
+    capsys.readouterr()
+    assert cli.main(["coverage", "--fail-under", "90"]) == 1
+    assert "is below the required 90" in capsys.readouterr().err
+    assert cli.main(["coverage", "--fail-under", "50"]) == 0
+    capsys.readouterr()
+    assert cli.main(["coverage", "--json"]) == 0
+    d = json.loads(capsys.readouterr().out)
+    assert d["coverage"] == 0.5 and d["holes"][0]["subject"] == "not covered"
+    assert cli.main(["coverage", "/nonexistent-path-for-coverage"]) == 1

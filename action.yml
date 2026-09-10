@@ -11,6 +11,9 @@ inputs:
   version:
     description: gitvow version to install (pip specifier). Defaults to the action's own tag.
     default: ""
+  fail-under:
+    description: Fail when gitvow coverage for the pull request's range is below this percentage. Empty disables the check.
+    default: ""
   pr-description:
     description: Write the decisions trailer block into the pull request description so a squash commit inherits it. always (default; harmless where merges keep the original commits), never, or auto (only when the workflow token can read the merge settings and the repository is squash-only; most tokens cannot).
     default: "always"
@@ -42,6 +45,15 @@ runs:
         rc=$?
         set -e
         gitvow report --base "$base" --head "$head" --decisions-summary > gitvow-decisions.txt || true
+        if [ -n "${{ inputs.fail-under }}" ]; then
+          set +e
+          gitvow coverage --since 1y --fail-under "${{ inputs.fail-under }}" > gitvow-coverage.txt
+          crc=$?
+          set -e
+          cat gitvow-coverage.txt >> "$GITHUB_STEP_SUMMARY"
+          cat gitvow-coverage.txt
+          [ $crc -ne 0 ] && rc=$crc
+        fi
         cat gitvow-report.md >> "$GITHUB_STEP_SUMMARY"
         cat gitvow-report.md
         echo "rc=$rc" >> "$GITHUB_OUTPUT"

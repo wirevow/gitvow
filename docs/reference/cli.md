@@ -10,6 +10,8 @@ gitvow check -- <command...>                              dry-run the policy aga
 gitvow check --path <file>                                dry-run against an edited path
 gitvow check --mcp <tool-name>                            dry-run against an MCP tool name
 gitvow scan [repo] [--since 90d|6m|1y|DATE] [--json]  read an existing repository's git history: how much an agent wrote, how much of it touched a gated file, and how much records who agreed; needs no install and writes nothing
+gitvow coverage [repo] [--since 90d] [--who] [--fail-under N] [--json]
+                                                          is the record complete? agent-signed commits carrying no session trailer, computed from history so it trusts no client; exit 1 below --fail-under
 gitvow status [--json]                                    check the install is live: hooks reachable from the agent, policy and redaction rules load, git hooks in place, plus each agent's manual steps; exit 1 if anything is failing
 gitvow show [commit]                                      print a commit's message, trailers and session note (default HEAD)
 gitvow decisions [--json]                                 the card: open findings in this repository, numbered, with evidence and what the record proposes

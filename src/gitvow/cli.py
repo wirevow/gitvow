@@ -191,6 +191,25 @@ def cmd_scan(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_coverage(a: argparse.Namespace) -> int:
+    """Is the record complete for this repository? Computed from history, trusting no client."""
+    from .scan import coverage, render_coverage
+
+    try:
+        d = coverage(os.path.abspath(a.repo), a.since)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(json.dumps(d, indent=1) if a.json else render_coverage(d, a.who), end="" if not a.json else "\n")
+    if a.fail_under is not None and d["coverage"] is not None and d["coverage"] * 100 < a.fail_under:
+        print(
+            f"coverage {round(d['coverage'] * 100)}% is below the required {a.fail_under}%",
+            file=sys.stderr,
+        )
+        return 1
+    return 0
+
+
 def cmd_status(a: argparse.Namespace) -> int:
     """Is the record actually being written here? Reports what is missing and the line that fixes it."""
     from .status import build, render
@@ -565,6 +584,15 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--since", default="90d", help="90d, 6m, 1y or a date; default 90d")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_scan)
+    s = sub.add_parser(
+        "coverage", help="is the record complete? agent-signed commits that carry no session, from history"
+    )
+    s.add_argument("repo", nargs="?", default=".")
+    s.add_argument("--since", default="90d")
+    s.add_argument("--who", action="store_true", help="list commit authors with uncovered commits, to fix installs")
+    s.add_argument("--fail-under", type=float, help="exit 1 when coverage is below this percentage; for CI")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_coverage)
     s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_status)

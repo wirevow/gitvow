@@ -2,6 +2,11 @@
 
 ## Unreleased
 
+## 0.15.0 — 2026-09-10
+- `gitvow coverage [--who] [--fail-under N]`: is the record complete? A commit carrying an agent's signature but no `Gitvow-Session` trailer is a coverage hole, meaning that machine was never configured or its hooks were disabled for that command. Computed from history alone, so it trusts no client and cannot be improved by deleting anything locally. `--fail-under` exits non-zero, for a required pull request check.
+- Coverage is stated as install health rather than anybody's performance, and as a floor rather than a total: an agent that signs nothing is invisible to it, while a session is recorded from the hook whether or not the agent signs.
+- Documented why this matters more than deletion. A trailer lives inside the commit, so the record is exactly as durable as the code it describes; what a machine can do is fail to produce a record at all, and coverage is how that becomes visible from outside.
+
 ## 0.14.0 — 2026-09-10
 - `gitvow scan [repo] [--since] [--json]`: reads `git log` in any repository, installed or not, and reports how much of the recent history carries an agent's signature, how much of that touched a file the policy calls consequential, and how much of it records who agreed. It writes nothing and needs no configuration, so it can be the first thing anyone runs. What counts as consequential comes from your own `path_confirm` rules where you have them, and the output names which policy it used.
 - Agent signatures recognised from co-author trailers for Claude Code, Cursor, Copilot, Codex, Gemini, Devin, Aider, Factory and Windsurf, the Claude Code generated-with line, and gitvow's own session trailer. The output states plainly that the count is a floor, since an agent that leaves no trailer is invisible to a history scan, and that gitvow does not rely on trailers once installed.

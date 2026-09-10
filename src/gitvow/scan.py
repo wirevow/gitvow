@@ -226,3 +226,104 @@ def render(d: dict[str, Any]) -> str:
     lines.append("")
     lines.append("  Next: pipx install gitvow && gitvow install --user --check")
     return "\n".join(lines) + "\n"
+
+
+def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
+    """Is the record complete? Computed from the remote's own history, trusting no client.
+
+    A commit that carries an agent's signature but no `Gitvow-Session` trailer is a coverage hole: that
+    machine was not configured, or its hooks were disabled. This is install health, never a person's
+    performance, and it is a floor: an agent that signs nothing at all is invisible here.
+    """
+    if not os.path.isdir(cwd):
+        raise ValueError(f"not a git repository: {cwd}")
+    try:
+        top = toplevel(cwd) or cwd
+    except OSError as e:
+        raise ValueError(f"not a git repository: {cwd}") from e
+    args = [
+        "log",
+        f"-{MAX_COMMITS}",
+        f"--since={_since_date(since)}",
+        "--no-merges",
+        "--date=short",
+        "--format=%x01%H%x00%ad%x00%an%x00%s%x00%B%x02",
+    ]
+    try:
+        rc, out, err = git(args, top)
+    except OSError as e:
+        raise ValueError(f"not a git repository: {cwd}") from e
+    if rc != 0:
+        raise ValueError(err or f"not a git repository: {cwd}")
+    signed = 0
+    covered = 0
+    holes: list[dict[str, Any]] = []
+    by_author: dict[str, int] = {}
+    for rec in out.split("\x01"):
+        if not rec.strip():
+            continue
+        head, _, _ = rec.partition("\x02")
+        parts = head.split("\x00")
+        if len(parts) < 5:
+            continue
+        sha, date, author, subject, body = parts[0], parts[1], parts[2], parts[3], parts[4]
+        agents = sorted({name for name, rx in COMPILED if rx.search(body)})
+        if not agents:
+            continue
+        signed += 1
+        if SESSION_RE.search(body):
+            covered += 1
+            continue
+        holes.append({"sha": sha[:7], "date": date, "author": author, "subject": subject[:60], "agents": agents})
+        by_author[author] = by_author.get(author, 0) + 1
+    return {
+        "repo": os.path.basename(top),
+        "since": _since_date(since),
+        "window": since,
+        "signed": signed,
+        "covered": covered,
+        "uncovered": signed - covered,
+        "coverage": round(covered / signed, 3) if signed else None,
+        "holes": holes[:50],
+        "by_author": dict(sorted(by_author.items(), key=lambda kv: -kv[1])),
+    }
+
+
+def render_coverage(d: dict[str, Any], who: bool = False) -> str:
+    lines = [f"{d['repo']} · coverage over {_window_words(d['window'])}", ""]
+    if not d["signed"]:
+        lines.append("  no commits carry an agent's signature in this window, so there is nothing to cover.")
+        lines.append("")
+        lines.append("  This is a floor, not a total: an agent that signs nothing is invisible to it.")
+        return "\n".join(lines) + "\n"
+    pct = round(100 * d["coverage"])
+    lines.append(f"  {d['signed']:>4}  commits carry an agent's signature")
+    lines.append(f"  {d['covered']:>4}  of those are recorded by gitvow{'':10}{pct}%")
+    lines.append(f"  {d['uncovered']:>4}  are not")
+    lines.append("")
+    if not d["uncovered"]:
+        lines.append("  Every agent-signed commit in this window carries a session. Nothing to fix.")
+    else:
+        lines.append("  Uncovered commits, newest first:")
+        for h in d["holes"][:12]:
+            lines.append(f"    {h['sha']}  {h['date'][5:]}  {h['subject']}  ({', '.join(h['agents'])})")
+        if d["uncovered"] > 12:
+            lines.append(f"    … and {d['uncovered'] - 12} more")
+        if who and d["by_author"]:
+            lines.append("")
+            lines.append("  Machines to configure, by commit author. Install health, not performance:")
+            for a, n in list(d["by_author"].items())[:10]:
+                lines.append(f"    {a}  ({n} uncovered)")
+        lines.append("")
+        lines.append("  Fix: `gitvow install --user --check` on the machine that made these, then `gitvow status`.")
+    lines.append("")
+    lines.append("  Coverage is a floor. An agent that leaves no signature at all is invisible to it, and")
+    lines.append("  a session is recorded from the hook regardless of whether the agent signs its commits.")
+    return "\n".join(lines) + "\n"
+
+
+def _window_words(window: str) -> str:
+    human = {"d": "days", "w": "weeks", "m": "months", "y": "years"}
+    if re.fullmatch(r"\d+[dwmy]", window or ""):
+        return f"the last {window[:-1]} {human[window[-1]]}"
+    return f"since {window}"
