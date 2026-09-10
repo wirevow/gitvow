@@ -1,7 +1,7 @@
 # Sessions, steps and notes
 
 ## Session
-One Claude Code conversation, identified by the session id Claude Code assigns. gitvow records it in the repository's `.git` directory when the session starts, so git hooks can see it. It never enters the working tree.
+One conversation with an agent, identified by the session id that agent assigns. gitvow records it in the repository's `.git` directory when the session starts, so git hooks can see it. It never enters the working tree.
 
 ## Step
 A counted commit within a session. The first commit an agent makes in a session is step 1, the next step 2. The number lets you order a session's commits without looking at timestamps, and lets a reviewer see how far into a session a change was made.

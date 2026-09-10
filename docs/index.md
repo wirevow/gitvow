@@ -30,4 +30,4 @@ It is not a review tool, a chat UI or a hosted product. It is the layer those th
 
 ## Supported agents
 
-Claude Code, verified in real sessions throughout. Codex CLI, Gemini CLI, Cursor, Copilot CLI and Factory through [adapters](guides/other-agents.md) built against each vendor's documented hook contract and awaiting real-session verification by users of those agents.
+Claude Code, Codex CLI and Cursor, verified in real sessions end to end: the gate collects a finding, the card refuses the commit, a person's answer becomes trailers, and the note carries the decision and attribution. Gemini CLI, Copilot CLI and Factory through [adapters](guides/other-agents.md) built against each vendor's documented hook contract and awaiting real-session verification by users of those agents.

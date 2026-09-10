@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+## 0.13.2 — 2026-09-10
+- Documentation caught up with the last four releases. The quick start was still Claude-Code-only, told you to run an install that no longer behaves that way, and printed a self-check from before decisions existed. It now covers agent detection, `--check`, `gitvow status`, and what a decision card actually looks like at commit time, with the current eighteen checks.
+- The agents guide names which adapters are verified in a real session and which are built from vendor documentation alone, per agent, in the table rather than in a paragraph at the end.
+- Added the trap desktop agents fall into: Cursor does not inherit your terminal's PATH, so a per-repository install's bare command often cannot be found, and because its hooks are fail-closed Cursor blocks the tool instead of running ungated.
+- The install guide now documents four git hooks rather than one, agent detection, staleness after an upgrade, and points at `gitvow status` instead of a grep for diagnosing silent hooks.
+
 ## 0.13.1 — 2026-09-10
 - `gitvow install` with no `--agent` now finds every agent on the machine (by configuration directory, application path or command) and configures all of them, printing what it found. Forgetting a flag no longer leaves an agent silently ungated. `--check` runs the self-check straight afterwards, so the first thing a new user sees is the gate working in their own terminal.
 - `gitvow uninstall` with no `--agent` removes gitvow from every agent configured in that scope, leaving any hooks of your own in place. Previously both commands silently assumed Claude Code.

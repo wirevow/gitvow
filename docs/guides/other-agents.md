@@ -1,15 +1,15 @@
-# Use gitvow with Codex CLI, Gemini CLI and Cursor
+# Use gitvow with Codex, Cursor and other agents
 
 gitvow's record and gate are agent-neutral: trailers, notes, snapshots and the ledger live in git and in your home directory, and the policy is the same file. What differs per agent is the hook contract, so gitvow ships one adapter per agent that translates each agent's payload into the shape the hooks understand and answers in the form the agent expects.
 
-| Agent | Hooks configured in | Events used | How a block is delivered |
-|---|---|---|---|
-| Claude Code | `~/.claude/settings.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
-| Codex CLI | `~/.codex/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
-| Gemini CLI | `~/.gemini/settings.json` | SessionStart, BeforeTool, AfterTool, SessionEnd | exit 2, reason on stderr |
-| Cursor | `~/.cursor/hooks.json` | sessionStart, preToolUse, beforeShellExecution, afterFileEdit, stop | JSON `permission: deny` or `ask` with `agent_message` |
-| Copilot CLI | `~/.copilot/hooks/gitvow.json` | sessionStart, preToolUse, postToolUse, sessionEnd | JSON `permissionDecision: deny` or `ask` with `permissionDecisionReason` |
-| Factory Droid | `~/.factory/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
+| Agent | Verified | Hooks configured in | Events used | How a block is delivered |
+|---|---|---|---|---|
+| Claude Code | real session | `~/.claude/settings.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
+| Codex CLI | real session | `~/.codex/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
+| Gemini CLI | vendor docs only | `~/.gemini/settings.json` | SessionStart, BeforeTool, AfterTool, SessionEnd | exit 2, reason on stderr |
+| Cursor | real session | `~/.cursor/hooks.json` | sessionStart, preToolUse, beforeShellExecution, afterFileEdit, stop | JSON `permission: deny` or `ask` with `agent_message` |
+| Copilot CLI | vendor docs only | `~/.copilot/hooks/gitvow.json` | sessionStart, preToolUse, postToolUse, sessionEnd | JSON `permissionDecision: deny` or `ask` with `permissionDecisionReason` |
+| Factory Droid | vendor docs only | `~/.factory/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
 
 ## Install
 
@@ -30,6 +30,10 @@ gitvow status
 ```
 
 It checks that the hook command the agent will run actually resolves, that the policy and redaction rules load, that the git hooks are in place, and it repeats whatever each agent still needs by hand. Exit code 1 means something is failing. Run it inside a repository.
+
+### One thing to know about desktop agents
+
+Cursor runs as a desktop application, so it does not inherit the PATH of your terminal. A per-repository install records the bare command `gitvow`, which a desktop agent frequently cannot find; the hook then fails, and because gitvow installs Cursor's hooks fail-closed, Cursor blocks the tool and reports that the hook returned no output. Install per user as well, so the absolute path is recorded, and run `gitvow status`, which resolves the exact command each agent will run and says which of them depends on PATH.
 
 ### Two extra steps for Codex CLI
 

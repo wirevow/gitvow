@@ -1,6 +1,6 @@
 # The gate
 
-Before Claude Code runs a tool, it asks gitvow. gitvow answers in one of three ways.
+Before your agent runs a tool, it asks gitvow. gitvow answers in one of three ways. The same policy and the same answers apply to every [supported agent](../guides/other-agents.md); only the way a refusal is delivered differs.
 
 | Outcome | What happens | Example |
 |---|---|---|
@@ -27,4 +27,4 @@ If the policy file is missing or invalid, every tool call is refused until it is
 `<repo>/.gitvow/policy.json` if present, else `~/.gitvow/policy.json`, else the package default. A repository can therefore tighten or override a user's defaults, and the repository's policy can be reviewed in a pull request like any other change.
 
 ## What the gate cannot see
-It inspects tool calls made through Claude Code. A Bash command is inspected as text; a process it spawns is not seen separately. Path checks use the path, not the diff. Regular expressions are a floor; providers and the classifier are how you raise it. See [Write a policy](../guides/policy.md).
+It inspects tool calls the agent makes through its hooks. A Bash command is inspected as text; a process it spawns is not seen separately. Path checks use the path, not the diff. Regular expressions are a floor; providers and the classifier are how you raise it. See [Write a policy](../guides/policy.md).

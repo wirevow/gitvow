@@ -4,7 +4,7 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 
 | Field | Type | Meaning |
 |---|---|---|
-| `session_id` | string | Claude Code session id |
+| `session_id` | string | the session id the agent assigns to the conversation |
 | `step` | int | commit number within the session |
 | `committed_at` | string | local time the note was written |
 | `assistant_turns_so_far` | int | assistant messages in the transcript at commit time |
