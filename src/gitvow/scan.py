@@ -247,7 +247,7 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
         f"--since={_since_date(since)}",
         "--no-merges",
         "--date=short",
-        "--format=%x01%H%x00%ad%x00%an%x00%s%x00%B%x02",
+        "--format=%x01%H%x00%ad%x00%an%x00%s%x00%ct%x00%B%x02",
     ]
     try:
         rc, out, err = git(args, top)
@@ -264,9 +264,9 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
             continue
         head, _, _ = rec.partition("\x02")
         parts = head.split("\x00")
-        if len(parts) < 5:
+        if len(parts) < 6:
             continue
-        sha, date, author, subject, body = parts[0], parts[1], parts[2], parts[3], parts[4]
+        sha, date, author, subject, ct, body = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
         agents = sorted({name for name, rx in COMPILED if rx.search(body)})
         if not agents:
             continue
@@ -274,7 +274,16 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
         if SESSION_RE.search(body):
             covered += 1
             continue
-        holes.append({"sha": sha[:7], "date": date, "author": author, "subject": subject[:60], "agents": agents})
+        holes.append(
+            {
+                "sha": sha[:7],
+                "date": date,
+                "author": author,
+                "subject": subject[:60],
+                "agents": agents,
+                "at": int(ct) if ct.isdigit() else 0,
+            }
+        )
         by_author[author] = by_author.get(author, 0) + 1
     return {
         "repo": os.path.basename(top),

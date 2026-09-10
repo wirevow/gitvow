@@ -1,6 +1,7 @@
 import json
 import os
 import subprocess
+import time
 from pathlib import Path
 
 from gitvow import cli
@@ -129,17 +130,26 @@ def test_an_old_install_is_reported_as_stale(repo, home, monkeypatch):
     assert c and c[0] == "fail" and "Stop" in c[1]
 
 
-def _signed_commit(repo, name, body):
+def _signed_commit(repo, name, body, offset=None):
+    """`offset` in seconds places the commit unambiguously before or after an install.
+
+    Both git's --since and a commit timestamp have one-second granularity, so a test that commits in the
+    same second as the install cannot say which came first.
+    """
     (repo / name).write_text("x\n")
+    env = dict(os.environ)
+    if offset is not None:
+        stamp = time.strftime("%Y-%m-%dT%H:%M:%S", time.localtime(time.time() + offset))
+        env["GIT_AUTHOR_DATE"] = env["GIT_COMMITTER_DATE"] = stamp
     subprocess.run(["git", "add", "-A"], cwd=repo, check=True, capture_output=True)
-    subprocess.run(["git", "commit", "-qm", body], cwd=repo, check=True, capture_output=True)
+    subprocess.run(["git", "commit", "-qm", body], cwd=repo, check=True, capture_output=True, env=env)
 
 
 def test_an_agent_commit_since_the_install_with_no_session_fails(repo, home, monkeypatch):
     """The miss this check exists for: hooks are read at start-up, so a session already open is ungated."""
     monkeypatch.chdir(repo)
     install_repo(str(repo))
-    _signed_commit(repo, "one.txt", "made by an ungated session\n\nCo-authored-by: Claude <x@y>")
+    _signed_commit(repo, "one.txt", "made by an ungated session\n\nCo-authored-by: Claude <x@y>", offset=3600)
     c = _first(build(str(repo), str(home)), "since the install")
     assert c and c[0] == "fail"
     assert "1 agent commit" in c[1] and "carries no session" in c[1]
@@ -150,7 +160,12 @@ def test_an_agent_commit_since_the_install_with_no_session_fails(repo, home, mon
 def test_a_recorded_commit_since_the_install_is_silent(repo, home, monkeypatch):
     monkeypatch.chdir(repo)
     install_repo(str(repo))
-    _signed_commit(repo, "one.txt", "recorded\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1\nGitvow-Step: 1")
+    _signed_commit(
+        repo,
+        "one.txt",
+        "recorded\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1\nGitvow-Step: 1",
+        offset=3600,
+    )
     checks = build(str(repo), str(home))
     assert _first(checks, "since the install") is None
     assert not [c for c in checks if c[0] == "fail"], checks
@@ -159,7 +174,7 @@ def test_a_recorded_commit_since_the_install_is_silent(repo, home, monkeypatch):
 def test_commits_before_the_install_are_not_blamed_on_it(repo, home, monkeypatch):
     """Existing history is uncovered by construction; only what happens after the install is a signal."""
     monkeypatch.chdir(repo)
-    _signed_commit(repo, "old.txt", "before gitvow existed here\n\nCo-authored-by: Claude <x@y>")
+    _signed_commit(repo, "old.txt", "before gitvow existed here\n\nCo-authored-by: Claude <x@y>", offset=-7200)
     install_repo(str(repo))
     assert _first(build(str(repo), str(home)), "since the install") is None
 

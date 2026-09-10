@@ -2,6 +2,9 @@
 
 ## Unreleased
 
+## 0.15.2 — 2026-09-10
+- Fixed the check added in 0.15.1: `git log --since` has one-second granularity, so a commit made in the same second as the install was blamed on it. CI caught this on every runner while the machine it was written on was too slow to hit it. Each uncovered commit is now compared against the install using its own timestamp, which `gitvow coverage --json` also exposes as `at`.
+
 ## 0.15.1 — 2026-09-10
 - Fixed a real hole found by installing gitvow in its own repository: every agent except Cursor reads its hook configuration once at session start, so installing while a session is open leaves that session ungated and silent, and `status` cheerfully reported the install as healthy. `install` now says so per agent, and `status` tests for the consequence rather than repeating the advice: an agent-signed commit made after the install that carries no session is a failure, with the instruction to restart. Commits from before the install are ignored, since they are uncovered by construction.
 - gitvow now gates its own repository, configured for all six supported agents because contributors use different ones, with a workflow that publishes `scan` and `coverage` on every push and the pull request action running on itself.
