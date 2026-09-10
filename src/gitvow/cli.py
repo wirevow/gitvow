@@ -178,6 +178,19 @@ def cmd_check(a: argparse.Namespace) -> int:
     return 2 if d.blocks else 0
 
 
+def cmd_scan(a: argparse.Namespace) -> int:
+    """Read an existing repository's history: how much an agent wrote, and how much of it records who agreed."""
+    from .scan import build, render
+
+    try:
+        d = build(os.path.abspath(a.repo), a.since)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(json.dumps(d, indent=1) if a.json else render(d), end="" if not a.json else "\n")
+    return 0
+
+
 def cmd_status(a: argparse.Namespace) -> int:
     """Is the record actually being written here? Reports what is missing and the line that fixes it."""
     from .status import build, render
@@ -545,6 +558,13 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--target", help="branch the change is going to; scoped decisions not covering it are reopened")
     s.add_argument("--decisions-summary", action="store_true", help="print only the trailer block for a PR description")
     s.set_defaults(f=cmd_report)
+    s = sub.add_parser(
+        "scan", help="read an existing repository's history: how much an agent wrote, and who agreed to it"
+    )
+    s.add_argument("repo", nargs="?", default=".")
+    s.add_argument("--since", default="90d", help="90d, 6m, 1y or a date; default 90d")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_scan)
     s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_status)

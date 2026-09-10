@@ -27,6 +27,7 @@ nav:
       - Providers, policy from facts: concepts/providers.md
       - Decisions, who agreed: concepts/decisions.md
   - Guides:
+      - Look before installing: guides/scan.md
       - Install per user or per repo: guides/install.md
       - Write a policy: guides/policy.md
       - Read a commit's session: guides/reading.md

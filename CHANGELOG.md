@@ -2,6 +2,10 @@
 
 ## Unreleased
 
+## 0.14.0 — 2026-09-10
+- `gitvow scan [repo] [--since] [--json]`: reads `git log` in any repository, installed or not, and reports how much of the recent history carries an agent's signature, how much of that touched a file the policy calls consequential, and how much of it records who agreed. It writes nothing and needs no configuration, so it can be the first thing anyone runs. What counts as consequential comes from your own `path_confirm` rules where you have them, and the output names which policy it used.
+- Agent signatures recognised from co-author trailers for Claude Code, Cursor, Copilot, Codex, Gemini, Devin, Aider, Factory and Windsurf, the Claude Code generated-with line, and gitvow's own session trailer. The output states plainly that the count is a floor, since an agent that leaves no trailer is invisible to a history scan, and that gitvow does not rely on trailers once installed.
+
 ## 0.13.2 — 2026-09-10
 - Documentation caught up with the last four releases. The quick start was still Claude-Code-only, told you to run an install that no longer behaves that way, and printed a self-check from before decisions existed. It now covers agent detection, `--check`, `gitvow status`, and what a decision card actually looks like at commit time, with the current eighteen checks.
 - The agents guide names which adapters are verified in a real session and which are built from vendor documentation alone, per agent, in the table rather than in a paragraph at the end.

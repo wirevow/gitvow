@@ -13,6 +13,7 @@
 No runtime dependencies. Standard-library Python and git. One command to install, one to remove.
 
 ```sh
+pipx run gitvow scan            # look at a repository first: nothing installed, nothing written
 pip install gitvow
 gitvow install --user --check   # configures every agent found here, then proves the gate works
 gitvow status                   # is the record actually being written in this repository?

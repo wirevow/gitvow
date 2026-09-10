@@ -2,6 +2,14 @@
 
 Requirements: git, Python 3.9 or newer, and at least one coding agent. Claude Code, Codex CLI and Cursor are verified in real sessions; Gemini CLI, Copilot CLI and Factory have adapters awaiting a first real session. See [Use gitvow with other agents](guides/other-agents.md).
 
+## Look first
+
+```sh
+pipx run gitvow scan
+```
+
+Reads `git log` in any repository and tells you how much of the recent history an agent wrote, how much of that touched a file your policy calls consequential, and how much of it records who agreed. Nothing is installed and nothing is written. See [Look before installing](guides/scan.md).
+
 ## Install for yourself
 
 ```sh
