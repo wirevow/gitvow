@@ -9,3 +9,7 @@ build/
 *.egg-info/
 site/
 .DS_Store
+
+# gitvow's own local state in this repository: machine-specific, never shared
+.git/gitvow-session.json
+.git/gitvow-hooks.log

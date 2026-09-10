@@ -1,0 +1,10 @@
+#!/bin/sh
+# gitvow: push session notes (refs/notes/gitvow/*) to the same remote whenever a branch is pushed.
+# The inner push re-enters this hook; GITVOW_PUSHING_NOTES stops the recursion.
+REMOTE="$1"
+if [ -z "$GITVOW_PUSHING_NOTES" ] && [ -n "$REMOTE" ] && git for-each-ref --count=1 refs/notes/gitvow/ | grep -q .; then
+  GITVOW_PUSHING_NOTES=1 git push --quiet "$REMOTE" 'refs/notes/gitvow/*:refs/notes/gitvow/*' 2>/dev/null || true
+fi
+GD="$(git rev-parse --git-dir)"; SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/pre-push" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/pre-push" "$@"
+exit 0

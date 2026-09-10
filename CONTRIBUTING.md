@@ -31,3 +31,20 @@ Bump `version` in `pyproject.toml`, move the Unreleased section of `CHANGELOG.md
 
 ## Code of conduct
 Be kind, be specific, assume good intent. Report conduct issues to the maintainers listed in `pyproject.toml`.
+
+## This repository gates itself
+
+gitvow is installed here, for every agent it supports, so the tool is exercised on its own history. After cloning:
+
+```sh
+git config core.hooksPath .gitvow/git-hooks
+```
+
+That is all. From then on, an agent session in this repository passes the same gate everyone else gets: destructive commands are refused, an edit to a gate-bearing path or a CI definition waits for the commit, and the commit is refused once with a card until somebody answers it. The policy is `.gitvow/policy.json` and it is reviewed in pull requests like any other change.
+
+Two honest caveats, both of which we would rather you knew than discovered:
+
+- An agent already running when you clone will not be gated until it starts a new session, because agents read their hook configuration at start-up. `gitvow status` says whether the gate is live for you.
+- Codex CLI needs its hooks trusted once with `/hooks`, and needs this repository's `.git` in `sandbox_workspace_write.writable_roots`, or it cannot commit at all. `gitvow install` prints both.
+
+`gitvow coverage` on this repository will read low for a while. The gate was installed on 10 September 2026 and everything before that is uncovered by construction, which is exactly what coverage is supposed to show.

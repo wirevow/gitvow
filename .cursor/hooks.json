@@ -1,0 +1,61 @@
+{
+  "version": 1,
+  "hooks": {
+    "sessionStart": [
+      {
+        "command": "gitvow hook --agent cursor sessionStart",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "preToolUse": [
+      {
+        "command": "gitvow hook --agent cursor preToolUse",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "beforeShellExecution": [
+      {
+        "command": "gitvow hook --agent cursor beforeShellExecution",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "beforeMCPExecution": [
+      {
+        "command": "gitvow hook --agent cursor beforeMCPExecution",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "afterFileEdit": [
+      {
+        "command": "gitvow hook --agent cursor afterFileEdit",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "afterShellExecution": [
+      {
+        "command": "gitvow hook --agent cursor afterShellExecution",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ],
+    "stop": [
+      {
+        "command": "gitvow hook --agent cursor stop",
+        "type": "command",
+        "timeout": 30,
+        "failClosed": true
+      }
+    ]
+  }
+}

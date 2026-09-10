@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent codex SessionStart",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent codex PreToolUse",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Bash|apply_patch|mcp__.*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent codex PostToolUse",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Bash|apply_patch"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent codex Stop",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

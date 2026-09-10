@@ -1,0 +1,50 @@
+name: gitvow
+
+# We run gitvow on gitvow. On a pull request the action posts the session notes and decisions and
+# checks coverage; on a push it publishes what the history currently shows, so the number is visible
+# to us every time rather than only when someone remembers to look.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {fetch-depth: 0}
+
+      - name: The record on this pull request
+        if: github.event_name == 'pull_request'
+        uses: ./
+        with:
+          version: git+https://github.com/wirevow/gitvow@main
+          require-notes: "true"
+          # No coverage floor yet: the gate was installed here on 2026-09-10, so history is
+          # mostly uncovered by construction. Raise this once a quarter of sessions are gated.
+          fail-under: ""
+
+      - uses: actions/setup-python@v7
+        if: github.event_name == 'push'
+        with: {python-version: "3.12"}
+
+      - name: What our own history shows
+        if: github.event_name == 'push'
+        run: |
+          set -euo pipefail
+          pip install -q -e .
+          {
+            echo '### gitvow scan'
+            echo '```'
+            gitvow scan --since 1y
+            echo '```'
+            echo '### gitvow coverage'
+            echo '```'
+            gitvow coverage --since 1y
+            echo '```'
+          } | tee -a "$GITHUB_STEP_SUMMARY"

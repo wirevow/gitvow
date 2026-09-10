@@ -1,0 +1,56 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "gitvow-SessionStart",
+            "type": "command",
+            "command": "gitvow hook --agent gemini SessionStart",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "BeforeTool": [
+      {
+        "matcher": "run_shell_command|write_file|replace|edit|mcp__.*",
+        "hooks": [
+          {
+            "name": "gitvow-BeforeTool",
+            "type": "command",
+            "command": "gitvow hook --agent gemini BeforeTool",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "AfterTool": [
+      {
+        "matcher": "run_shell_command|write_file|replace|edit",
+        "hooks": [
+          {
+            "name": "gitvow-AfterTool",
+            "type": "command",
+            "command": "gitvow hook --agent gemini AfterTool",
+            "timeout": 30000
+          }
+        ]
+      }
+    ],
+    "SessionEnd": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "name": "gitvow-SessionEnd",
+            "type": "command",
+            "command": "gitvow hook --agent gemini SessionEnd",
+            "timeout": 30000
+          }
+        ]
+      }
+    ]
+  }
+}

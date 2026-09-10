@@ -1,0 +1,33 @@
+#!/bin/sh
+# gitvow: append session trailers when a session is active in this repo; chain to the repo's own hook if present.
+GD="$(git rev-parse --git-dir)"; STATE="$GD/gitvow-session.json"
+if [ -f "$STATE" ]; then
+  # Trailers go only on commits the agent itself runs: the PreToolUse gate sets pending_commit when the
+  # agent invokes git commit and PostToolUse clears it. A human commit in a terminal gets no trailer.
+  SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;print(s.get('session_id') or '' if time.time()-p<300 else '')" 2>/dev/null)
+  STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
+  if [ -n "$SID" ] && ! grep -q "^Gitvow-Session:" "$1"; then printf "\nGitvow-Session: %s\nGitvow-Step: %s\n" "$SID" "$STEP" >> "$1"; fi
+  # Decisions recorded with `gitvow decide` become Gitvow-Accepted/Declined trailers; findings nobody decided
+  # become Gitvow-Open, on agent and human commits alike.
+  if ! grep -q "^Gitvow-\(Accepted\|Declined\|Open\):" "$1"; then
+    python3 - "$STATE" "$1" <<'PY' 2>/dev/null
+import json, sys
+st = json.load(open(sys.argv[1])); out = []
+for f in st.get("findings") or []:
+    d = f.get("decision")
+    if not d:
+        out.append("Gitvow-Open: " + f["finding"]); continue
+    line = ("Gitvow-Accepted: " if d["answer"] == "accepted" else "Gitvow-Declined: ") + f["finding"] + " by " + str(d["by"])
+    if d.get("scope"): line += " scope=" + d["scope"]
+    if d.get("note"): line += ": " + d["note"]
+    out.append(line)
+if out:
+    msg = open(sys.argv[2]).read()
+    with open(sys.argv[2], "a") as fh:
+        fh.write(("" if msg.endswith("\n") else "\n") + ("\n" if "Gitvow-Session:" not in msg else "") + "\n".join(out) + "\n")
+PY
+  fi
+fi
+SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/prepare-commit-msg" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/prepare-commit-msg" "$@"
+exit 0

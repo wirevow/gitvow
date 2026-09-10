@@ -1,0 +1,46 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook SessionStart"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook PreToolUse"
+          }
+        ],
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit|mcp__.*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook PostToolUse"
+          }
+        ],
+        "matcher": "Bash|Edit|Write|MultiEdit|NotebookEdit"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook Stop"
+          }
+        ]
+      }
+    ]
+  }
+}

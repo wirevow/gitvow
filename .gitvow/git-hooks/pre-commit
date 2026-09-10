@@ -1,0 +1,36 @@
+#!/bin/sh
+# gitvow: a person committing while the agent's findings are open. Default: say so and let the commit through
+# (the trailer hook records Gitvow-Open). Policy decisions.mode "strict": refuse until every finding is decided.
+GD="$(git rev-parse --git-dir)"; STATE="$GD/gitvow-session.json"; TOP="$(git rev-parse --show-toplevel)"
+if [ -f "$STATE" ]; then
+  python3 - "$STATE" "$TOP" <<'PY'
+import json, os, sys, time
+st = json.load(open(sys.argv[1]))
+open_ = [f for f in st.get("findings") or [] if not f.get("decision")]
+if not open_:
+    sys.exit(0)
+fresh = time.time() - (st.get("pending_commit") or 0) < 300  # the agent's own commit: the gate already asked
+if fresh:
+    sys.exit(0)
+mode = "open"
+for p in (os.path.join(sys.argv[2], ".gitvow", "policy.json"), os.path.expanduser("~/.gitvow/policy.json")):
+    if os.path.exists(p):
+        try:
+            mode = (json.load(open(p)).get("decisions") or {}).get("mode", "open")
+        except Exception:
+            pass
+        break
+n = len(open_)
+sys.stderr.write("gitvow: %d open finding%s from an agent session:\n" % (n, "" if n == 1 else "s"))
+for i, f in enumerate(open_, 1):
+    sys.stderr.write("  %d. %s\n     why: %s\n" % (i, f["finding"], f.get("reason", "")))
+if mode == "strict":
+    sys.stderr.write("decisions.mode is strict: record an answer with `gitvow decide <n> accept|decline`, then commit again.\n")
+    sys.exit(1)
+sys.stderr.write("recorded as Gitvow-Open on this commit; `gitvow decide` closes them.\n")
+PY
+  [ $? -ne 0 ] && exit 1
+fi
+SELF="$(cd "$(dirname "$0")" && pwd)"; REPOHOOKS="$(cd "$GD/hooks" 2>/dev/null && pwd || true)"
+[ -x "$GD/hooks/pre-commit" ] && [ "$SELF" != "$REPOHOOKS" ] && exec "$GD/hooks/pre-commit" "$@"
+exit 0

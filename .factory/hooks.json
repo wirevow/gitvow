@@ -1,0 +1,50 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent factory SessionStart",
+            "timeout": 30
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent factory PreToolUse",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Execute|Edit|Create|ApplyPatch|MultiEdit|mcp__.*"
+      }
+    ],
+    "PostToolUse": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent factory PostToolUse",
+            "timeout": 30
+          }
+        ],
+        "matcher": "Execute|Edit|Create|ApplyPatch|MultiEdit"
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "gitvow hook --agent factory Stop",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

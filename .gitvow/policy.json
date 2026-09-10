@@ -1,0 +1,91 @@
+{
+  "_doc": "Default gitvow policy. Regex (Python re) on Bash command text, edited file paths, or MCP tool names. Order: deny \u2192 confirm \u2192 allow; unmatched calls are allowed and logged. Confirm rules take 'when': 'immediate' (Bash default) or 'commit' (path default; asked on one card when the agent commits). Copy to <repo>/.gitvow/policy.json or ~/.gitvow/policy.json to customise.",
+  "bash_deny": [
+    {
+      "pattern": "\\brm\\s+-rf?\\s+(/|~|\\$HOME)(\\s|$)",
+      "reason": "recursive delete of root/home"
+    },
+    {
+      "pattern": "\\bgit\\s+push\\b.*(--force|-f\\b|\\+refs)",
+      "reason": "force push"
+    },
+    {
+      "pattern": "\\bgit\\s+(reset\\s+--hard|clean\\s+-fd|branch\\s+-D)\\b",
+      "reason": "destructive git history/worktree operation"
+    },
+    {
+      "pattern": "\\bkubectl\\s+(delete|drain|cordon)\\b",
+      "reason": "destructive kubectl"
+    },
+    {
+      "pattern": "\\b(terraform|pulumi)\\s+(destroy|apply)\\b",
+      "reason": "infrastructure mutation"
+    },
+    {
+      "pattern": "\\bDROP\\s+(TABLE|DATABASE|SCHEMA)\\b",
+      "reason": "destructive SQL"
+    },
+    {
+      "pattern": "\\baws\\s+\\S+\\s+(delete|terminate|deregister)\\S*",
+      "reason": "destructive AWS CLI"
+    },
+    {
+      "pattern": "curl[^|]*\\|\\s*(ba)?sh\\b",
+      "reason": "pipe remote script to shell"
+    }
+  ],
+  "bash_confirm": [
+    {
+      "pattern": "\\bgit\\s+push\\b",
+      "reason": "pushing to a remote"
+    },
+    {
+      "pattern": "\\bkubectl\\s+(apply|rollout|set|scale|exec)\\b",
+      "reason": "cluster mutation"
+    },
+    {
+      "pattern": "\\bhelm\\s+(install|upgrade|uninstall)\\b",
+      "reason": "helm release change"
+    },
+    {
+      "pattern": "\\bgh\\s+(pr\\s+merge|release\\s+create|repo\\s+delete)\\b",
+      "reason": "GitHub mutation"
+    }
+  ],
+  "path_confirm": [
+    {
+      "pattern": "(^|/)values/production-[a-z]+/.*\\.ya?ml$",
+      "reason": "edits production GitOps values"
+    },
+    {
+      "pattern": "(^|/)\\.github/workflows/|Jenkinsfile",
+      "reason": "edits CI definitions"
+    },
+    {
+      "pattern": "(^|/)\\.gitvow/(policy\\.json|redact-rules\\.json|hooks/|git-hooks/)|(^|/)\\.claude/settings.*\\.json",
+      "reason": "edits gitvow's own policy, redaction rules or hooks",
+      "when": "immediate"
+    },
+    {
+      "pattern": "(^|/)(auth|authz|authorization|gate|whitelist|allowlist)[^/]*\\.(java|go|py|ts|js|ya?ml)$",
+      "reason": "edits an authorization or gate-bearing file"
+    }
+  ],
+  "mcp_allow": [],
+  "mcp_deny": [
+    "mcp__.*__(delete|remove|destroy|drop)_.*"
+  ],
+  "decisions": {
+    "mode": "open",
+    "authorities": [],
+    "production_branches": ["main", "master", "production"],
+    "rule_threshold": 3,
+    "rule_decay_days": 90,
+    "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (a person's commit records Gitvow-Open for undecided findings) or strict (pre-commit refuses until gitvow decide). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
+  },
+  "llm_classifier": {
+    "enabled": false,
+    "command": "",
+    "_doc": "Optional: a command that reads the hook JSON on stdin and prints ALLOW|CONFIRM|DENY <reason>. Used only for calls not matched above."
+  }
+}
