@@ -1,0 +1,1934 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Provenance and a policy gate for AI-agent coding sessions, stored in git you already have.">
+      
+      
+      
+        <link rel="canonical" href="https://wirevow.dev/gitvow/reference/note/">
+      
+      
+        <link rel="prev" href="../hooks/">
+      
+      
+        <link rel="next" href="../policy/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Session note schema - gitvow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/wirevow.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#session-note-schema" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="gitvow" class="md-header__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../../assets/mark.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            gitvow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Session note schema
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="gitvow" class="md-nav__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../../assets/mark.svg" alt="logo">
+
+    </a>
+    gitvow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions, steps and notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What stays out of git
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Snapshots, the code as the agent left it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers, policy from facts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../concepts/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions, who agreed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Look before installing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install per user or per repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write a policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read a commit's session
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/trial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a trial and collect results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/redaction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Redaction and custom rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/pull-requests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session notes on pull requests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wire a provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Restore what the agent had
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/other-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex, Cursor and other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Let the agent ask the record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A period in one page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/cost/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What each session cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Answer the card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_5" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hook payloads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session note schema
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session note schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#attribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        attribution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decisions[]
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rule-decision-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule-decision note
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trailers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trailers
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../provider-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters for other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../adapter-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External adapter protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security and the bypass surface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#attribution" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        attribution
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        decisions[]
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-rule-decision-note" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The rule-decision note
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#trailers" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Trailers
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="session-note-schema">Session note schema</h1>
+<p>Stored under <code>refs/notes/gitvow/&lt;session-id&gt;</code> (gitvow 0.1 used the single ref <code>refs/notes/sessions</code>). First line <code>gitvow-session</code>, then JSON:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>session_id</code></td>
+<td>string</td>
+<td>the session id the agent assigns to the conversation</td>
+</tr>
+<tr>
+<td><code>step</code></td>
+<td>int</td>
+<td>commit number within the session</td>
+</tr>
+<tr>
+<td><code>committed_at</code></td>
+<td>string</td>
+<td>local time the note was written</td>
+</tr>
+<tr>
+<td><code>assistant_turns_so_far</code></td>
+<td>int</td>
+<td>assistant messages in the transcript at commit time</td>
+</tr>
+<tr>
+<td><code>tool_calls_so_far</code></td>
+<td>int</td>
+<td>tool invocations at commit time</td>
+</tr>
+<tr>
+<td><code>tools_used</code></td>
+<td>string[]</td>
+<td>distinct tool names</td>
+</tr>
+<tr>
+<td><code>last_stated_plan</code></td>
+<td>string</td>
+<td>last assistant text before the commit, redacted, at most 600 characters; read from Claude Code, Codex and Gemini CLI transcripts, empty for Cursor</td>
+</tr>
+<tr>
+<td><code>files_in_commit</code></td>
+<td>string[]</td>
+<td><code>git show --stat</code> lines, at most 50</td>
+</tr>
+<tr>
+<td><code>files_written_by_agent_this_session</code></td>
+<td>string[]</td>
+<td>files in the commit that the agent edited or wrote via tools in this session</td>
+</tr>
+<tr>
+<td><code>attribution</code></td>
+<td>object</td>
+<td>see below</td>
+</tr>
+<tr>
+<td><code>usage</code></td>
+<td>object</td>
+<td>tokens by kind, models seen, <code>estimated_cost_usd</code>, pricing table used; see <a href="../../guides/cost/">What each session cost</a></td>
+</tr>
+<tr>
+<td><code>subagents</code></td>
+<td>object</td>
+<td><code>count</code> and <code>tool_calls</code> of side conversations in the session</td>
+</tr>
+<tr>
+<td><code>snapshot</code></td>
+<td>string or null</td>
+<td>the last snapshot ref taken before this commit, e.g. <code>refs/gitvow/snapshots/&lt;session&gt;/7</code></td>
+</tr>
+<tr>
+<td><code>decisions</code></td>
+<td>object[]</td>
+<td>the findings this commit carried and how they were answered; see below</td>
+</tr>
+<tr>
+<td><code>schema</code></td>
+<td>int</td>
+<td>note schema version, currently 6</td>
+</tr>
+<tr>
+<td><code>transcript</code></td>
+<td>string</td>
+<td>always "kept local; see ledger"</td>
+</tr>
+<tr>
+<td><code>redaction</code></td>
+<td>string</td>
+<td>statement of what redaction ran</td>
+</tr>
+</tbody>
+</table>
+<h3 id="attribution"><code>attribution</code></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>files_in_commit</code></td>
+<td>int</td>
+<td>files changed by the commit</td>
+</tr>
+<tr>
+<td><code>touched_by_agent</code></td>
+<td>int</td>
+<td>of those, files the agent wrote or edited this session</td>
+</tr>
+<tr>
+<td><code>lines_added_in_commit</code></td>
+<td>int</td>
+<td>sum of added lines over all files</td>
+</tr>
+<tr>
+<td><code>lines_changed_by_human_after_agent</code></td>
+<td>int</td>
+<td>lines added or removed by a person after the agent's last write, over agent-touched files</td>
+</tr>
+<tr>
+<td><code>agent_share</code></td>
+<td>float or null</td>
+<td>share of added lines that match the agent's version; null when the commit adds no lines or no agent-written blob was recorded</td>
+</tr>
+<tr>
+<td><code>files[]</code></td>
+<td>object[]</td>
+<td>per file: <code>path</code>, <code>agent_wrote</code>, <code>lines_added_in_commit</code>, <code>human_lines_added</code>, <code>human_lines_removed</code>, <code>agent_blob</code>, <code>committed_blob</code></td>
+</tr>
+</tbody>
+</table>
+<h3 id="decisions"><code>decisions[]</code></h3>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>finding</code></td>
+<td>string</td>
+<td>the finding as it appears in the trailer, e.g. <code>route /v1/x in src/api.py</code></td>
+</tr>
+<tr>
+<td><code>kind</code></td>
+<td>string</td>
+<td><code>edit</code>, <code>route</code>, <code>route-removal</code>, <code>gate-file</code></td>
+</tr>
+<tr>
+<td><code>subject</code></td>
+<td>string</td>
+<td>the path or route</td>
+</tr>
+<tr>
+<td><code>path</code></td>
+<td>string</td>
+<td>the file the finding came from</td>
+</tr>
+<tr>
+<td><code>reason</code></td>
+<td>string</td>
+<td>the rule's reason or the provider's summary</td>
+</tr>
+<tr>
+<td><code>evidence</code></td>
+<td>string[]</td>
+<td>provider evidence, redacted, at most 8 lines</td>
+</tr>
+<tr>
+<td><code>raised</code></td>
+<td>int</td>
+<td>how many tool calls raised the same finding in the session</td>
+</tr>
+<tr>
+<td><code>answer</code></td>
+<td>string</td>
+<td><code>accepted</code>, <code>declined</code>, <code>referred</code> or <code>open</code></td>
+</tr>
+<tr>
+<td><code>by</code></td>
+<td>string or null</td>
+<td>committer identity used in the trailer: email local part or name</td>
+</tr>
+<tr>
+<td><code>authority</code></td>
+<td>string</td>
+<td><code>policy</code> (named in <code>decisions.authorities</code>), <code>commit-access</code> (no list configured), <code>none</code></td>
+</tr>
+<tr>
+<td><code>scope</code></td>
+<td>string or null</td>
+<td>environment or branch the answer is limited to. A scoped answer is an exception, so it never counts towards a proposed rule</td>
+</tr>
+<tr>
+<td><code>to</code></td>
+<td>string or null</td>
+<td>with <code>answer: referred</code>, who the question should go to; null when the person did not name anyone (schema 6)</td>
+</tr>
+<tr>
+<td><code>note</code></td>
+<td>string or null</td>
+<td>the person's reason, redacted</td>
+</tr>
+<tr>
+<td><code>decided_at</code></td>
+<td>string or null</td>
+<td>local time the answer was recorded</td>
+</tr>
+<tr>
+<td><code>human_turns_after_card</code></td>
+<td>int or null</td>
+<td>user messages in the transcript between the card and the answer; <code>0</code> means the agent answered without a person speaking</td>
+</tr>
+<tr>
+<td><code>proposed</code></td>
+<td>string or null</td>
+<td>what the record proposed on the card from earlier decisions on the same finding: <code>accept</code>, <code>decline</code> or null</td>
+</tr>
+</tbody>
+</table>
+<p>The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields. Schema 6 added <code>to</code> to <code>decisions[]</code>; a note written by an older gitvow reads the same as it always did.</p>
+<h2 id="the-rule-decision-note">The rule-decision note</h2>
+<p>Accepting or rejecting a proposed rule is itself a decision, so it is recorded the way decisions are. <code>gitvow rules accept|reject</code> writes an empty commit carrying the trailer and attaches a note under <code>refs/notes/gitvow/rules</code> — its own ref, because a rule decision is not a session. First line <code>gitvow-rule-decision</code>, then JSON:</p>
+<table>
+<thead>
+<tr>
+<th>Field</th>
+<th>Type</th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>schema</code></td>
+<td>int</td>
+<td>rule-decision note schema, currently 1</td>
+</tr>
+<tr>
+<td><code>verdict</code></td>
+<td>string</td>
+<td><code>accepted</code> or <code>rejected</code></td>
+</tr>
+<tr>
+<td><code>by</code></td>
+<td>string</td>
+<td>the authority who decided</td>
+</tr>
+<tr>
+<td><code>authority</code></td>
+<td>string</td>
+<td><code>policy</code> or <code>commit-access</code>; never <code>none</code>, because a verdict by an unnamed person is refused rather than recorded</td>
+</tr>
+<tr>
+<td><code>reason</code></td>
+<td>string or null</td>
+<td>the person's reason, redacted</td>
+</tr>
+<tr>
+<td><code>decided_at</code></td>
+<td>string</td>
+<td>local time the verdict was recorded</td>
+</tr>
+<tr>
+<td><code>threshold</code></td>
+<td>int</td>
+<td><code>decisions.rule_threshold</code> in force when the verdict was made</td>
+</tr>
+<tr>
+<td><code>rules[]</code></td>
+<td>object[]</td>
+<td>one per proposal in this verdict: <code>finding</code>, <code>kind</code>, <code>answer</code>, <code>count</code>, <code>first</code>, <code>last</code>, <code>by[]</code>, <code>evidence[]</code>, <code>exceptions</code>, <code>exception_scopes[]</code>, <code>expires</code></td>
+</tr>
+</tbody>
+</table>
+<p><code>rules[].evidence[]</code> is the run the proposal rested on, oldest first, at most 8 entries of <code>date</code>, <code>by</code>, <code>answer</code> and <code>sha</code>. It is stored at the moment of the verdict so the record says not only that a rule was accepted but what was in front of the person who accepted it.</p>
+<h2 id="trailers">Trailers</h2>
+<p><div class="highlight"><pre><span></span><code>Gitvow-Session: &lt;session id&gt;
+Gitvow-Step: &lt;int&gt;
+Gitvow-Accepted: &lt;finding&gt; by &lt;person&gt;[ scope=&lt;scope&gt;][: &lt;reason&gt;]
+Gitvow-Declined: &lt;finding&gt; by &lt;person&gt;[ scope=&lt;scope&gt;][: &lt;reason&gt;]
+Gitvow-Referred: &lt;finding&gt; by &lt;person&gt;[ to=&lt;person-or-team&gt;][: &lt;reason&gt;]
+Gitvow-Open: &lt;finding&gt;
+Gitvow-Revisits: &lt;commit&gt;
+Gitvow-Rule-Accepted: &lt;finding&gt; by &lt;person&gt;[ answer=&lt;accepted|declined&gt;][: &lt;reason&gt;]
+Gitvow-Rule-Rejected: &lt;finding&gt; by &lt;person&gt;[ answer=&lt;accepted|declined&gt;][: &lt;reason&gt;]
+</code></pre></div>
+Added by <code>prepare-commit-msg</code> when <code>.git/gitvow-session.json</code> holds a session id and a <code>pending_commit</code> timestamp younger than five minutes, which the PreToolUse gate sets when the agent runs <code>git commit</code> and PostToolUse clears afterwards. Idempotent: a message that already has <code>Gitvow-Session:</code> is left alone. A note is written only when the commit at HEAD carries the trailer.</p>
+<p><code>Gitvow-Accepted</code>, <code>Gitvow-Declined</code> and <code>Gitvow-Referred</code> are written for every finding decided with <code>gitvow decide</code> before the commit, on agent and human commits alike. <code>Gitvow-Open</code> is written on a human commit for each finding nobody decided (policy <code>decisions.mode</code> <code>open</code>). The <code>post-commit</code> hook clears the findings the commit carried. <code>Gitvow-Revisits</code> marks an empty commit written by <code>gitvow revisit</code>; its decision trailers answer the named commit's findings again. <code>Gitvow-Rule-Accepted</code> and <code>Gitvow-Rule-Rejected</code> mark an empty commit written by <code>gitvow rules accept|reject</code>; <code>answer=</code> says which run the verdict was about, so a later contradicting decision does not inherit it. See <a href="../../concepts/decisions/">Decisions</a>.</p>
+<p>The grammar grows by new trailer <strong>names</strong>, never by new tail tokens on a name that has already shipped. <code>Gitvow-Referred</code> and its <code>to=</code> arrived together in 0.16: an older gitvow does not match the new name at all, so it reads the commit exactly as it would have before, which is the safe direction. Adding a token to a trailer that already exists is not safe, and the reason is in the pattern above — the finding is matched lazily and every suffix is optional, so an older parser that does not know the token backtracks it <em>into</em> the finding. <code>Gitvow-Accepted: edit foo.go class=k7 by nikhil</code> would parse on 0.15 as a decision about <code>edit foo.go class=k7</code>, silently forking the identity of every decision that carried it, with nothing anywhere reporting an error. Treat the token set of a released trailer as closed: a new fact belongs in a new trailer name, or in the note, which is versioned and genuinely additive. Within that constraint every part after the finding is optional, so a commit written by any earlier gitvow parses exactly as it did when it was made, and no existing trailer name has changed meaning. <code>Gitvow-Rule-Accepted</code> is deliberately not a <code>Gitvow-Accepted</code>: accepting a rule is not an answer to a finding on that commit, and a parser looking for decisions must not pick it up.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../hooks/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Hook payloads">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Hook payloads
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../policy/" class="md-footer__link md-footer__link--next" aria-label="Next: Policy schema">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Policy schema
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Wirevow · <a href='https://wirevow.com'>wirevow.com</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "navigation.footer"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

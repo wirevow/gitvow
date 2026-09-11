@@ -1,0 +1,2078 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Provenance and a policy gate for AI-agent coding sessions, stored in git you already have.">
+      
+      
+      
+        <link rel="canonical" href="https://wirevow.dev/gitvow/concepts/decisions/">
+      
+      
+        <link rel="prev" href="../providers/">
+      
+      
+        <link rel="next" href="../../guides/scan/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Decisions, who agreed - gitvow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../../stylesheets/wirevow.css">
+    
+    <script>__md_scope=new URL("../..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#decisions-who-agreed-recorded" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="../.." title="gitvow" class="md-header__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../../assets/mark.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            gitvow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Decisions, who agreed
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="../.." title="gitvow" class="md-nav__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../../assets/mark.svg" alt="logo">
+
+    </a>
+    gitvow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../.." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+      
+        
+        
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions, steps and notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What stays out of git
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Snapshots, the code as the agent left it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers, policy from facts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions, who agreed
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions, who agreed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-moments-to-ask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two moments to ask
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-decision-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The decision card
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The decision card">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-makes-two-findings-the-same-finding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What makes two findings the same finding
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#four-answers-because-there-are-four-situations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Four answers, because there are four situations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-in-git" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions in git
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions in git">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#who-counts-as-an-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who counts as an authority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-a-person-commits-from-a-terminal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When a person commits from a terminal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#through-the-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Through the merge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#earned-rules-and-who-is-allowed-to-write-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Earned rules, and who is allowed to write one
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Earned rules, and who is allowed to write one">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-this-reaches-the-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How this reaches the agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-autonomy-meter-and-payback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The autonomy meter and payback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revisit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-is-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this is for
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Look before installing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install per user or per repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write a policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read a commit's session
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/trial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a trial and collect results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/redaction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Redaction and custom rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/pull-requests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session notes on pull requests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wire a provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Restore what the agent had
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/other-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex, Cursor and other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Let the agent ask the record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A period in one page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/cost/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What each session cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../guides/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Answer the card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hook payloads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session note schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/provider-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters for other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../reference/adapter-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External adapter protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security and the bypass surface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#two-moments-to-ask" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Two moments to ask
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-decision-card" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The decision card
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The decision card">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#what-makes-two-findings-the-same-finding" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What makes two findings the same finding
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#four-answers-because-there-are-four-situations" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Four answers, because there are four situations
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#decisions-in-git" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Decisions in git
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Decisions in git">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#who-counts-as-an-authority" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Who counts as an authority
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#scope" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Scope
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#when-a-person-commits-from-a-terminal" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        When a person commits from a terminal
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#through-the-merge" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Through the merge
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#earned-rules-and-who-is-allowed-to-write-one" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Earned rules, and who is allowed to write one
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Earned rules, and who is allowed to write one">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#how-this-reaches-the-agent" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        How this reaches the agent
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-autonomy-meter-and-payback" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The autonomy meter and payback
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#revisit" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Revisit
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-this-is-for" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What this is for
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="decisions-who-agreed-recorded">Decisions: who agreed, recorded</h1>
+<p>The gate asks a person before an agent does something consequential. Until 0.12 the record kept only that the question was asked. The answer, the acceptance itself, is the row the whole record rests on. gitvow now writes it.</p>
+<h2 id="two-moments-to-ask">Two moments to ask</h2>
+<p>Not every finding needs to interrupt the agent when it happens.</p>
+<table>
+<thead>
+<tr>
+<th>Class</th>
+<th>Examples</th>
+<th>When the person is asked</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Immediate</strong></td>
+<td>force push, history rewrite, <code>terraform apply</code>, <code>kubectl delete</code>, pushing to a remote, editing gitvow's own policy</td>
+<td>at once, as before, because nothing after them can undo them</td>
+</tr>
+<tr>
+<td><strong>At commit</strong></td>
+<td>a new route without a filter, an edit to an authorization file, a change to production values or CI, a provider answering yes</td>
+<td>when the agent runs <code>git commit</code>, all findings on one card</td>
+</tr>
+</tbody>
+</table>
+<p>An at-commit finding is not live until it is committed, so the agent keeps working and the finding accumulates silently in the session state. One question per commit replaces several per session. Rules choose their class with <code>"when": "immediate"</code> or <code>"when": "commit"</code>; Bash rules default to immediate, path and provider rules to commit. See <a href="../../reference/policy/">Policy schema</a>.</p>
+<h2 id="the-decision-card">The decision card</h2>
+<p>When the agent runs <code>git commit</code> with open findings, the gate refuses the commit once and hands the agent a card: each finding, why it was raised, the evidence, and what the record proposes based on earlier decisions on the same finding in this repository.</p>
+<div class="highlight"><pre><span></span><code>DECISIONS REQUIRED before this commit: 2 findings from this session.
+Put this card to the user. Record each answer with
+  gitvow decide &lt;n&gt; accept|decline [--scope &lt;env-or-branch&gt;] [--reason "&lt;phrase&gt;"]
+If the person says this is not their call, record that instead of guessing:
+  gitvow decide &lt;n&gt; refer [--to &lt;person-or-team&gt;] [--reason "&lt;phrase&gt;"]
+then run the commit again.
+
+1. edit auth/AuthorizeWhitelistedPaths.java
+   why: edits an authorization or gate-bearing file
+   record: accepted 3 times, last by nikhil on 2026-09-02 (scope staging). Proposed: accept.
+2. route /v1/orders/export in src/api/orders.py
+   why: provider facts: route_gate /v1/orders/export: not under any whitelist pattern; service is external
+   record: no earlier decision.
+</code></pre></div>
+<p>The agent puts the card to the person. The person answers in the conversation, one word or one phrase each. The agent records the answers with <code>gitvow decide</code> and commits again. The card is the only surface a developer meets: no new command to learn, no rules to curate.</p>
+<p>A proposal is context, not permission. Nothing is accepted on the record's behalf in this release.</p>
+<h3 id="what-makes-two-findings-the-same-finding">What makes two findings the same finding</h3>
+<p>The record groups by the finding's text, so what that text names decides what can ever accumulate. It names the thing being decided about, never the particular occasion: a path for an edit, a route for a route, and — since 0.16 — the program and the rule that stopped it for a command, so <code>run kubectl (cluster mutation)</code> covers <code>kubectl apply -f a.yaml</code> and <code>kubectl apply -f b.yaml</code> alike. The command line itself is evidence on the card, which is where the per-invocation detail belongs.</p>
+<p>Before 0.16 a command finding was the whole command line. That made every invocation a fresh question with no record behind it, and no command could ever reach <code>rule_threshold</code>, because the arguments are exactly the part that changes each time. Command decisions recorded by 0.15 and earlier still read and still parse; they simply stay in their own per-command-line groups, which is where they always were.</p>
+<h2 id="four-answers-because-there-are-four-situations">Four answers, because there are four situations</h2>
+<table>
+<thead>
+<tr>
+<th>Answer</th>
+<th>What it says</th>
+<th>What it costs later</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>accept</strong></td>
+<td>agreed, unconditionally</td>
+<td>can become precedent</td>
+</tr>
+<tr>
+<td><strong>decline</strong></td>
+<td>not agreed</td>
+<td>can become precedent</td>
+</tr>
+<tr>
+<td><strong>refer</strong></td>
+<td><em>I am not the person to decide this</em></td>
+<td>nothing; the question has to reach someone else</td>
+</tr>
+<tr>
+<td><em>(open)</em></td>
+<td>nobody answered at all</td>
+<td>decision debt until someone does</td>
+</tr>
+</tbody>
+</table>
+<p>The last two used to be one. Both arrived on a commit as <code>Gitvow-Open</code>, which meant a queue of questions
+aimed at a person who could never answer them looked exactly like a team that was behind on its answers, and
+the two need opposite remedies: debt needs a decision, a referral needs a different person. A referral is now
+its own trailer and its own state, counted and listed separately in the digest and the pull request report,
+and it never counts towards a proposed rule — not because it is unhelpful, but because "ask someone else" is
+not an answer about the change.</p>
+<p>A referral closes the card and lets the commit through. Holding a commit against the wrong person produces a
+wrong answer, not a right one, so the pressure is put where it belongs: on the record, which says out loud
+that this finding is still waiting on <code>security</code>. <code>--to</code> is optional; a referral with nobody named is still
+better than an accept nobody believed.</p>
+<h2 id="decisions-in-git">Decisions in git</h2>
+<p>The answers become trailers on the commit and a <code>decisions</code> array in the session note:</p>
+<div class="highlight"><pre><span></span><code>Gitvow-Accepted: edit auth/AuthorizeWhitelistedPaths.java by nikhil scope=staging: reviewed the pattern
+Gitvow-Declined: route /v1/orders/export in src/api/orders.py by nikhil: needs security review
+Gitvow-Referred: edit infra/iam/roles.tf by nikhil to=platform: they own this module
+</code></pre></div>
+<p><code>git log</code> answers who agreed to what. <code>gitvow show</code> adds why: the evidence, the person's authority under the policy, the reason and the scope. Trailers travel with the commit through merge and rebase and are inherited by every branch forked afterwards, so the same finding on a later branch arrives on the card with its history.</p>
+<h3 id="who-counts-as-an-authority">Who counts as an authority</h3>
+<p>The policy may name people or teams under <code>decisions.authorities</code>, matched against the committer's email, its local part, or name. If none are named, anyone with commit access is an authority and the note says so. A decision by someone outside the list is still recorded, marked <code>authority: none</code>; it informs, it does not earn anything.</p>
+<h3 id="scope">Scope</h3>
+<p>"Accepted, staging only" is a condition, not a blanket yes. <code>--scope staging</code> or <code>--scope release/2026-09</code> records it. The pull request report reopens a scoped decision when the pull request targets a production branch the scope does not cover: the reviewer sees "accepted for staging; this pull request targets main". A decision never widens itself.</p>
+<p>A scoped answer is therefore an exception, and an exception is never a precedent: it is set aside before any rule is counted. Three accepts for staging are three exceptions, not a rule that the unconditional thing is fine — nobody ever said that. A finding's exceptions are counted and shown next to it, because a finding collecting exceptions and never a plain answer is worth a person's attention, but they cannot add up to a rule in either direction and they do not break a run of plain answers either.</p>
+<h2 id="when-a-person-commits-from-a-terminal">When a person commits from a terminal</h2>
+<p>Agent hooks do not fire; git hooks do. The agent's findings from the session are still in the repository state.</p>
+<ul>
+<li><strong>Default, open.</strong> The commit goes through with a <code>Gitvow-Open: &lt;finding&gt;</code> trailer for each undecided finding. A person committing is not thereby deciding, and a hook that asks questions breaks IDEs and scripts. Open findings appear in <code>gitvow report</code> and the digest as decision debt, and <code>gitvow decide</code> closes them later.</li>
+<li><strong>Strict.</strong> With <code>"decisions": {"mode": "strict"}</code> in the repository policy, the pre-commit hook prints the card and refuses the commit until <code>gitvow decide</code> has recorded an answer for every finding.</li>
+</ul>
+<p>A person working without an agent triggers nothing. gitvow adds no ceremony to sessions that did not happen.</p>
+<h2 id="through-the-merge">Through the merge</h2>
+<table>
+<thead>
+<tr>
+<th>Merge style</th>
+<th>Trailers</th>
+<th>Session note</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Merge commit or rebase</td>
+<td>intact on the original commits, now on the production branch</td>
+<td>intact; <code>notes.rewriteRef</code> follows rebases</td>
+</tr>
+<tr>
+<td>Squash</td>
+<td>in the squash commit only if its message includes the original messages, or the pull request description</td>
+<td>lost from the new commit; the pull request comment remains the evidence</td>
+</tr>
+</tbody>
+</table>
+<p>Prefer merge commits or rebase where the evidence, not only the decision, should reach history. For repositories that squash, the <a href="../../guides/pull-requests/">pull request check</a> writes a decisions summary into the pull request description so the squash commit inherits it.</p>
+<h2 id="earned-rules-and-who-is-allowed-to-write-one">Earned rules, and who is allowed to write one</h2>
+<p>When authorities have answered the same finding the same way three times running, with no scope attached (<code>decisions.rule_threshold</code>), gitvow <strong>proposes</strong> the finding as a rule. It does not create one.</p>
+<p>That distinction is the whole of it. Automatic promotion at a threshold conflates four different kinds of decision:</p>
+<table>
+<thead>
+<tr>
+<th>Kind</th>
+<th>Example</th>
+<th>Where it belongs</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Universal best practice</td>
+<td>do not log secrets</td>
+<td>the model and the linter already know; earning it adds nothing and dilutes the set</td>
+</tr>
+<tr>
+<td>Organisation-wide standard</td>
+<td>every service authenticates through the gateway</td>
+<td>the organisation, pushed down into repositories — not inferred upwards from one of them</td>
+</tr>
+<tr>
+<td>Repository or path specific</td>
+<td>this module's routes always go through the whitelist</td>
+<td><strong>here</strong>; this is what a rule is for</td>
+</tr>
+<tr>
+<td>Situational one-off</td>
+<td>this exception, staging only</td>
+<td>nowhere. Three accepts of an exception is not a rule, it is three exceptions</td>
+</tr>
+</tbody>
+</table>
+<p>And there is a constitutional problem with promotion by counting. This project's claim is that authority is human and the machine never accepts its own consequence. A rule created because a counter reached three is binding policy that nobody accepted — the machine authoring policy. Counting is gitvow's job. Deciding that a count means something is not.</p>
+<p>So the threshold produces a proposal, and a person named under <code>decisions.authorities</code> accepts or rejects it:</p>
+<div class="highlight"><pre><span></span><code>gitvow<span class="w"> </span>rules<span class="w">                       </span><span class="c1"># rules in force, proposals waiting, and what is not yet either</span>
+gitvow<span class="w"> </span>rules<span class="w"> </span>accept<span class="w"> </span><span class="m">1</span><span class="w"> </span>--reason<span class="w"> </span><span class="s2">"this is our pattern"</span>
+gitvow<span class="w"> </span>rules<span class="w"> </span>reject<span class="w"> </span><span class="m">1</span><span class="w"> </span>--reason<span class="w"> </span><span class="s2">"one-off, not policy"</span>
+gitvow<span class="w"> </span>rules<span class="w"> </span>accept<span class="w"> </span>--all<span class="w">          </span><span class="c1"># every proposal standing, in one commit</span>
+</code></pre></div>
+<p>Because creating precedent is itself a decision, the verdict is recorded the way decisions are: a <code>Gitvow-Rule-Accepted</code> or <code>Gitvow-Rule-Rejected</code> trailer on an empty commit, and a note on <code>refs/notes/gitvow/rules</code> holding the evidence the verdict was made against — the run, its dates, the people, the exceptions set aside. Someone reading the repository in a year can see not only that a rule was accepted but what was in front of the person who accepted it. Unlike a decision, a verdict from someone the policy does not name is refused rather than recorded and discounted: an answer by the wrong person is still a fact about what happened, but a rule by the wrong person is exactly what this mechanism exists to prevent.</p>
+<p>A rejection is neither a veto for one commit nor permanent. It sets a floor: the proposal returns only once a full threshold of answers dated <strong>after</strong> the rejection has accumulated. Fresh evidence, rather than a re-count of the evidence already refused.</p>
+<p>A rule still lapses after ninety days without a new confirmation (<code>decisions.rule_decay_days</code>), and revives when it is confirmed again; the acceptance stands. A contradicting answer resets the run, and the new run is a new proposal, because accepting "declined three times" was never an acceptance of "accepted three times".</p>
+<h3 id="how-this-reaches-the-agent">How this reaches the agent</h3>
+<ul>
+<li>At session start, the hook hands the agent the rules in force: "this repository has declined every unfiltered route four times; propose the filter first."</li>
+<li>Proposals are handed over too, in their own section, labelled: nobody has accepted this, it grants nothing, it is not the repository's position, and it changes nothing about what must be put to a person. They are there so that nothing which used to be visible goes quiet, not as permission in waiting.</li>
+<li>On the card, the finding arrives with its rule attached. If a proposal is standing instead, the card says so and names the command an authority would use, so the governance step surfaces at the moment someone is already looking.</li>
+</ul>
+<p>Nothing is accepted on the strength of a rule or a proposal. The gate still asks at commit. <code>gitvow rules --write</code> puts the block into the repository's agent instruction file, in a managed section you can commit and review like the policy.</p>
+<p><strong>The danger was never too few rules. It is too many bad ones.</strong> A set padded with platitudes, one-off exceptions and calls made by people who were not the right ones to make them produces a brief the agent should ignore, or worse, obeys. That is the disease that kills a hand-maintained wiki, arriving by another road.</p>
+<h2 id="the-autonomy-meter-and-payback">The autonomy meter and payback</h2>
+<p>The digest and the pull request report show, per repository and never per person: decisions accepted, declined, referred and open; decision debt, the open findings nobody has answered; referrals, the findings waiting on a different person; proposed rules awaiting an authority; questions per session against the previous period; how many answers matched what the record proposed; snapshots restored. A repository whose questions per session fall while its accepted decisions rise is one whose agents are learning what it wants, and the numbers say so without anyone being ranked.</p>
+<h2 id="revisit">Revisit</h2>
+<p><code>gitvow revisit &lt;commit&gt; accept|decline</code> answers a decision already on the branch again, including an open one from a person's commit. It writes an empty commit carrying the new answer and <code>Gitvow-Revisits: &lt;commit&gt;</code>; the earlier trailer stays where it was, so the record keeps both and the debt is closed. A wrong answer costs one command, which is what makes people answer freely.</p>
+<h2 id="what-this-is-for">What this is for</h2>
+<p>Every answered card is a labelled pair: a situation with evidence, and a decision with a reason, made by a named person doing their normal work. Per repository, those pairs become proposals on the next card. Where the pattern is strong enough, gitvow proposes it as a rule and a person accepts it, and only then does the agent read it as the repository's position. Nothing in this release suppresses a question; the record has to be honest before it is allowed to be quiet, and it never writes its own policy.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../providers/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Providers, policy from facts">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Providers, policy from facts
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../../guides/scan/" class="md-footer__link md-footer__link--next" aria-label="Next: Look before installing">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Look before installing
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Wirevow · <a href='https://wirevow.com'>wirevow.com</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "../..", "features": ["navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "navigation.footer"], "search": "../../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

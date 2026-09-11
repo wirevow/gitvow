@@ -1,0 +1,1985 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Provenance and a policy gate for AI-agent coding sessions, stored in git you already have.">
+      
+      
+      
+        <link rel="canonical" href="https://wirevow.dev/gitvow/roadmap/">
+      
+      
+        <link rel="prev" href="../security/">
+      
+      
+        <link rel="next" href="../faq/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Roadmap - gitvow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/wirevow.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#roadmap" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="gitvow" class="md-header__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../assets/mark.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            gitvow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Roadmap
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="gitvow" class="md-nav__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../assets/mark.svg" alt="logo">
+
+    </a>
+    gitvow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions, steps and notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What stays out of git
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Snapshots, the code as the agent left it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers, policy from facts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions, who agreed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Look before installing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install per user or per repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write a policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read a commit's session
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/trial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a trial and collect results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/redaction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Redaction and custom rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/pull-requests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session notes on pull requests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wire a provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Restore what the agent had
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/other-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex, Cursor and other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Let the agent ask the record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A period in one page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/cost/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What each session cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Answer the card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hook payloads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session note schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/provider-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters for other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/adapter-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External adapter protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../security/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security and the bypass surface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#02-trial-hardened-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2 — Trial-hardened (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#03-reviewer-surface-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3 — Reviewer surface (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#04-policy-from-facts-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4 — Policy from facts (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#05-live-provider-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5 — Live provider (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#05-snapshots-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5 — Snapshots (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#06-adapters-for-other-agents-shipped-real-session-verification-pending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.6 — Adapters for other agents (shipped, real-session verification pending)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#07-the-record-teaches-the-next-session-in-progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7 — The record teaches the next session (in progress)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#09-a-period-in-one-page-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.9 — A period in one page (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-any-agent-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.10 — Any agent (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-what-each-session-cost-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.11 — What each session cost (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#012-decisions-shipped-real-session-verification-of-human-commit-and-fork-paths-pending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.12 — Decisions (shipped, real-session verification of human-commit and fork paths pending)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#016-nobodys-policy-but-a-persons-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.16 — Nobody's policy but a person's (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#017-signed-decisions-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.17 — Signed decisions (next)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Later
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#not-planned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not planned
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#02-trial-hardened-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.2 — Trial-hardened (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#03-reviewer-surface-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.3 — Reviewer surface (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#04-policy-from-facts-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.4 — Policy from facts (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#05-live-provider-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5 — Live provider (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#05-snapshots-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.5 — Snapshots (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#06-adapters-for-other-agents-shipped-real-session-verification-pending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.6 — Adapters for other agents (shipped, real-session verification pending)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#07-the-record-teaches-the-next-session-in-progress" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.7 — The record teaches the next session (in progress)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#09-a-period-in-one-page-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.9 — A period in one page (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#010-any-agent-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.10 — Any agent (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#011-what-each-session-cost-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.11 — What each session cost (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#012-decisions-shipped-real-session-verification-of-human-commit-and-fork-paths-pending" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.12 — Decisions (shipped, real-session verification of human-commit and fork paths pending)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#016-nobodys-policy-but-a-persons-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.16 — Nobody's policy but a person's (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#017-signed-decisions-next" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        0.17 — Signed decisions (next)
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#later" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Later
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#not-planned" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Not planned
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="roadmap">Roadmap</h1>
+<p>gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.</p>
+<h2 id="02-trial-hardened-shipped">0.2 — Trial-hardened (shipped)</h2>
+<ul>
+<li>One notes ref per session, <code>refs/notes/gitvow/&lt;session-id&gt;</code>, so parallel agents never contend and pushes never conflict.</li>
+<li>Custom redaction rules from <code>.gitvow/redact-rules.json</code> in the repository and in the home directory; invalid rules fail closed.</li>
+<li>Line-level attribution: lines a human changed after the agent, per file, and the agent's share of the commit.</li>
+<li>Notes follow amend, rebase and squash through <code>notes.rewriteRef</code>.</li>
+<li>Exit still open: a five-person, two-week trial produces zero secrets in collected archives on manual review.</li>
+</ul>
+<h2 id="03-reviewer-surface-shipped">0.3 — Reviewer surface (shipped)</h2>
+<ul>
+<li><code>gitvow report</code> and a GitHub Action that post each pull request's session notes as one updated comment and as the job summary.</li>
+<li>The check fails when a commit carries a session trailer but its note was never pushed. (A commit without any trailer is, by construction, a human commit; nothing can prove otherwise, so the check reports it rather than failing.)</li>
+<li>"Said versus did": each changed file checked against the agent's stated plan.</li>
+<li>Notes pushed automatically by a <code>pre-push</code> hook; <code>gitvow push-notes</code> for by hand.</li>
+<li>Exit still open: two teams review with it on; time-to-first-comment measured.</li>
+</ul>
+<h2 id="04-policy-from-facts-shipped">0.4 — Policy from facts (shipped)</h2>
+<ul>
+<li>Provider protocol: the gate asks external programs <code>gate_bearing</code>, <code>route_gate</code> and <code>route_callers</code>; a <code>yes</code> requires a human, with the provider's evidence in the message. Failure means confirm. gitvow defines the contract; providers live elsewhere; an example over a static facts file ships in the repository.</li>
+<li>Exit met: a real agent session adding an unauthorised route to a synthetic repository is stopped, and the message names the whitelist file.</li>
+</ul>
+<h2 id="05-live-provider-shipped">0.5 — Live provider (shipped)</h2>
+<ul>
+<li><a href="https://wirevow.dev/gitvow-provider-facts/">gitvow-provider-facts</a>: a provider over a derived fact store of routes, gates and inbound calls, in its own repository. Class-level prefix resolution, whitelist-pattern classification of new routes, callers by repository and call site, store age in every answer.</li>
+<li>Exit met: a real agent session removing a route with recorded callers is stopped, and the message names the calling services and call sites.</li>
+</ul>
+<h2 id="05-snapshots-shipped">0.5 — Snapshots (shipped)</h2>
+<ul>
+<li>Working-tree snapshot after every agent edit, under <code>refs/gitvow/snapshots/&lt;session&gt;/&lt;n&gt;</code>, parented on HEAD, never pushed, secrets excluded.</li>
+<li><code>gitvow snapshots</code>, <code>gitvow diff</code>, <code>gitvow restore</code> into a detached worktree, pruning by count and age, purge on uninstall. Session notes name the snapshot that preceded the commit.</li>
+<li>Exit met: a real agent session's first edit is restored intact after the agent edited the same file again and a person changed it further.</li>
+</ul>
+<h2 id="06-adapters-for-other-agents-shipped-real-session-verification-pending">0.6 — Adapters for other agents (shipped, real-session verification pending)</h2>
+<ul>
+<li>Codex CLI, Gemini CLI and Cursor adapters: payload normalisation, native responses (Cursor <code>ask</code> for confirm), patch parsing for Codex edits, per-agent install and uninstall.</li>
+<li>Exit: a real session on each agent stopped by the gate and producing a trailer, note and snapshot. Claude Code, Codex CLI and Cursor met (Codex and Cursor verified 2026-09-10; each real session exposed defects the vendor documentation could not, from Codex's hook trust and <code>.git</code> sandbox to Cursor's clickable-past card and silent-hook block); Gemini CLI awaits a user of that agent.</li>
+</ul>
+<h2 id="07-the-record-teaches-the-next-session-in-progress">0.7 — The record teaches the next session (in progress)</h2>
+<ul>
+<li><code>gitvow why</code>, <code>trace</code>, <code>recall</code>, <code>handoff</code> over trailers, notes, snapshots and the ledger; agent skills in the common format for Claude Code, Codex, Cursor and Gemini CLI.</li>
+<li>Transcript readers for Codex and Gemini so their notes carry a plan and tool counts (done, unverified against live files); Cursor's transcript is undocumented.</li>
+<li>Copilot CLI and Factory adapters (done, real-session verification pending).</li>
+<li>Exit: a real session on a repository with history answers "why does this file look like this" from the record, and a handoff produced by one agent is picked up by another.</li>
+</ul>
+<h2 id="09-a-period-in-one-page-shipped">0.9 — A period in one page (shipped)</h2>
+<ul>
+<li><code>gitvow digest --since</code>: agent and human commit counts, sessions with plans and attribution, lines changed by people after agents, gate activity and most-changed files for a time window, from the record alone.</li>
+</ul>
+<h2 id="010-any-agent-shipped">0.10 — Any agent (shipped)</h2>
+<ul>
+<li>External adapter protocol: a <code>gitvow-agent-&lt;name&gt;</code> executable on the PATH with <code>info</code>, <code>normalize</code> and <code>respond</code> subcommands makes a new agent work with hook, install and selftest without changing gitvow. Fails closed during PreToolUse.</li>
+</ul>
+<h2 id="011-what-each-session-cost-shipped">0.11 — What each session cost (shipped)</h2>
+<ul>
+<li>Tokens and estimated cost per session from the transcripts already read, with a dated default pricing table and a policy override; in the note, ledger, report, digest and handoff. Subagent side conversations counted.</li>
+</ul>
+<h2 id="012-decisions-shipped-real-session-verification-of-human-commit-and-fork-paths-pending">0.12 — Decisions (shipped, real-session verification of human-commit and fork paths pending)</h2>
+<ul>
+<li>Two classes of confirm rule: immediate, and at commit. At-commit findings accumulate while the agent works and are put to a person on one card when the agent commits, with evidence and the record's proposal from earlier decisions on the same finding.</li>
+<li>Answers written as <code>Gitvow-Accepted</code>, <code>Gitvow-Declined</code> and <code>Gitvow-Open</code> trailers and as a <code>decisions</code> array in the note (schema 5), with the person, their authority under the policy, scope and reason. <code>gitvow decisions</code>, <code>gitvow decide</code>. Human commits: open by default, strict as an option. The pull request report lists decisions, reopens scoped ones at production branches, and writes a summary into the description of squash-merging repositories.</li>
+<li>Earned rules (0.12.1): findings answered the same way by authorities <code>rule_threshold</code> times, each with evidence, dates and a decay window; handed to the agent at session start and on the card as context, never as permission. <code>gitvow rules [--write]</code>. Since 0.16 the threshold <em>proposes</em> a rule rather than creating one (below).</li>
+<li>Autonomy meter, payback and revisit (0.12.2): the digest shows decisions, debt, questions per session against the previous period, answers that matched the proposal and snapshots restored; the report marks decisions the record pre-answered; <code>gitvow revisit</code> answers a past decision again with an empty commit and closes open debt.</li>
+<li>Exit: a real session accepts one finding and declines another; a person's commit records an open finding; a branch forked afterwards sees the earlier decision on its card; a scoped decision is reopened on a pull request to main.</li>
+</ul>
+<h2 id="016-nobodys-policy-but-a-persons-shipped">0.16 — Nobody's policy but a person's (shipped)</h2>
+<p>Promotion at a threshold made gitvow the author of binding policy, in a project whose claim is that authority
+is human and the machine never accepts its own consequence. It also could not tell a repository-specific call
+from a platitude, an organisation-wide standard or a one-off exception, and a rules set padded with all three
+is a brief the agent should ignore or, worse, obeys.</p>
+<ul>
+<li>The threshold proposes; an authority accepts or rejects with <code>gitvow rules accept|reject</code>, recorded as a
+  trailer plus a note carrying the evidence, because creating precedent is a decision. A rejection waits for
+  a full threshold of fresh evidence before the proposal returns.</li>
+<li>A scoped answer is an exception and never counts towards a rule in either direction.</li>
+<li><code>gitvow decide &lt;n&gt; refer [--to who]</code>: "you asked the wrong person" separated from "nobody has decided",
+  with its own trailer and its own line in the digest and the pull request report.</li>
+<li>Still missing, and deliberately: organisation-wide rules pushed <em>down</em> into repositories. That is where
+  the second kind of decision belongs, and there is no organisation store yet.</li>
+<li>Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
+  one command, and the rules it runs on afterwards each name the person who accepted them.</li>
+</ul>
+<h2 id="017-signed-decisions-next">0.17 — Signed decisions (next)</h2>
+<p>The record can say who agreed. It cannot yet say that they did. A <code>Gitvow-Accepted</code> trailer is written by
+the hook, but nothing stops a person writing the same line by hand with every hook live, and <code>gitvow report</code>
+will then print it as fact. A hand-written <code>Gitvow-Session</code> trailer even raises <code>gitvow coverage</code>, so the one
+attack a signature would prevent currently improves the number meant to detect it. This is the wrong way
+round: a <em>deleted</em> record leaves a hole anyone can see, and a <em>forged</em> one does not.</p>
+<ul>
+<li>Sign the decision at the moment it is made, on the developer's machine, and verify signatures wherever the
+  record is read: <code>gitvow decisions</code>, <code>gitvow report</code>, <code>gitvow coverage</code>. Keyless signing over the existing
+  supply-chain rails is the intended shape, so an acceptance becomes an attestation whose subject is the
+  commit and whose predicate is the decision — no new infrastructure to trust, and admission control gets it
+  for free.</li>
+<li>Coverage grew a corroboration column first (0.16), which is the cheap half of this and needs no keys: a
+  session trailer is compared against the note the hook would have written, and claims with nothing behind
+  them are counted and listed separately. It raises the floor from "type one line" to "understand the note
+  refs". It is not proof — a forger can write a note too — and the numbers say so.</li>
+<li>Exit: a decision trailer altered or added by hand is reported as unverifiable by every command that reads
+  the record, on a repository where the genuine decisions still verify; and the failure mode when no keys are
+  configured is a stated absence, never a silent pass.</li>
+</ul>
+<h2 id="later">Later</h2>
+<ul>
+<li>A configuration-driven storage tier for the ledger (restricted repository, object store).</li>
+<li>Real-session verification of the five built-in adapters other than Claude Code, by users of those agents.</li>
+</ul>
+<h2 id="not-planned">Not planned</h2>
+<p>Hosting, mirroring, cloud summaries of transcripts, a web UI. gitvow is the layer those things consume.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../security/" class="md-footer__link md-footer__link--prev" aria-label="Previous: Security and the bypass surface">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                Security and the bypass surface
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../faq/" class="md-footer__link md-footer__link--next" aria-label="Next: FAQ">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                FAQ
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Wirevow · <a href='https://wirevow.com'>wirevow.com</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "navigation.footer"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>

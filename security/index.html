@@ -1,0 +1,2435 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+        <meta name="description" content="Provenance and a policy gate for AI-agent coding sessions, stored in git you already have.">
+      
+      
+      
+        <link rel="canonical" href="https://wirevow.dev/gitvow/security/">
+      
+      
+        <link rel="prev" href="../reference/adapter-protocol/">
+      
+      
+        <link rel="next" href="../roadmap/">
+      
+      
+        
+      
+      
+      <link rel="icon" href="../assets/favicon.svg">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.7">
+    
+    
+      
+        <title>Security and the bypass surface - gitvow</title>
+      
+    
+    
+      <link rel="stylesheet" href="../assets/stylesheets/main.ec1eaa64.min.css">
+      
+        
+        <link rel="stylesheet" href="../assets/stylesheets/palette.ab4e12ef.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+    
+    
+      <link rel="stylesheet" href="../stylesheets/wirevow.css">
+    
+    <script>__md_scope=new URL("..",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    
+    
+    
+    
+    
+    <body dir="ltr" data-md-color-scheme="slate" data-md-color-primary="custom" data-md-color-accent="custom">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#security-and-the-bypass-surface" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href=".." title="gitvow" class="md-header__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../assets/mark.svg" alt="logo">
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            gitvow
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Security and the bypass surface
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+      
+    
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+        <div class="md-search__suggest" data-md-component="search-suggest"></div>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+      <div class="md-header__source">
+        <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+      </div>
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href=".." title="gitvow" class="md-nav__button md-logo" aria-label="gitvow" data-md-component="logo">
+      
+  <img src="../assets/mark.svg" alt="logo">
+
+    </a>
+    gitvow
+  </label>
+  
+    <div class="md-nav__source">
+      <a href="https://github.com/wirevow/gitvow" title="Go to repository" class="md-source" data-md-component="source">
+  <div class="md-source__icon md-icon">
+    
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512"><!--! Font Awesome Free 7.1.0 by @fontawesome - https://fontawesome.com License - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License) Copyright 2025 Fonticons, Inc.--><path d="M439.6 236.1 244 40.5c-5.4-5.5-12.8-8.5-20.4-8.5s-15 3-20.4 8.4L162.5 81l51.5 51.5c27.1-9.1 52.7 16.8 43.4 43.7l49.7 49.7c34.2-11.8 61.2 31 35.5 56.7-26.5 26.5-70.2-2.9-56-37.3L240.3 199v121.9c25.3 12.5 22.3 41.8 9.1 55-6.4 6.4-15.2 10.1-24.3 10.1s-17.8-3.6-24.3-10.1c-17.6-17.6-11.1-46.9 11.2-56v-123c-20.8-8.5-24.6-30.7-18.6-45L142.6 101 8.5 235.1C3 240.6 0 247.9 0 255.5s3 15 8.5 20.4l195.6 195.7c5.4 5.4 12.7 8.4 20.4 8.4s15-3 20.4-8.4l194.7-194.7c5.4-5.4 8.4-12.8 8.4-20.4s-3-15-8.4-20.4"/></svg>
+  </div>
+  <div class="md-source__repository">
+    GitHub
+  </div>
+</a>
+    </div>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href=".." class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Home
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../quickstart/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Quick start
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_3" >
+        
+          
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Concepts
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_3">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Concepts
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/sessions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Sessions, steps and notes
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/gate/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    The gate
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/storage/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What stays out of git
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Snapshots, the code as the agent left it
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Providers, policy from facts
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../concepts/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Decisions, who agreed
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_4" >
+        
+          
+          <label class="md-nav__link" for="__nav_4" id="__nav_4_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Guides
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_4_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_4">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Guides
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/scan/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Look before installing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/install/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Install per user or per repo
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Write a policy
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/reading/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Read a commit's session
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/trial/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Run a trial and collect results
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/redaction/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Redaction and custom rules
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/pull-requests/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session notes on pull requests
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/providers/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Wire a provider
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/snapshots/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Restore what the agent had
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/other-agents/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Codex, Cursor and other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/skills/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Let the agent ask the record
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/digest/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    A period in one page
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/cost/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    What each session cost
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../guides/decisions/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Answer the card
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    
+    
+    
+    
+      
+        
+        
+      
+    
+    
+    <li class="md-nav__item md-nav__item--section md-nav__item--nested">
+      
+        
+        
+          
+        
+        <input class="md-nav__toggle md-toggle md-toggle--indeterminate" type="checkbox" id="__nav_5" >
+        
+          
+          <label class="md-nav__link" for="__nav_5" id="__nav_5_label" tabindex="">
+            
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Reference
+  
+
+    
+  </span>
+  
+  
+
+            <span class="md-nav__icon md-icon"></span>
+          </label>
+        
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_5_label" aria-expanded="false">
+          <label class="md-nav__title" for="__nav_5">
+            <span class="md-nav__icon md-icon"></span>
+            
+  
+    Reference
+  
+
+          </label>
+          <ul class="md-nav__list" data-md-scrollfix>
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/cli/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    CLI
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/hooks/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Hook payloads
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/note/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Session note schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/policy/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Policy schema
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/provider-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Provider protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/adapters/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Adapters for other agents
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+              
+                
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../reference/adapter-protocol/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    External adapter protocol
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+              
+            
+          </ul>
+        </nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security and the bypass surface
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Security and the bypass surface
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-gitvow-does-not-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What gitvow does not claim
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-enforcement-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The three enforcement points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The three enforcement points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-1-on-the-machine-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point 1 — on the machine (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#point-2-in-ci-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point 2 — in CI (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#point-3-in-the-store-with-signing-not-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point 3 — in the store, with signing (not built)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was tested
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What was tested">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-branch-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On branch protection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#closing-the-agents-own-bypass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Closing the agent's own bypass
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#threats-worst-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threats, worst first
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threats, worst first">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-never-installed-at-all-or-the-hooks-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Never installed at all, or the hooks disabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-a-forged-acceptance-undetectable-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. A forged acceptance — undetectable today
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-a-note-deleted-after-it-was-pushed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. A note deleted after it was pushed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-a-note-deleted-before-it-was-ever-pushed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. A note deleted before it was ever pushed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-asymmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The asymmetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-the-ci-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure the CI check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-defect-that-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A defect that shipped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-leaves-the-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What leaves the machine
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#threat-model-for-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threat model for content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threat model for content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#redaction-is-best-effort" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redaction is best effort
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fail-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fail closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribution-blobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribution blobs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-gate-cannot-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the gate cannot see
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supply-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supply chain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../roadmap/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roadmap
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../faq/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    FAQ
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../ARCHITECTURE/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Architecture
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+      
+      
+  
+  
+  
+  
+    <li class="md-nav__item">
+      <a href="../contributing/" class="md-nav__link">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Contributing
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#what-gitvow-does-not-claim" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What gitvow does not claim
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#the-three-enforcement-points" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The three enforcement points
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="The three enforcement points">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#point-1-on-the-machine-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point 1 — on the machine (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#point-2-in-ci-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point 2 — in CI (shipped)
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#point-3-in-the-store-with-signing-not-built" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Point 3 — in the store, with signing (not built)
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-was-tested" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What was tested
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="What was tested">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#on-branch-protection" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        On branch protection
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#closing-the-agents-own-bypass" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Closing the agent's own bypass
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#threats-worst-first" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threats, worst first
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threats, worst first">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#1-never-installed-at-all-or-the-hooks-disabled" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        1. Never installed at all, or the hooks disabled
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#2-a-forged-acceptance-undetectable-today" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        2. A forged acceptance — undetectable today
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#3-a-note-deleted-after-it-was-pushed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        3. A note deleted after it was pushed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#4-a-note-deleted-before-it-was-ever-pushed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        4. A note deleted before it was ever pushed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#the-asymmetry" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        The asymmetry
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#configure-the-ci-check" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configure the CI check
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#a-defect-that-shipped" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        A defect that shipped
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-leaves-the-machine" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What leaves the machine
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#threat-model-for-content" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Threat model for content
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Threat model for content">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#redaction-is-best-effort" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Redaction is best effort
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#fail-closed" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fail closed
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#snapshots" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Snapshots
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#attribution-blobs" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Attribution blobs
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#what-the-gate-cannot-see" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        What the gate cannot see
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#supply-chain" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Supply chain
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#reporting" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Reporting
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+  
+  
+
+
+<h1 id="security-and-the-bypass-surface">Security and the bypass surface</h1>
+<p>This page is the honest version. It says where gitvow's enforcement holds, where it does not, and what
+you can run yourself to check each statement. Every command below was run against 0.15.2 in a throwaway
+repository with a per-repository install, and the outcomes are what was observed rather than what was
+expected.</p>
+<h2 id="what-gitvow-does-not-claim">What gitvow does not claim</h2>
+<p>gitvow does not give you a tamper-proof audit trail, and no page here will say that it does.</p>
+<p>A gitvow trailer lives inside the commit message. It is exactly as editable as the commit message it
+lives in, by anyone who can rewrite the branch. A session note lives in a git ref that no forge protects.
+There are three claims worth making, and they are the only ones made anywhere in these docs:</p>
+<table>
+<thead>
+<tr>
+<th>Claim</th>
+<th>What it means</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Measurable coverage</strong></td>
+<td>How much of your agent-signed history carries a session record, computed from <code>git log</code> alone on a machine that trusts no client. <code>gitvow coverage</code>.</td>
+</tr>
+<tr>
+<td><strong>Durability equal to the code</strong></td>
+<td>The trailer is inside the commit; the note follows amend, rebase and squash through <code>notes.rewriteRef</code>. Losing the record means losing the commit.</td>
+</tr>
+<tr>
+<td><strong>Verifiable non-forgery, once signing exists</strong></td>
+<td>Not today. Today an acceptance is a line of text and anybody can type one. See <a href="#2-a-forged-acceptance-undetectable-today">Forgery</a>.</td>
+</tr>
+</tbody>
+</table>
+<h2 id="the-three-enforcement-points">The three enforcement points</h2>
+<p>Enforcement is not one thing that is either on or off. It is three separate points that catch three
+different failures, and they are not equally strong.</p>
+<h3 id="point-1-on-the-machine-shipped">Point 1 — on the machine (shipped)</h3>
+<p>The gate answers before the agent's tool call runs; git hooks then write the trailers and attach the
+session note. This is where a person is actually asked, while the context is still in the room.</p>
+<p>It is <strong>bypassable by its owner, on purpose.</strong> A developer owns their machine, and a gate that pretends
+otherwise is theatre. This point catches accidents, not adversaries, and it guarantees nothing about
+completeness.</p>
+<h3 id="point-2-in-ci-shipped">Point 2 — in CI (shipped)</h3>
+<p>A required check on the pull request: decisions present, session notes actually pushed, and coverage above
+a floor you set. It reads the remote's own history, so nothing done on a laptop improves the number.</p>
+<p>This is the point that matters, because it cannot be switched off from the machine that failed. Switching
+it off is a change to a protected repository setting, which is itself visible. Shipped as
+<code>gitvow coverage --fail-under</code> and the <code>require-notes</code> and <code>fail-under</code> inputs of the
+<a href="../guides/pull-requests/">GitHub Action</a>.</p>
+<h3 id="point-3-in-the-store-with-signing-not-built">Point 3 — in the store, with signing (not built)</h3>
+<p>Signature verification on every acceptance, coverage computed across repositories rather than one at a
+time, and a replica held under a retention policy the writer cannot shorten. This is what catches forgery.</p>
+<div class="admonition danger">
+<p class="admonition-title">None of this exists</p>
+<p>Signing is not implemented anywhere in gitvow. Until it is, a forged acceptance is not detectable by
+<code>gitvow</code>, by the GitHub Action, or by reading the repository. This is not a gap being managed; it is
+the next thing to build.</p>
+</div>
+<h2 id="what-was-tested">What was tested</h2>
+<p>Set-up for every row: a fresh repository, <code>gitvow install .</code>, a session state file with one accepted
+finding, so that an ordinary commit produces the full trailer block.</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span><span class="s2">"plain commit"</span>
+<span class="gp">$ </span>git<span class="w"> </span>log<span class="w"> </span>-1<span class="w"> </span>--format<span class="o">=</span>%B
+<span class="go">plain commit</span>
+
+<span class="go">Gitvow-Session: sess-abc123</span>
+<span class="go">Gitvow-Step: 4</span>
+<span class="go">Gitvow-Accepted: edits an auth route by Tester scope=staging: reviewed</span>
+</code></pre></div>
+<table>
+<thead>
+<tr>
+<th>Attempt</th>
+<th>Observed</th>
+<th>Verdict</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>git commit --no-verify -m "…"</code></td>
+<td>The trailers are still written. <code>--no-verify</code> skips <code>pre-commit</code> and <code>commit-msg</code>; gitvow writes trailers from <code>prepare-commit-msg</code>, which it does not skip. The commit came out with <code>Gitvow-Session</code>, <code>Gitvow-Step</code> and <code>Gitvow-Accepted</code>.</td>
+<td><strong>holds</strong> — the most-guessed bypass does not work</td>
+</tr>
+<tr>
+<td><code>git -c core.hooksPath=/dev/null commit -m "…"</code></td>
+<td>No hook runs, so no trailer and no note. Reading the commit, it is indistinguishable from a hand-written one.</td>
+<td><strong>bypassed</strong></td>
+</tr>
+<tr>
+<td>the same commit, keeping the agent's own <code>Co-authored-by</code> line</td>
+<td><code>gitvow coverage</code> read the history and reported the hole: <code>1 commits carry an agent's signature / 0 of those are recorded by gitvow</code>. With <code>--fail-under 100</code> it exited 1.</td>
+<td><strong>caught in CI</strong></td>
+</tr>
+<tr>
+<td>the same commit with the <code>Co-authored-by</code> line deleted too</td>
+<td>Not caught. Coverage counts only commits carrying an agent's own signature; a commit with no signature and no session is a human commit and nothing can prove otherwise.</td>
+<td><strong>not caught</strong> — coverage is a floor</td>
+</tr>
+<tr>
+<td><code>git push origin :refs/notes/gitvow/&lt;session&gt;</code></td>
+<td>The note is deleted from the remote. It had been pushed automatically by the <code>pre-push</code> hook, and one command removes it. The deletion is visible: the commit still carries <code>Gitvow-Session</code>, so <code>gitvow report --require-notes</code> exited 1 and named the commit.</td>
+<td><strong>deletable, hole visible</strong></td>
+</tr>
+<tr>
+<td><code>git push --no-verify origin main</code></td>
+<td><code>pre-push</code> is skipped, so the notes stay on the machine and the branch lands without them. Same hole as deletion, reached more quietly, visible the same way.</td>
+<td><strong>deletable, hole visible</strong></td>
+</tr>
+<tr>
+<td><code>git commit -m "…" --trailer "Gitvow-Accepted=edits core/authz_rules.go by staff-engineer scope=production: reviewed with security"</code></td>
+<td>No bypass flag; hooks fully installed and running. <code>gitvow report</code> printed it as a real answer — <code>Accepted: … by staff-engineer, scope production</code> — <code>--decisions-summary</code> emitted it for the pull request description, and <code>--require-notes</code> exited 0.</td>
+<td><strong>undetectable</strong></td>
+</tr>
+<tr>
+<td>the same forgery plus a hand-typed <code>Gitvow-Session:</code> trailer</td>
+<td>Coverage rose to <code>100%</code>: the forgery improves the metric. This clumsier version is caught for an unrelated reason — the session it claims has no note, so <code>--require-notes</code> exited 1.</td>
+<td><strong>raises coverage</strong></td>
+</tr>
+<tr>
+<td>the agent itself runs <code>git -c core.hooksPath=… commit</code></td>
+<td>The at-commit card never appears. gitvow recognises the agent's commit by matching the literal text <code>git commit</code>, which <code>git -c … commit</code> does not match, so open findings are neither shown nor recorded. The command is written to <code>.git/gitvow-hooks.log</code>, which nobody outside that machine reads.</td>
+<td><strong>bypassed</strong> — a policy rule closes it, <a href="#closing-the-agents-own-bypass">below</a></td>
+</tr>
+<tr>
+<td><code>git commit --amend</code> after a note was attached</td>
+<td>The note followed the rewritten commit through the <code>notes.rewriteRef</code> setting the install adds; the trailers are inside the message and carried by construction.</td>
+<td><strong>holds</strong></td>
+</tr>
+</tbody>
+</table>
+<h3 id="on-branch-protection">On branch protection</h3>
+<p>GitHub rulesets and branch protection rules
+<a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-rulesets/about-rulesets">target branches and tags</a>:
+"You can create rulesets to control how people can interact with selected branches and tags in a
+repository." <code>refs/notes/*</code> is neither a branch nor a tag, so nothing under it is protected on GitHub —
+not by required checks, not by force-push protection, not by deletion protection. This was read from
+GitHub's documentation, not tested against a live repository, and it is the reason the note check in CI
+exists.</p>
+<h3 id="closing-the-agents-own-bypass">Closing the agent's own bypass</h3>
+<p>One deny rule makes an agent's attempt to run git with gitvow's hooks disabled a refused tool call:</p>
+<div class="highlight"><pre><span></span><code><span class="p">{</span>
+<span class="w">  </span><span class="nt">"bash_deny"</span><span class="p">:</span><span class="w"> </span><span class="p">[</span>
+<span class="w">    </span><span class="p">{</span>
+<span class="w">      </span><span class="nt">"pattern"</span><span class="p">:</span><span class="w"> </span><span class="s2">"\\bgit\\b[^|;&amp;]*\\s(-c\\s+core\\.hooksPath|--no-verify)\\b"</span><span class="p">,</span>
+<span class="w">      </span><span class="nt">"reason"</span><span class="p">:</span><span class="w"> </span><span class="s2">"git run with gitvow's hooks disabled"</span>
+<span class="w">    </span><span class="p">}</span>
+<span class="w">  </span><span class="p">]</span>
+<span class="p">}</span>
+</code></pre></div>
+<p>Checked with <code>gitvow check</code>, which is the dry-run for exactly this:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>gitvow<span class="w"> </span>check<span class="w"> </span>--<span class="w"> </span>git<span class="w"> </span>-c<span class="w"> </span>core.hooksPath<span class="o">=</span>/dev/null<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span>x
+<span class="go">DENY: git run with gitvow's hooks disabled</span>
+<span class="gp">$ </span>gitvow<span class="w"> </span>check<span class="w"> </span>--<span class="w"> </span>git<span class="w"> </span>commit<span class="w"> </span>--no-verify<span class="w"> </span>-m<span class="w"> </span>x
+<span class="go">DENY: git run with gitvow's hooks disabled</span>
+<span class="gp">$ </span>gitvow<span class="w"> </span>check<span class="w"> </span>--<span class="w"> </span>git<span class="w"> </span>push<span class="w"> </span>--no-verify
+<span class="go">DENY: git run with gitvow's hooks disabled</span>
+<span class="gp">$ </span>gitvow<span class="w"> </span>check<span class="w"> </span>--<span class="w"> </span>git<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span>x
+<span class="go">ALLOW</span>
+<span class="gp">$ </span>gitvow<span class="w"> </span>check<span class="w"> </span>--<span class="w"> </span>git<span class="w"> </span>-C<span class="w"> </span>sub<span class="w"> </span>commit<span class="w"> </span>-m<span class="w"> </span>x
+<span class="go">ALLOW</span>
+</code></pre></div>
+<p>That last line is the limit of the rule: <code>git -C dir commit</code> still gets past it, and past the card's own
+<code>git commit</code> match. The rule constrains the agent. It does nothing about a person at a terminal, and it is
+not meant to.</p>
+<h2 id="threats-worst-first">Threats, worst first</h2>
+<p>Ranked by what each costs you, not by how clever it is.</p>
+<h3 id="1-never-installed-at-all-or-the-hooks-disabled">1. Never installed at all, or the hooks disabled</h3>
+<p>By a wide margin the most likely way your record is wrong. Nobody attacked anything: a machine was never
+configured, or an agent session was already open when gitvow went in. There is no drama and no signal,
+which is exactly why it wins.</p>
+<p><strong>Answered by</strong> <code>gitvow coverage</code> computed from history, plus a required CI check. Both shipped.</p>
+<h3 id="2-a-forged-acceptance-undetectable-today">2. A forged acceptance — undetectable today</h3>
+<p>Anyone who can write a commit message can attribute a decision to a named engineer who never made it,
+with a production scope, and have gitvow's own report repeat it into a pull request as fact. It takes one
+ordinary commit with a <code>--trailer</code> flag, with the gate installed and running and no bypass involved, as
+reproduced in the table above. There is no check to add, no configuration to set and no reading of the
+repository that finds it.</p>
+<p><strong>Answered by</strong> signing. Not built.</p>
+<h3 id="3-a-note-deleted-after-it-was-pushed">3. A note deleted after it was pushed</h3>
+<p>One command, and <code>refs/notes/*</code> sits outside everything GitHub lets you protect. It ranks below forgery
+because it is loud: the trailer stays on the commit, so the missing note is a hole that any reader and
+<code>gitvow report --require-notes</code> can see.</p>
+<p><strong>Answered by</strong> the CI note check (shipped) plus a store replica (not built).</p>
+<h3 id="4-a-note-deleted-before-it-was-ever-pushed">4. A note deleted before it was ever pushed</h3>
+<p>Not a threat, and worth saying so rather than padding the list. A record that never left the machine is a
+record of work that also never left the machine. If the code is not there either, nobody is missing
+anything.</p>
+<p><strong>Answered by</strong> nothing needed.</p>
+<h3 id="the-asymmetry">The asymmetry</h3>
+<p>A deleted record leaves a hole you can see. A forged one does not.</p>
+<p>Every deletion above is survivable because the evidence of the deletion survives it. Forgery is different
+in kind: it produces a record that reads correctly, satisfies gitvow's own checks and raises the coverage
+number. It is the only failure here with no answer at all, and signing is the only thing that answers it.</p>
+<p>One honest note about signing: a commit signature attests to who made a commit, not to whether the person
+named in a trailer agreed to anything. Getting from one to the other is design work that is not finished,
+so it is not described here as though it were.</p>
+<h2 id="configure-the-ci-check">Configure the CI check</h2>
+<p>Point 1 is where the human moment happens. Point 2 is where completeness is enforced, because it is the
+only one your developers cannot switch off.</p>
+<div class="highlight"><pre><span></span><code><span class="c1"># .github/workflows/gitvow.yml</span>
+<span class="nt">name</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">gitvow</span>
+<span class="nt">on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">pull_request</span>
+<span class="nt">permissions</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">contents</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">read</span>
+<span class="w">  </span><span class="nt">pull-requests</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">write</span>
+<span class="nt">jobs</span><span class="p">:</span>
+<span class="w">  </span><span class="nt">record</span><span class="p">:</span>
+<span class="w">    </span><span class="nt">runs-on</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">ubuntu-latest</span>
+<span class="w">    </span><span class="nt">steps</span><span class="p">:</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">actions/checkout@v4</span>
+<span class="w">        </span><span class="nt">with</span><span class="p">:</span><span class="w"> </span><span class="p p-Indicator">{</span><span class="nt">fetch-depth</span><span class="p">:</span><span class="w"> </span><span class="nv">0</span><span class="p p-Indicator">}</span>
+<span class="w">      </span><span class="p p-Indicator">-</span><span class="w"> </span><span class="nt">uses</span><span class="p">:</span><span class="w"> </span><span class="l l-Scalar l-Scalar-Plain">wirevow/gitvow@v0.15</span>
+<span class="w">        </span><span class="nt">with</span><span class="p">:</span>
+<span class="w">          </span><span class="nt">require-notes</span><span class="p">:</span><span class="w"> </span><span class="s">"true"</span><span class="w">   </span><span class="c1"># fail when a trailered commit's note was never pushed</span>
+<span class="w">          </span><span class="nt">fail-under</span><span class="p">:</span><span class="w"> </span><span class="s">"90"</span><span class="w">        </span><span class="c1"># fail when coverage drops below this percentage</span>
+</code></pre></div>
+<p>Then make the job a required check in the repository's branch protection or ruleset, or it is a comment
+rather than a gate. Without the action:</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>gitvow<span class="w"> </span>coverage<span class="w"> </span>--since<span class="w"> </span>90d<span class="w"> </span>--fail-under<span class="w"> </span><span class="m">90</span>
+<span class="gp">$ </span>gitvow<span class="w"> </span>report<span class="w"> </span>--base<span class="w"> </span><span class="s2">"</span><span class="nv">$BASE</span><span class="s2">"</span><span class="w"> </span>--head<span class="w"> </span><span class="s2">"</span><span class="nv">$HEAD</span><span class="s2">"</span><span class="w"> </span>--require-notes
+</code></pre></div>
+<p>Two things worth getting right:</p>
+<ul>
+<li><strong>Set the floor where your history already is.</strong> <code>gitvow coverage</code> tells you; a floor you have to lower
+  next week teaches everyone to ignore it. <code>fetch-depth: 0</code> matters, because coverage reads history.</li>
+<li><strong>Coverage is install health, never anybody's performance.</strong> <code>gitvow coverage --who</code> lists the commit
+  authors whose machines still need configuring, and that is the only thing it is for.</li>
+</ul>
+<h2 id="a-defect-that-shipped">A defect that shipped</h2>
+<p>gitvow was installed into its own repository. Every agent except Cursor reads its hook configuration once,
+at session start — so the session already open kept running with no gate, wrote commits with no session
+record, and <code>gitvow status</code> reported the install as healthy. Installed, inert and silent: the worst of the
+three states, and it produces a clean-looking record of ungated work with every number agreeing.</p>
+<p>Nothing found this but using it. Fixed in 0.15.1 by testing for the consequence rather than repeating the
+advice: an agent-signed commit made after the install that carries no session is now a failure with a
+named remedy.</p>
+<div class="highlight"><pre><span></span><code><span class="gp">$ </span>gitvow<span class="w"> </span>status
+<span class="go">  FAIL 1 agent commit since the install (2026-09-10 15:58) carries no session: f1bf662</span>
+<span class="go">         an agent session that was already open when you installed is not gated, because</span>
+<span class="go">         hooks are read at start-up. Restart it, then `gitvow coverage` to confirm.</span>
+<span class="go">         Cursor reloads by itself.</span>
+</code></pre></div>
+<p>0.15.2 then fixed the fix: <code>git log --since</code> has one-second granularity, so a commit made in the same
+second as the install was blamed on it. CI caught that on every runner while the machine it was written on
+was too fast to ever see it.</p>
+<h2 id="what-leaves-the-machine">What leaves the machine</h2>
+<p>Not "nothing", which is what this page used to say. Two things go to your remote once you push:</p>
+<ul>
+<li><strong>Commit trailers</strong>, because they are inside commits.</li>
+<li><strong>Session notes.</strong> The <code>pre-push</code> hook pushes <code>refs/notes/gitvow/*</code> to the remote you are pushing to,
+  automatically, whenever you push a branch. <code>gitvow push-notes [remote]</code> does it by hand. <code>git push
+  --no-verify</code> skips it.</li>
+</ul>
+<p>Everything else stays local: snapshots under <code>refs/gitvow/snapshots/</code> (never pushed, and excluded from the
+<code>pre-push</code> hook), attribution blobs in <code>.git/objects</code>, the per-session JSON files under <code>~/.gitvow/ledger/</code>,
+the hook log in <code>.git/gitvow-hooks.log</code>, and the agent's transcript, which gitvow never copies anywhere.
+See <a href="../concepts/storage/">What stays out of git</a>.</p>
+<p>There is no telemetry and no network call anywhere in gitvow. It has no runtime dependencies.</p>
+<h2 id="threat-model-for-content">Threat model for content</h2>
+<p>gitvow reads the agent transcript to build the note and the session record. Transcripts contain tool
+output, which can contain secrets and personal data. gitvow therefore never copies tool output anywhere:
+it records tool names, a shortened and redacted argument, and the agent's last stated plan after redaction.</p>
+<h3 id="redaction-is-best-effort">Redaction is best effort</h3>
+<p>Layered patterns plus an entropy pass lower the probability that a secret reaches git. They cannot make it
+zero, and they cannot protect a repository from people who can already read it. Read the patterns before
+enabling this on repositories that handle customer data, and add rules for your own identifiers. See
+<a href="../guides/redaction/">Redaction and custom rules</a>.</p>
+<h3 id="fail-closed">Fail closed</h3>
+<p>A missing or invalid policy refuses every tool call. A classifier that fails or times out yields confirm,
+not allow. A broken external agent adapter blocks during <code>PreToolUse</code>. An invalid redaction rules file
+stops notes, session records and log details from being written at all, rather than writing them
+under-redacted.</p>
+<h3 id="snapshots">Snapshots</h3>
+<p>A snapshot is a commit object holding the working tree after an agent edit, minus ignored files and the
+secrets exclusion list. It lives under <code>refs/gitvow/snapshots/</code>, which no gitvow command pushes and which
+the <code>pre-push</code> hook excludes. Anyone with read access to the repository directory can read snapshots,
+exactly as they can read the working tree. Extend <code>snapshots.exclude</code> for files that must never be
+captured, or disable snapshots in the policy.</p>
+<h3 id="attribution-blobs">Attribution blobs</h3>
+<p>To attribute lines, gitvow stores the version of a file the agent wrote as a loose git object in
+<code>.git/objects</code>. It is unreachable from any ref, is never pushed, and <code>git gc</code> prunes it on the normal
+schedule. It contains exactly what was already in the working tree.</p>
+<h2 id="what-the-gate-cannot-see">What the gate cannot see</h2>
+<p>It inspects tool calls the agent makes through its hooks. A Bash command is inspected as text; a process
+it spawns is not seen separately. Path checks use the path, not the diff. Regular expressions are a floor;
+<a href="../concepts/providers/">providers</a> and the classifier are how you raise it.</p>
+<h2 id="supply-chain">Supply chain</h2>
+<p>No runtime dependencies. CI runs ruff, bandit, pip-audit with <code>--strict</code>, CodeQL, and a build-and-check of
+the wheel on every change; Dependabot watches the development dependencies and the actions. Releases go to
+PyPI through trusted publishing, so no token is stored anywhere.</p>
+<h2 id="reporting">Reporting</h2>
+<p>See <code>SECURITY.md</code> in the repository for the disclosure process. If you run one of the commands above and
+get a different result, that is a bug and it is wanted. Please use synthetic secrets in reproductions.</p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+    
+      
+      <nav class="md-footer__inner md-grid" aria-label="Footer" >
+        
+          
+          <a href="../reference/adapter-protocol/" class="md-footer__link md-footer__link--prev" aria-label="Previous: External adapter protocol">
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+            </div>
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Previous
+              </span>
+              <div class="md-ellipsis">
+                External adapter protocol
+              </div>
+            </div>
+          </a>
+        
+        
+          
+          <a href="../roadmap/" class="md-footer__link md-footer__link--next" aria-label="Next: Roadmap">
+            <div class="md-footer__title">
+              <span class="md-footer__direction">
+                Next
+              </span>
+              <div class="md-ellipsis">
+                Roadmap
+              </div>
+            </div>
+            <div class="md-footer__button md-icon">
+              
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M4 11v2h12l-5.5 5.5 1.42 1.42L19.84 12l-7.92-7.92L10.5 5.5 16 11z"/></svg>
+            </div>
+          </a>
+        
+      </nav>
+    
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+    <div class="md-copyright__highlight">
+      © 2026 Wirevow · <a href='https://wirevow.com'>wirevow.com</a>
+    </div>
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": "..", "features": ["navigation.sections", "navigation.expand", "content.code.copy", "search.suggest", "navigation.footer"], "search": "../assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="../assets/javascripts/bundle.d7400e89.min.js"></script>
+      
+    
+  </body>
+</html>
