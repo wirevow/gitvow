@@ -51,9 +51,48 @@ gitvow is deliberately small. These are the things it should grow into, in order
 ## 0.12 — Decisions (shipped, real-session verification of human-commit and fork paths pending)
 - Two classes of confirm rule: immediate, and at commit. At-commit findings accumulate while the agent works and are put to a person on one card when the agent commits, with evidence and the record's proposal from earlier decisions on the same finding.
 - Answers written as `Gitvow-Accepted`, `Gitvow-Declined` and `Gitvow-Open` trailers and as a `decisions` array in the note (schema 5), with the person, their authority under the policy, scope and reason. `gitvow decisions`, `gitvow decide`. Human commits: open by default, strict as an option. The pull request report lists decisions, reopens scoped ones at production branches, and writes a summary into the description of squash-merging repositories.
-- Earned rules (0.12.1): findings answered the same way by authorities `rule_threshold` times become rules with evidence, dates and a decay window; handed to the agent at session start and on the card as context, never as permission. `gitvow rules [--write]`.
+- Earned rules (0.12.1): findings answered the same way by authorities `rule_threshold` times, each with evidence, dates and a decay window; handed to the agent at session start and on the card as context, never as permission. `gitvow rules [--write]`. Since 0.16 the threshold *proposes* a rule rather than creating one (below).
 - Autonomy meter, payback and revisit (0.12.2): the digest shows decisions, debt, questions per session against the previous period, answers that matched the proposal and snapshots restored; the report marks decisions the record pre-answered; `gitvow revisit` answers a past decision again with an empty commit and closes open debt.
 - Exit: a real session accepts one finding and declines another; a person's commit records an open finding; a branch forked afterwards sees the earlier decision on its card; a scoped decision is reopened on a pull request to main.
+
+## 0.16 — Nobody's policy but a person's (shipped)
+
+Promotion at a threshold made gitvow the author of binding policy, in a project whose claim is that authority
+is human and the machine never accepts its own consequence. It also could not tell a repository-specific call
+from a platitude, an organisation-wide standard or a one-off exception, and a rules set padded with all three
+is a brief the agent should ignore or, worse, obeys.
+
+- The threshold proposes; an authority accepts or rejects with `gitvow rules accept|reject`, recorded as a
+  trailer plus a note carrying the evidence, because creating precedent is a decision. A rejection waits for
+  a full threshold of fresh evidence before the proposal returns.
+- A scoped answer is an exception and never counts towards a rule in either direction.
+- `gitvow decide <n> refer [--to who]`: "you asked the wrong person" separated from "nobody has decided",
+  with its own trailer and its own line in the digest and the pull request report.
+- Still missing, and deliberately: organisation-wide rules pushed *down* into repositories. That is where
+  the second kind of decision belongs, and there is no organisation store yet.
+- Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
+  one command, and the rules it runs on afterwards each name the person who accepted them.
+
+## 0.17 — Signed decisions (next)
+
+The record can say who agreed. It cannot yet say that they did. A `Gitvow-Accepted` trailer is written by
+the hook, but nothing stops a person writing the same line by hand with every hook live, and `gitvow report`
+will then print it as fact. A hand-written `Gitvow-Session` trailer even raises `gitvow coverage`, so the one
+attack a signature would prevent currently improves the number meant to detect it. This is the wrong way
+round: a *deleted* record leaves a hole anyone can see, and a *forged* one does not.
+
+- Sign the decision at the moment it is made, on the developer's machine, and verify signatures wherever the
+  record is read: `gitvow decisions`, `gitvow report`, `gitvow coverage`. Keyless signing over the existing
+  supply-chain rails is the intended shape, so an acceptance becomes an attestation whose subject is the
+  commit and whose predicate is the decision — no new infrastructure to trust, and admission control gets it
+  for free.
+- Coverage grew a corroboration column first (0.16), which is the cheap half of this and needs no keys: a
+  session trailer is compared against the note the hook would have written, and claims with nothing behind
+  them are counted and listed separately. It raises the floor from "type one line" to "understand the note
+  refs". It is not proof — a forger can write a note too — and the numbers say so.
+- Exit: a decision trailer altered or added by hand is reported as unverifiable by every command that reads
+  the record, on a repository where the genuine decisions still verify; and the failure mode when no keys are
+  configured is a stated absence, never a silent pass.
 
 ## Later
 - A configuration-driven storage tier for the ledger (restricted repository, object store).

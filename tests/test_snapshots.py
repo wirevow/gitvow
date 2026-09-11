@@ -49,7 +49,7 @@ def test_note_names_last_snapshot_and_new_session_restarts_numbering(repo, home,
     git(repo, "commit", "-qam", "agent commit")
     post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}), str(home))
     note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
-    assert note["schema"] == 5 and note["snapshot"] == "refs/gitvow/snapshots/sess-1/1"
+    assert note["schema"] == 6 and note["snapshot"] == "refs/gitvow/snapshots/sess-1/1"
     p = payload("SessionStart")
     p["session_id"] = "sess-2"
     session_start(p, str(home))

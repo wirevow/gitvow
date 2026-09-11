@@ -32,7 +32,35 @@ AGENT_MARKS: tuple[tuple[str, str], ...] = (
 )
 COMPILED = tuple((name, re.compile(pat, re.I)) for name, pat in AGENT_MARKS)
 SESSION_RE = re.compile(r"^Gitvow-Session:\s*\S+", re.M)
+SESSION_ID_RE = re.compile(r"^Gitvow-Session:\s*(\S+)", re.M)
 MAX_COMMITS = 5000
+
+
+def _ref_name(session_id: str) -> str:
+    """The note ref a session id maps to. Mirrors hooks.notes_ref, kept local to avoid an import cycle."""
+    return re.sub(r"[^A-Za-z0-9._-]", "_", session_id or "unknown")
+
+
+def _recorded_sessions(top: str) -> tuple[set[str], bool]:
+    """Session ids that actually have a note behind them, and whether any note refs are present at all.
+
+    A `Gitvow-Session` trailer is a claim; a note is the thing the hook wrote. Comparing the two is the
+    cheapest check we have against a trailer somebody typed by hand, and it needs no cryptography. It is
+    not proof — a determined forger can write a note object too — but it raises the floor from "type one
+    line" to "understand the note refs", and it is honest about which of the two it saw.
+
+    The flag matters in CI: a shallow clone that never fetched `refs/notes/gitvow/*` has no notes to
+    compare against, and reporting every commit as unverified there would be a lie about the repository
+    rather than a finding about the record.
+    """
+    try:
+        rc, out, _ = git(["for-each-ref", "--format=%(refname)", "refs/notes/gitvow/"], top)
+    except OSError:
+        return set(), False
+    if rc != 0:
+        return set(), False
+    ids = {line.rsplit("/", 1)[-1] for line in out.splitlines() if line.strip()}
+    return ids, bool(ids)
 
 
 def _since_date(since: str) -> str:
@@ -234,6 +262,13 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
     A commit that carries an agent's signature but no `Gitvow-Session` trailer is a coverage hole: that
     machine was not configured, or its hooks were disabled. This is install health, never a person's
     performance, and it is a floor: an agent that signs nothing at all is invisible here.
+
+    It is a floor in the other direction too, which the numbers now say out loud. A `Gitvow-Session`
+    trailer is a claim anyone can type, so each one is compared against the note the hook would have
+    written; `verified` counts the corroborated ones and `unverified` the claims with nothing behind
+    them. Neither is proof — a forger can write a note as well — and until decisions are signed this
+    reports how much of the *declared* work carries a record, never that any record is genuine. The
+    total commit count is included so the unknown class has a visible bound rather than an implied one.
     """
     if not os.path.isdir(cwd):
         raise ValueError(f"not a git repository: {cwd}")
@@ -255,8 +290,12 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
         raise ValueError(f"not a git repository: {cwd}") from e
     if rc != 0:
         raise ValueError(err or f"not a git repository: {cwd}")
+    recorded, notes_available = _recorded_sessions(top)
+    commits = 0
     signed = 0
     covered = 0
+    verified = 0
+    unverified: list[dict[str, Any]] = []
     holes: list[dict[str, Any]] = []
     by_author: dict[str, int] = {}
     for rec in out.split("\x01"):
@@ -267,12 +306,28 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
         if len(parts) < 6:
             continue
         sha, date, author, subject, ct, body = parts[0], parts[1], parts[2], parts[3], parts[4], parts[5]
+        commits += 1
         agents = sorted({name for name, rx in COMPILED if rx.search(body)})
         if not agents:
             continue
         signed += 1
-        if SESSION_RE.search(body):
+        claim = SESSION_ID_RE.search(body)
+        if claim:
             covered += 1
+            if not notes_available:
+                continue
+            if _ref_name(claim.group(1)) in recorded:
+                verified += 1
+            else:
+                unverified.append(
+                    {
+                        "sha": sha[:7],
+                        "date": date,
+                        "author": author,
+                        "subject": subject[:60],
+                        "session": claim.group(1)[:40],
+                    }
+                )
             continue
         holes.append(
             {
@@ -289,10 +344,16 @@ def coverage(cwd: str, since: str = "90d") -> dict[str, Any]:
         "repo": os.path.basename(top),
         "since": _since_date(since),
         "window": since,
+        "commits": commits,
         "signed": signed,
         "covered": covered,
         "uncovered": signed - covered,
         "coverage": round(covered / signed, 3) if signed else None,
+        "notes_available": notes_available,
+        "verified": verified if notes_available else None,
+        "unverified": len(unverified) if notes_available else None,
+        "unverified_list": unverified[:50],
+        "verified_coverage": (round(verified / signed, 3) if signed else None) if notes_available else None,
         "holes": holes[:50],
         "by_author": dict(sorted(by_author.items(), key=lambda kv: -kv[1])),
     }
@@ -303,13 +364,34 @@ def render_coverage(d: dict[str, Any], who: bool = False) -> str:
     if not d["signed"]:
         lines.append("  no commits carry an agent's signature in this window, so there is nothing to cover.")
         lines.append("")
+        if d.get("commits"):
+            lines.append(f"  {d['commits']} non-merge commits were read. None of them says an agent was involved,")
+            lines.append("  which is not the same as none of them having been.")
         lines.append("  This is a floor, not a total: an agent that signs nothing is invisible to it.")
         return "\n".join(lines) + "\n"
     pct = round(100 * d["coverage"])
+    if d.get("commits"):
+        lines.append(f"  {d['commits']:>4}  non-merge commits in this window")
     lines.append(f"  {d['signed']:>4}  commits carry an agent's signature")
     lines.append(f"  {d['covered']:>4}  of those are recorded by gitvow{'':10}{pct}%")
     lines.append(f"  {d['uncovered']:>4}  are not")
     lines.append("")
+    if d.get("notes_available") and d.get("unverified"):
+        vpct = round(100 * d["verified_coverage"]) if d.get("verified_coverage") is not None else 0
+        lines.append(f"  {d['unverified']:>4}  claim a session that has no note behind it{'':6}{vpct}% corroborated")
+        lines.append("")
+        lines.append("  A session trailer is a claim; the note is what the hook wrote. These commits carry the")
+        lines.append("  claim and no note, which is the shape a hand-written trailer takes — though a stale or")
+        lines.append("  unfetched note ref looks identical, so read it as unconfirmed rather than as forged:")
+        for u in d["unverified_list"][:8]:
+            lines.append(f"    {u['sha']}  {u['date'][5:]}  {u['subject']}  (session {u['session']})")
+        if d["unverified"] > 8:
+            lines.append(f"    … and {d['unverified'] - 8} more")
+        lines.append("")
+    elif not d.get("notes_available"):
+        lines.append("  No gitvow note refs are present here, so no session claim could be corroborated.")
+        lines.append("  In CI, fetch refs/notes/gitvow/* to turn this from a count of claims into a check.")
+        lines.append("")
     if not d["uncovered"]:
         lines.append("  Every agent-signed commit in this window carries a session. Nothing to fix.")
     else:
@@ -326,8 +408,9 @@ def render_coverage(d: dict[str, Any], who: bool = False) -> str:
         lines.append("")
         lines.append("  Fix: `gitvow install --user --check` on the machine that made these, then `gitvow status`.")
     lines.append("")
-    lines.append("  Coverage is a floor. An agent that leaves no signature at all is invisible to it, and")
-    lines.append("  a session is recorded from the hook regardless of whether the agent signs its commits.")
+    lines.append("  Coverage is a floor, in two directions. An agent that leaves no signature at all is invisible")
+    lines.append("  to it, and a trailer written by hand counts as covered — until decisions are signed, this")
+    lines.append("  measures how much of the declared work carries a record, never that a record is genuine.")
     return "\n".join(lines) + "\n"
 
 

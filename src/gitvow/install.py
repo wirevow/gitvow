@@ -19,18 +19,21 @@ if [ -f "$STATE" ]; then
   SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;print(s.get('session_id') or '' if time.time()-p<300 else '')" 2>/dev/null)
   STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
   if [ -n "$SID" ] && ! grep -q "^Gitvow-Session:" "$1"; then printf "\\nGitvow-Session: %s\\nGitvow-Step: %s\\n" "$SID" "$STEP" >> "$1"; fi
-  # Decisions recorded with `gitvow decide` become Gitvow-Accepted/Declined trailers; findings nobody decided
-  # become Gitvow-Open, on agent and human commits alike.
-  if ! grep -q "^Gitvow-\\(Accepted\\|Declined\\|Open\\):" "$1"; then
+  # Decisions recorded with `gitvow decide` become Gitvow-Accepted/Declined/Referred trailers; findings nobody
+  # decided become Gitvow-Open, on agent and human commits alike. A referral is its own trailer because "the
+  # question reached the wrong person" is not an answer and must never be read as one.
+  if ! grep -q "^Gitvow-\\(Accepted\\|Declined\\|Open\\|Referred\\):" "$1"; then
     python3 - "$STATE" "$1" <<'PY' 2>/dev/null
 import json, sys
+KEYS = {"accepted": "Gitvow-Accepted: ", "declined": "Gitvow-Declined: ", "referred": "Gitvow-Referred: "}
 st = json.load(open(sys.argv[1])); out = []
 for f in st.get("findings") or []:
     d = f.get("decision")
     if not d:
         out.append("Gitvow-Open: " + f["finding"]); continue
-    line = ("Gitvow-Accepted: " if d["answer"] == "accepted" else "Gitvow-Declined: ") + f["finding"] + " by " + str(d["by"])
+    line = KEYS[d["answer"]] + f["finding"] + " by " + str(d["by"])
     if d.get("scope"): line += " scope=" + d["scope"]
+    if d.get("to"): line += " to=" + d["to"]
     if d.get("note"): line += ": " + d["note"]
     out.append(line)
 if out:

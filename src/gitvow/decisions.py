@@ -1,7 +1,14 @@
 """Decisions: at-commit findings kept in the session state, the card, a person's answers, trailers, and history.
 
 A finding is raised by an at-commit rule while the agent works and is put to a person when the agent commits.
-The answer travels as Gitvow-Accepted / Gitvow-Declined trailers and a `decisions` array in the session note.
+The answer travels as Gitvow-Accepted / Gitvow-Declined / Gitvow-Referred trailers and a `decisions` array
+in the session note.
+
+There are four answers, not two, because "nobody has decided" and "you asked the wrong person" are different
+facts with different remedies. An open finding is debt: it needs a decision. A referral is a routing failure:
+it needs a different person. Recording both as Gitvow-Open made the two indistinguishable in every report,
+so a queue of questions aimed at someone who could never answer them looked exactly like a team that was
+behind on its answers.
 """
 
 from __future__ import annotations
@@ -13,7 +20,27 @@ from typing import Any
 from .redact import redact
 from .state import git, load_state, save_state
 
-TRAILER_RE = re.compile(r"^Gitvow-(Accepted|Declined|Open):\s*(.+?)(?: by (\S+))?(?: scope=(\S+))?(?:: (.*))?$", re.M)
+# The trailer grammar is in commits forever, so it grows by new trailer *names* and never by a new tail token
+# on a name that has already shipped. `Gitvow-Referred` and its `to=` arrived together in 0.16, and an older
+# gitvow does not match the new name at all, which is the safe direction. Appending a token to `Accepted`,
+# `Declined` or `Open` would not be safe, and the reason is in this pattern: the finding is matched lazily
+# and every suffix is optional, so an older parser that does not know the token backtracks it into the
+# finding. `Gitvow-Accepted: edit foo.go class=k7 by nikhil` reads on 0.15 as a decision about
+# `edit foo.go class=k7`, which silently forks the identity of every decision carrying it and reports no
+# error anywhere. A new fact goes in a new trailer name, or in the note, which is versioned and genuinely
+# additive. `Gitvow-Rule-Accepted` (see rules.py, which is bound by the same constraint) deliberately does
+# not match here: accepting a proposed rule is not an answer to a finding on that commit.
+TRAILER_RE = re.compile(
+    r"^Gitvow-(Accepted|Declined|Open|Referred):\s*(.+?)"
+    r"(?: by (\S+))?(?: scope=(\S+))?(?: to=(\S+))?(?:: (.*))?$",
+    re.M,
+)
+ANSWERS = {"Accepted": "accepted", "Declined": "declined", "Open": "open", "Referred": "referred"}
+# Answers that can establish a precedent. A referral answers nothing about the finding itself and an open
+# finding has not been answered at all, so neither may ever reach rules.py.
+PRECEDENT_ANSWERS = ("accepted", "declined")
+TRAILER_KEYS = {"accepted": "Gitvow-Accepted", "declined": "Gitvow-Declined", "referred": "Gitvow-Referred"}
+ANSWER_VERBS = {"accept": "accepted", "decline": "declined", "refer": "referred"}  # what a person types -> recorded
 REVISITS_RE = re.compile(r"^Gitvow-Revisits:\s*([0-9a-f]{7,40})\b", re.M)
 CARD_HEADER = "DECISIONS REQUIRED"
 MAX_EVIDENCE = 8
@@ -94,11 +121,12 @@ def parse_trailers(body: str) -> list[dict[str, Any]]:
     for m in TRAILER_RE.finditer(body or ""):
         out.append(
             {
-                "answer": {"Accepted": "accepted", "Declined": "declined", "Open": "open"}[m.group(1)],
+                "answer": ANSWERS[m.group(1)],
                 "finding": m.group(2).strip(),
                 "by": m.group(3),
                 "scope": m.group(4),
-                "note": (m.group(5) or "").strip() or None,
+                "to": m.group(5),
+                "note": (m.group(6) or "").strip() or None,
             }
         )
     return out
@@ -128,9 +156,12 @@ def _note_decisions(cwd: str, sha: str, body: str) -> dict[str, dict[str, Any]]:
 def history_all(
     cwd: str, limit: int = HISTORY_COMMITS, finding: str | None = None, pol: dict[str, Any] | None = None
 ) -> list[dict[str, Any]]:
-    """Every decision (not open) in this branch's history, newest first, with authority from the note.
+    """Every precedent-bearing decision in this branch's history, newest first, with authority from the note.
 
-    Without a note, authority is 'commit-access' when the trailer names someone: the person had commit access.
+    Only accepts and declines are returned. An open finding is not an answer, and a referral says only that
+    the question reached the wrong person, so neither can inform the proposal on the next card or be counted
+    towards a rule. Without a note, authority is 'commit-access' when the trailer names someone: the person
+    had commit access.
     """
     rc, out, _ = git(["log", f"-{limit}", "--format=%H%x00%ad%x00%B%x01", "--date=short"], cwd)
     rows: list[dict[str, Any]] = []
@@ -141,7 +172,11 @@ def history_all(
         if not rec.strip() or "Gitvow-" not in rec:
             continue
         sha, date, body = rec.split("\x00", 2)
-        ts = [t for t in parse_trailers(body) if t["answer"] != "open" and (finding is None or t["finding"] == finding)]
+        ts = [
+            t
+            for t in parse_trailers(body)
+            if t["answer"] in PRECEDENT_ANSWERS and (finding is None or t["finding"] == finding)
+        ]
         if not ts:
             continue
         notes = _note_decisions(cwd, sha, body)
@@ -216,12 +251,25 @@ def card(
     if not fs:
         return "No open findings.\n"
     pending = [f for f in fs if not f.get("decision")]
+    # Derived once, not once per finding: deriving walks the whole branch and reads a note per trailered
+    # commit, and a card with six findings used to pay for that six times over.
+    by_finding: dict[str, dict[str, Any]] = {}
+    if pol is not None:
+        from .rules import derive
+
+        derived = derive(cwd, pol)
+        by_finding = {
+            **{r["finding"]: {**r, "state": "proposal"} for r in derived["proposals"]},
+            **{r["finding"]: {**r, "state": "rule"} for r in derived["rules"]},
+        }
     lines = []
     if for_agent:
         lines += [
             f"{CARD_HEADER} before this commit: {len(pending)} finding{'s' if len(pending) != 1 else ''} from this session.",
             "Put this card to the user. Record each answer with",
             '  gitvow decide <n> accept|decline [--scope <env-or-branch>] [--reason "<phrase>"]',
+            "If the person says this is not their call, record that instead of guessing:",
+            '  gitvow decide <n> refer [--to <person-or-team>] [--reason "<phrase>"]',
             "then run the commit again.",
             "",
         ]
@@ -229,7 +277,12 @@ def card(
         d = f.get("decision")
         head = f"{f['n']}. {f['finding']}"
         if d:
-            head += f"   [{d['answer']} by {d['by']}" + (f", scope {d['scope']}" if d.get("scope") else "") + "]"
+            head += (
+                f"   [{d['answer']} by {d['by']}"
+                + (f", scope {d['scope']}" if d.get("scope") else "")
+                + (f", to {d['to']}" if d.get("to") else "")
+                + "]"
+            )
         lines.append(head)
         why = f["reason"]
         if f.get("raised", 1) > 1:
@@ -241,14 +294,21 @@ def card(
         if not d:
             _, sentence = proposal(history(cwd, f["finding"]))
             lines.append(f"   record: {sentence}")
-            if pol is not None:
-                from .rules import rule_for
-
-                r = rule_for(cwd, pol, f["finding"])
-                if r:
-                    lines.append(
-                        f"   rule: {r['answer']} {r['count']} times by authorities since {r['first']}; decays {r['expires']}."
-                    )
+            r = by_finding.get(f["finding"])
+            if r and r["state"] == "rule":
+                lines.append(
+                    f"   rule: {r['answer']} {r['count']} times by authorities since {r['first']}; "
+                    f"accepted as a rule by {r['accepted_by']} on {r['accepted_on']}; decays {r['expires']}."
+                )
+            elif r:
+                # A proposed rule is named on the card so the person can see that a precedent is waiting on
+                # them, never as a reason to answer one way. It says what it is twice, because an agent
+                # relaying this card will otherwise paraphrase it to the person as the repository's position.
+                lines.append(
+                    f"   proposed rule (NOT a rule: nobody has accepted it, it permits nothing): "
+                    f"{r['answer']} {r['count']} times by authorities since {r['first']}. "
+                    f'An authority may accept it with: gitvow rules accept "{r["finding"]}"'
+                )
     return "\n".join(lines) + "\n"
 
 
@@ -262,10 +322,11 @@ def decide(
     by: str | None = None,
     rules: list[tuple[str, str]] | None = None,
     user_turns: int | None = None,
+    to: str | None = None,
 ) -> list[dict[str, Any]]:
     """Record a person's answer for finding `which` (1-based) or 'all'. Returns the findings decided."""
-    if answer not in ("accept", "decline"):
-        raise ValueError("answer must be accept or decline")
+    if answer not in ANSWER_VERBS:
+        raise ValueError("answer must be accept, decline or refer")
     st = load_state(cwd)
     fs: list[dict[str, Any]] = st.get("findings") or []
     if not fs:
@@ -286,10 +347,12 @@ def decide(
     done = []
     for i in idx:
         fs[i]["decision"] = {
-            "answer": "accepted" if answer == "accept" else "declined",
+            "answer": ANSWER_VERBS[answer],
             "by": ident,
             "authority": auth,
-            "scope": (scope or "").strip() or None,
+            # A referral is not a conditional yes, so it carries no scope even if one was passed.
+            "scope": (scope or "").strip() or None if answer != "refer" else None,
+            "to": (to or "").strip() or None if answer == "refer" else None,
             "note": note,
             "decided_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "user_turns": user_turns,
@@ -303,10 +366,11 @@ def trailer_line(f: dict[str, Any]) -> str:
     d = f.get("decision")
     if not d:
         return f"Gitvow-Open: {f['finding']}"
-    key = "Gitvow-Accepted" if d["answer"] == "accepted" else "Gitvow-Declined"
-    line = f"{key}: {f['finding']} by {d['by']}"
+    line = f"{TRAILER_KEYS[d['answer']]}: {f['finding']} by {d['by']}"
     if d.get("scope"):
         line += f" scope={d['scope']}"
+    if d.get("to"):
+        line += f" to={d['to']}"
     if d.get("note"):
         line += f": {d['note']}"
     return line
@@ -332,6 +396,7 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
                 "by": d.get("by"),
                 "authority": d.get("authority", "none") if d else "none",
                 "scope": d.get("scope"),
+                "to": d.get("to"),
                 "note": d.get("note"),
                 "decided_at": d.get("decided_at"),
                 "human_turns_after_card": turns,
@@ -372,14 +437,15 @@ def revisit(
     reason: str | None = None,
     by: str | None = None,
     rules: list[tuple[str, str]] | None = None,
+    to: str | None = None,
 ) -> tuple[str, str]:
     """Answer a decision already on the branch again.
 
     Writes an empty commit carrying the new answer and `Gitvow-Revisits: <sha>`; the earlier trailer stays
     where it was, so the record keeps both.
     """
-    if answer not in ("accept", "decline"):
-        raise ValueError("answer must be accept or decline")
+    if answer not in ANSWER_VERBS:
+        raise ValueError("answer must be accept, decline or refer")
     ds = decisions_of(cwd, sha)
     if not ds:
         raise ValueError(f"{sha[:7]} carries no decision trailers")
@@ -398,9 +464,10 @@ def revisit(
     f = {
         "finding": target["finding"],
         "decision": {
-            "answer": "accepted" if answer == "accept" else "declined",
+            "answer": ANSWER_VERBS[answer],
             "by": ident,
-            "scope": (scope or "").strip() or None,
+            "scope": (scope or "").strip() or None if answer != "refer" else None,
+            "to": (to or "").strip() or None if answer == "refer" else None,
             "note": note,
         },
     }
@@ -417,13 +484,13 @@ def revisit(
     return head, trailer_line(f) + f" (revisits {full[:7]})"
 
 
-def open_debt(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
-    """Gitvow-Open findings on the branch that no later revisit has answered."""
+def _unanswered(cwd: str, answer: str, limit: int) -> list[dict[str, Any]]:
+    """Trailers carrying `answer` that no later revisit of the same commit and finding has replaced."""
     rc, out, _ = git(["log", f"-{limit}", "--format=%H%x00%ad%x00%B%x01", "--date=short"], cwd)
     if rc != 0:
         return []
     revisited: set[tuple[str, str]] = set()
-    opens: list[dict[str, Any]] = []
+    rows: list[dict[str, Any]] = []
     for rec in out.split("\x01"):
         rec = rec.strip("\n")
         if not rec.strip() or "Gitvow-" not in rec:
@@ -434,6 +501,25 @@ def open_debt(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
             for t in parse_trailers(body):
                 revisited.add((m.group(1)[:7], t["finding"]))
         for t in parse_trailers(body):
-            if t["answer"] == "open":
-                opens.append({"sha": sha[:7], "date": date, "finding": t["finding"]})
-    return [o for o in opens if (o["sha"], o["finding"]) not in revisited]
+            if t["answer"] == answer:
+                row = {"sha": sha[:7], "date": date, "finding": t["finding"]}
+                if answer == "referred":
+                    row["to"] = t.get("to")
+                    row["by"] = t.get("by")
+                rows.append(row)
+    return [r for r in rows if (r["sha"], r["finding"]) not in revisited]
+
+
+def open_debt(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
+    """Gitvow-Open findings on the branch that no later revisit has answered."""
+    return _unanswered(cwd, "open", limit)
+
+
+def referrals(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
+    """Gitvow-Referred findings on the branch that no later revisit has answered.
+
+    Kept apart from open debt on purpose. Both are unanswered, but the fix differs: open debt needs somebody
+    to decide, a referral needs the question to reach the person named in `to`. Counting them together hid
+    the second kind entirely, because a referral looks like progress and reads like debt.
+    """
+    return _unanswered(cwd, "referred", limit)

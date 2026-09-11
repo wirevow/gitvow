@@ -43,7 +43,7 @@ def test_commit_flow_trailer_note_and_attribution(repo, home, payload, transcrip
     note = git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD")
     assert note.startswith("gitvow-session")
     data = json.loads(note.split("\n", 1)[1])
-    assert data["schema"] == 5 and data["step"] == 1 and data["tools_used"] == ["Bash", "Edit"]
+    assert data["schema"] == 6 and data["step"] == 1 and data["tools_used"] == ["Bash", "Edit"]
     assert "[github-token]" in data["last_stated_plan"] and "[email:" in data["last_stated_plan"]
     assert "ghp_" not in note and "ops@example.com" not in note
     att = data["attribution"]
@@ -233,3 +233,32 @@ def test_new_session_resets_steps_and_blobs_but_resume_keeps_them(repo, home, pa
     session_start(p, str(home))  # a new session in the same repo starts from zero
     st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
     assert st["session_id"] == "sess-2" and st["steps"] == 0 and st["agent_blobs"] == {}
+
+
+def test_a_global_option_between_git_and_commit_still_raises_the_card():
+    """`git -c k=v commit` and `git -C dir commit` are the same act.
+
+    The first version of this matched `\\bgit\\s+commit\\b`, so a single flag between the two words
+    avoided the card entirely — a bypass that needed no hook trickery, only the knowledge that it
+    existed. Regression test for the whole family.
+    """
+    from gitvow.hooks import COMMIT_RE
+
+    for cmd in (
+        "git commit -m x",
+        "git -c core.hooksPath=/dev/null commit -m x",
+        "git -c user.name=a -c user.email=b commit -m x",
+        "git -C /tmp/elsewhere commit -m x",
+        "git --no-pager commit -m x",
+        "git --git-dir=/tmp/g --work-tree=/tmp/w commit -m x",
+        "GIT_AUTHOR_NAME=a git -C . commit -m x",
+        "cd /tmp && git -c a=b commit -am x",
+    ):
+        assert COMMIT_RE.search(cmd), cmd
+
+
+def test_plumbing_that_merely_starts_with_commit_is_not_a_commit():
+    from gitvow.hooks import COMMIT_RE
+
+    for cmd in ("git commit-tree $t", "git commit-graph write", "git log --format=%H", "gitk commitish"):
+        assert not COMMIT_RE.search(cmd), cmd

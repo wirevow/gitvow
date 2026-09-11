@@ -58,6 +58,7 @@ def _decisions(
     for r in rows:
         n = by_finding.get(r["finding"]) or {}
         r["authority"] = n.get("authority")
+        r["to"] = r.get("to") or n.get("to")
         r["evidence"] = n.get("evidence") or []
         r["human_turns_after_card"] = n.get("human_turns_after_card")
         wanted = {"accept": "accepted", "decline": "declined"}.get(n.get("proposed") or "")
@@ -138,6 +139,9 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             "accepted": sum(1 for d in alld if d["answer"] == "accepted"),
             "declined": sum(1 for d in alld if d["answer"] == "declined"),
             "open": sum(1 for d in alld if d["answer"] == "open"),
+            # Counted apart from open on purpose: a reviewer seeing "3 open" and a reviewer seeing
+            # "3 waiting on security" have different next actions.
+            "referred": sum(1 for d in alld if d["answer"] == "referred"),
             "reopened": sum(1 for d in alld if d.get("reopen")),
             "pre_answered": sum(1 for d in alld if d.get("pre_answered")),
         },
@@ -164,6 +168,8 @@ def render_markdown(r: dict[str, Any]) -> str:
         bits = [f"{ds['accepted']} accepted", f"{ds['declined']} declined"]
         if ds.get("open"):
             bits.append(f"**{ds['open']} open**")
+        if ds.get("referred"):
+            bits.append(f"**{ds['referred']} referred to someone else**")
         if ds.get("reopened"):
             bits.append(f"**{ds['reopened']} to reopen for {r.get('target')}**")
         if ds.get("pre_answered"):
@@ -220,6 +226,15 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
         if d["answer"] == "open":
             out.append(f"**Open:** {d['finding']} — nobody decided; `gitvow decide` closes it")
             continue
+        if d["answer"] == "referred":
+            # Not debt and not an answer. Naming the person is the whole remediation, so it leads the line.
+            whom = f" to {d['to']}" if d.get("to") else ""
+            why = f": {d['note']}" if d.get("note") else ""
+            out.append(
+                f"**Referred{whom}:** {d['finding']} — {d.get('by') or 'unknown'} was not the person to decide "
+                f"this{why}; it needs a different person, not a reminder. `gitvow revisit` records their answer"
+            )
+            continue
         who = d.get("by") or "unknown"
         auth = f" ({d['authority']})" if d.get("authority") in ("none",) else ""
         scope = f", scope {d['scope']}" if d.get("scope") else ""
@@ -240,12 +255,19 @@ def decisions_summary(r: dict[str, Any]) -> str:
     seen: list[str] = []
     for c in r["commits"]:
         for d in c.get("decisions") or []:
-            key = {"accepted": "Gitvow-Accepted", "declined": "Gitvow-Declined", "open": "Gitvow-Open"}[d["answer"]]
+            key = {
+                "accepted": "Gitvow-Accepted",
+                "declined": "Gitvow-Declined",
+                "open": "Gitvow-Open",
+                "referred": "Gitvow-Referred",
+            }[d["answer"]]
             line = f"{key}: {d['finding']}"
             if d["answer"] != "open":
                 line += f" by {d.get('by') or 'unknown'}"
                 if d.get("scope"):
                     line += f" scope={d['scope']}"
+                if d.get("to"):
+                    line += f" to={d['to']}"
                 if d.get("note"):
                     line += f": {d['note']}"
             if line not in seen:

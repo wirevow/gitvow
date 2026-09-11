@@ -103,6 +103,27 @@ def _validate(pol: dict[str, Any], path: str) -> None:
             raise PolicyError(f"{path}: provider {prov['name']} lists unknown questions {bad}")
 
 
+def _command_subject(text: str, match: re.Match[str], reason: str) -> str:
+    """What a command finding is *about*: the program the rule matched, named by the rule that stopped it.
+
+    Until 0.16 this was the whole command line, so `kubectl apply -f a.yaml` and `kubectl apply -f b.yaml`
+    were two different findings for ever. A person answered the same question again on every invocation, and
+    no command could reach `decisions.rule_threshold` even in a repository that ran it daily: the arguments
+    are precisely the part that changes per run, so a subject built from them converges on nothing. Every
+    other finding kind already named the thing being decided about — a path, a route — and this one named the
+    typing. The program plus the rule that objected is that thing, and it is the rule rather than the program
+    alone because two rules can match the same program for unrelated reasons, and collapsing those into one
+    finding would let a precedent set for one consequence answer the other. The full command line travels as
+    evidence instead, so the card still shows exactly what was going to run.
+    """
+    tail = text[match.start() :].lstrip()
+    # Split at the first shell metacharacter rather than taking the whole match: a pattern is free to span
+    # arguments (`git push .*--force`), and anything after the program name is per-invocation again.
+    head = re.split(r"[\s;|&<>()]", tail, maxsplit=1)[0].strip("\"'") if tail else ""
+    exe = os.path.basename(head) or head or (text.strip().split(" ", 1)[0] if text.strip() else "command")
+    return f"{exe} ({reason})"[:120]
+
+
 def _finding(kind: str, subject: str, path: str, reason: str, evidence: list[str] | None = None) -> dict[str, Any]:
     if kind == "command":
         text = f"run {subject}"
@@ -131,11 +152,15 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
             if re.search(r["pattern"], text):
                 return Decision("deny", r.get("reason", "denied"), text)
         for r in pol.get("bash_confirm", []):
-            if re.search(r["pattern"], text):
+            m = re.search(r["pattern"], text)
+            if m:
                 when = r.get("when", "immediate")
+                reason = r.get("reason", "needs confirmation")
                 if when == "immediate":
-                    return Decision("confirm", r.get("reason", "needs confirmation"), text)
-                findings.append(_finding("command", text.strip()[:120], "", r.get("reason", "needs confirmation")))
+                    return Decision("confirm", reason, text)
+                findings.append(
+                    _finding("command", _command_subject(text, m, reason), "", reason, [text.strip()[:200]])
+                )
     if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit") and path:
         for r in pol.get("path_confirm", []):
             if re.search(r["pattern"], path):

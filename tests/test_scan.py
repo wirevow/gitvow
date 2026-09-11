@@ -113,7 +113,7 @@ def test_coverage_counts_agent_signed_commits_without_a_session(repo, home):
     assert "3  commits carry an agent's signature" in text
     assert "2  of those are recorded by gitvow" in text and "67%" in text
     assert "not covered" in text and "gitvow install --user --check" in text
-    assert "Coverage is a floor." in text
+    assert "Coverage is a floor, in two directions." in text
     assert "Install health, not performance" not in text  # only with --who
     assert "Install health, not performance" in render_coverage(d, who=True)
 
@@ -150,3 +150,82 @@ def test_cli_coverage_fail_under_is_a_ci_gate(repo, home, monkeypatch, capsys):
     d = json.loads(capsys.readouterr().out)
     assert d["coverage"] == 0.5 and d["holes"][0]["subject"] == "not covered"
     assert cli.main(["coverage", "/nonexistent-path-for-coverage"]) == 1
+
+
+def _note(repo, session, sha="HEAD"):
+    import subprocess
+
+    subprocess.run(
+        ["git", "notes", "--ref", f"gitvow/{session}", "add", "-f", "-m", "{}", sha],
+        cwd=str(repo),
+        check=True,
+        capture_output=True,
+    )
+
+
+def test_a_session_trailer_with_no_note_is_reported_as_uncorroborated(repo, home):
+    """A trailer is a claim; the note is what the hook wrote.
+
+    Anyone can type `Gitvow-Session: whatever` with every hook live, and it used to count as covered
+    with nothing checking it. Coverage still counts it — the metric is about declared work — but the
+    claim now has to stand next to the note, or its absence.
+    """
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "real\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1")
+    _note(repo, "s1")
+    _commit(repo, "b.txt", "typed by hand\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: made-up")
+    d = coverage(str(repo))
+
+    assert d["signed"] == 2 and d["covered"] == 2 and d["uncovered"] == 0
+    assert d["notes_available"] is True
+    assert d["verified"] == 1 and d["unverified"] == 1
+    assert d["verified_coverage"] == 0.5
+    assert [u["session"] for u in d["unverified_list"]] == ["made-up"]
+
+    text = render_coverage(d)
+    assert "claim a session that has no note behind it" in text
+    assert "50% corroborated" in text
+    assert "made-up" in text
+    assert "unconfirmed rather than as forged" in text
+
+
+def test_with_no_note_refs_at_all_corroboration_is_declined_not_failed(repo, home):
+    """A shallow CI clone has no notes to compare against.
+
+    Reporting every commit as unverified there would be a claim about the repository, not a finding
+    about the record, so the check declines instead and says how to enable it.
+    """
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "one\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1")
+    d = coverage(str(repo))
+
+    assert d["notes_available"] is False
+    assert d["verified"] is None and d["unverified"] is None and d["verified_coverage"] is None
+    text = render_coverage(d)
+    assert "no session claim could be corroborated" in text
+    assert "fetch refs/notes/gitvow/*" in text
+
+
+def test_coverage_bounds_the_unknown_class_with_a_total(repo, home):
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "agent\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1")
+    _commit(repo, "b.txt", "a person")
+    _commit(repo, "c.txt", "another person")
+    d = coverage(str(repo))
+
+    # Four, not three: the fixture's own "init" commit is history too, and the total exists precisely
+    # so the unknown class is bounded by what was read rather than by what the caller remembers adding.
+    assert d["commits"] == 4 and d["signed"] == 1
+    assert "4  non-merge commits in this window" in render_coverage(d)
+
+
+def test_the_floor_is_stated_in_both_directions(repo, home):
+    from gitvow.scan import coverage, render_coverage
+
+    _commit(repo, "a.txt", "one\n\nCo-authored-by: Claude <x@y>\nGitvow-Session: s1")
+    text = render_coverage(coverage(str(repo)))
+    assert "Coverage is a floor, in two directions." in text
+    assert "a trailer written by hand counts as covered" in text

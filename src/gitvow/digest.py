@@ -113,11 +113,15 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                     reasons[e.get("reason") or "?"] += 1
     decided = _decisions_in_period(top, since_day)
     debt = dec.open_debt(top)
+    referred = dec.referrals(top)
     from .policy import PolicyError, load_policy
     from .rules import derive
 
+    rule_proposals: int | None = None
     try:
-        rules_in_force: int | None = len(derive(top, load_policy(top))["rules"])
+        d_rules = derive(top, load_policy(top))
+        rules_in_force: int | None = len(d_rules["rules"])
+        rule_proposals = len(d_rules["proposals"])
     except PolicyError:
         rules_in_force = None  # the digest renders without a valid policy
     sess_list = sorted(sessions.values(), key=lambda s: s["date"], reverse=True)
@@ -159,7 +163,12 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
             **decided,
             "debt": len(debt),
             "debt_items": debt[:10],
+            # Referrals are their own number and their own list. Rolled into debt they were invisible, and a
+            # queue of questions pointed at the wrong person reads as a team behind on its answers.
+            "referrals": len(referred),
+            "referral_items": referred[:10],
             "rules_in_force": rules_in_force,
+            "rule_proposals": rule_proposals,
         },
         "questions": {
             "cards": now["cards"],
@@ -193,7 +202,7 @@ def _decisions_in_period(top: str, since_day: str) -> dict[str, int]:
     rc, out, _ = git(["log", "-5000", f"--since={since_day}", "--format=%H%x00%B%x01"], top)
     c: collections.Counter[str] = collections.Counter()
     if rc != 0:
-        return {"accepted": 0, "declined": 0, "open": 0, "revisited": 0, "matched_proposal": 0}
+        return {"accepted": 0, "declined": 0, "open": 0, "referred": 0, "revisited": 0, "matched_proposal": 0}
     for rec in out.split("\x01"):
         rec = rec.strip("\n")
         if not rec.strip() or "Gitvow-" not in rec:
@@ -209,7 +218,7 @@ def _decisions_in_period(top: str, since_day: str) -> dict[str, int]:
                 wanted = {"accept": "accepted", "decline": "declined"}.get(n.get("proposed") or "")
                 if wanted and wanted == n.get("answer"):
                     c["matched_proposal"] += 1
-    return {k: c[k] for k in ("accepted", "declined", "open", "revisited", "matched_proposal")}
+    return {k: c[k] for k in ("accepted", "declined", "open", "referred", "revisited", "matched_proposal")}
 
 
 def render(d: dict[str, Any]) -> str:
@@ -238,12 +247,18 @@ def render(d: dict[str, Any]) -> str:
     ds, q, pb = d.get("decisions") or {}, d.get("questions") or {}, d.get("payback") or {}
     if ds:
         line = f"Decisions: {ds['accepted']} accepted · {ds['declined']} declined · {ds['open']} open"
+        if ds.get("referred"):
+            line += f" · {ds['referred']} referred"
         if ds.get("debt"):
             line += f" · decision debt {ds['debt']} (open findings nobody has answered)"
+        if ds.get("referrals"):
+            line += f" · awaiting a different person {ds['referrals']}"
         if ds.get("revisited"):
             line += f" · {ds['revisited']} revisited"
         if ds.get("rules_in_force") is not None:
             line += f" · earned rules in force {ds['rules_in_force']}"
+        if ds.get("rule_proposals"):
+            line += f" · {ds['rule_proposals']} proposed rule{'s' if ds['rule_proposals'] != 1 else ''} awaiting an authority"
         out.append(line)
     if q:
         per = "n/a" if q.get("per_session") is None else f"{q['per_session']:.2f}"
@@ -262,6 +277,14 @@ def render(d: dict[str, Any]) -> str:
         out += ["", "### Decision debt"]
         for o in ds["debt_items"]:
             out.append(f"{o['sha']}  {o['date'][5:]}  {o['finding']}  · gitvow revisit {o['sha']} accept|decline")
+    if ds.get("referral_items"):
+        out += ["", "### Referred, waiting on someone else"]
+        for o in ds["referral_items"]:
+            whom = f"→ {o['to']}" if o.get("to") else "→ nobody named"
+            out.append(
+                f"{o['sha']}  {o['date'][5:]}  {o['finding']}  {whom}  · "
+                f"gitvow revisit {o['sha']} accept|decline --by <them>"
+            )
     if d["sessions"]:
         out += ["", "### Sessions"]
         for s in d["sessions"]:

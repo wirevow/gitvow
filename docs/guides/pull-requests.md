@@ -55,7 +55,7 @@ Inputs, all optional:
 
 ## Decisions on the pull request
 
-Each agent commit's report lists the decisions it carries: what was accepted or declined, by whom, with what scope and reason, and any `Gitvow-Open` finding nobody decided. When a decision's scope does not cover the branch the pull request targets and that branch is in `decisions.production_branches`, the report reopens it: "accepted for staging; this pull request targets main". The check does not fail on it; the reviewer decides.
+Each agent commit's report lists the decisions it carries: what was accepted or declined, by whom, with what scope and reason, any `Gitvow-Open` finding nobody decided, and any `Gitvow-Referred` finding that reached the wrong person. Referrals are counted and worded separately from open findings, because a reviewer who reads "3 open" chases the team and a reviewer who reads "3 waiting on security" chases security. When a decision's scope does not cover the branch the pull request targets and that branch is in `decisions.production_branches`, the report reopens it: "accepted for staging; this pull request targets main". The check does not fail on it; the reviewer decides.
 
 ### Squash merges
 
@@ -65,6 +65,7 @@ A squash merge writes one new commit whose message GitHub takes from the pull re
 <!-- gitvow-decisions -->
 Gitvow-Accepted: edit auth/AuthorizeWhitelistedPaths.java by nikhil scope=staging
 Gitvow-Declined: route /v1/orders/export in src/api/orders.py by nikhil: needs security review
+Gitvow-Referred: edit infra/iam/roles.tf by nikhil to=platform: they own this module
 <!-- /gitvow-decisions -->
 ```
 

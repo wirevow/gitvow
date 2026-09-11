@@ -65,9 +65,10 @@ The self-check is the other half: it creates a throwaway repository, drives ever
   ok   note carries the decisions; open list cleared
   ok   line attribution
   ok   note follows amend
+  ok   referral trailer added, apart from accept and decline
   ok   ledger written
 
-selftest: 18 passed, 0 failed
+selftest: 19 passed, 0 failed
 ```
 
 `gitvow selftest --agent codex` drives another agent's payload shapes instead.

@@ -321,6 +321,20 @@ def run() -> int:
                 "note follows amend",
             )
         )
+        # A referral is written by the same git hook as an accept, so a hook left behind by an older gitvow
+        # would drop it silently. Prove the third answer reaches a commit here rather than in a real session.
+        pre_tool_use({**base, "tool_name": "Edit", "tool_input": {"file_path": "x/authz_rules.py"}}, home)
+        dec.decide(repo, "1", "refer", {}, to="security", reason="selftest")
+        with open(os.path.join(repo, "a.txt"), "a") as fh:
+            fh.write("referred\n")
+        g("commit", "-qam", "selftest referral")
+        results.append(
+            (
+                "Gitvow-Referred: edit x/authz_rules.py by selftest to=security: selftest"
+                in g("log", "-1", "--format=%B"),
+                "referral trailer added, apart from accept and decline",
+            )
+        )
         stop(base, home)
         results.append(
             (os.path.exists(os.path.join(home, ".gitvow", "ledger", "selftest-session.json")), "ledger written")

@@ -237,8 +237,17 @@ def cmd_decisions(a: argparse.Namespace) -> int:
 
 
 def cmd_rules(a: argparse.Namespace) -> int:
-    """Earned rules from the decision history; --write puts them into an agent instruction file."""
-    from .rules import INSTRUCTION_FILES, derive, render, write_section
+    """Earned rules and the proposals awaiting an authority; `rules accept|reject` records the verdict."""
+    from .rules import (
+        INSTRUCTION_FILES,
+        RULES_NOTES_REF,
+        aside,
+        decide_proposals,
+        derive,
+        render,
+        select,
+        write_section,
+    )
 
     cwd = os.getcwd()
     try:
@@ -247,6 +256,30 @@ def cmd_rules(a: argparse.Namespace) -> int:
         print(f"policy error: {e}", file=sys.stderr)
         return 2
     d = derive(cwd, pol)
+    if a.sub:
+        try:
+            rules = load_rules(cwd, os.path.expanduser("~"))
+        except RedactionError as e:
+            print(f"redaction rules invalid: {e}", file=sys.stderr)
+            return 2
+        verdict = "accepted" if a.sub == "accept" else "rejected"
+        try:
+            entries = select(d, a.proposal, a.all)
+            head, lines = decide_proposals(cwd, pol, entries, verdict, a.reason, a.by, rules)
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        print("\n".join(lines))
+        tail = (
+            "in force from now on; the agent gets it as context at session start"
+            if verdict == "accepted"
+            else f"not a rule; it returns only after {d['threshold']} answers dated later than this commit"
+        )
+        print(
+            f"recorded as an empty commit {head[:7]} with its evidence on refs/notes/{RULES_NOTES_REF}; {tail}",
+            file=sys.stderr,
+        )
+        return 0
     if a.json:
         print(json.dumps(d, indent=1))
         return 0
@@ -260,14 +293,24 @@ def cmd_rules(a: argparse.Namespace) -> int:
     text = render(d, for_agent=False)
     if not text:
         print(
-            f"no earned rules yet: a finding becomes one after {d['threshold']} consistent answers by authorities "
-            f"(decisions.rule_threshold), confirmed within {d['decay_days']} days."
+            f"no earned rules and nothing proposed: a finding is proposed as a rule after {d['threshold']} "
+            f"consistent unscoped answers by authorities (decisions.rule_threshold), confirmed within "
+            f"{d['decay_days']} days, and becomes a rule when an authority accepts the proposal."
         )
-        if d["candidates"]:
-            for r in d["candidates"]:
-                print(f"  {r['finding']}: {r['answer']} {r['count']} times (last {r['last']} by {', '.join(r['by'])})")
+        print(
+            "\n".join(aside(d)).lstrip("\n"),
+            end="\n" if any(d[k] for k in ("rejected", "candidates", "decayed")) else "",
+        )
         return 0
     print(text, end="")
+    if d["proposals"]:
+        print(
+            f"\n{len(d['proposals'])} proposal{'s' if len(d['proposals']) != 1 else ''} awaiting an authority. "
+            "Accept or reject with:\n"
+            '  gitvow rules accept <n|finding> [--reason "<phrase>"]\n'
+            '  gitvow rules reject <n|finding> [--reason "<phrase>"]\n'
+            "  gitvow rules accept --all      # every proposal standing, in one commit"
+        )
     return 0
 
 
@@ -292,10 +335,10 @@ def cmd_revisit(a: argparse.Namespace) -> int:
         for d in ds:
             extra = (f" by {d['by']}" if d.get("by") else "") + (f" scope={d['scope']}" if d.get("scope") else "")
             print(f"{d['n']}. {d['answer']}: {d['finding']}{extra}")
-        print("revisit with: gitvow revisit <commit> accept|decline [--finding n]", file=sys.stderr)
+        print("revisit with: gitvow revisit <commit> accept|decline|refer [--finding n]", file=sys.stderr)
         return 0
     try:
-        head, line = dec.revisit(cwd, a.commit, a.answer, pol, a.finding, a.scope, a.reason, a.by, rules)
+        head, line = dec.revisit(cwd, a.commit, a.answer, pol, a.finding, a.scope, a.reason, a.by, rules, a.to)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 1
@@ -323,7 +366,7 @@ def cmd_decide(a: argparse.Namespace) -> int:
     st = load_state(cwd)
     turns = summarize(st.get("transcript_path"), rules=rules)["user_turns"] if st.get("transcript_path") else None
     try:
-        done = dec.decide(cwd, a.finding, a.answer, pol, a.scope, a.reason, a.by, rules, turns)
+        done = dec.decide(cwd, a.finding, a.answer, pol, a.scope, a.reason, a.by, rules, turns, a.to)
     except ValueError as e:
         print(str(e), file=sys.stderr)
         return 1
@@ -331,6 +374,12 @@ def cmd_decide(a: argparse.Namespace) -> int:
         print(dec.trailer_line(f))
     if done and done[0]["decision"]["authority"] == "none":
         print("recorded; the committer is not named under decisions.authorities", file=sys.stderr)
+    if a.answer == "refer":
+        print(
+            "recorded as a referral, not an answer: it closes the card but the finding still needs a decision "
+            "from someone else, and it can never earn a rule",
+            file=sys.stderr,
+        )
     print("written as trailers on the next commit", file=sys.stderr)
     return 0
 
@@ -364,7 +413,11 @@ def cmd_show(a: argparse.Namespace) -> int:
         return 1
     print(msg)
     m = re.search(r"^Gitvow-Session:\s*(\S+)", msg, re.M)
-    refs = ([notes_ref(m.group(1))] if m else []) + [LEGACY_NOTES_REF]
+    from .rules import RULES_NOTES_REF
+
+    # A rule decision has no session, so its note lives on one ref of its own; try it too rather than
+    # printing "(no session note)" on a commit that does carry the evidence for the rule it created.
+    refs = ([notes_ref(m.group(1))] if m else []) + [RULES_NOTES_REF, LEGACY_NOTES_REF]
     for ref in refs:
         rc, note, _ = git(["notes", f"--ref={ref}", "show", a.commit], os.getcwd())
         if rc == 0:
@@ -600,8 +653,14 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_decisions)
     s = sub.add_parser(
-        "rules", help="earned rules from the decision history; --write updates the agent instruction file"
+        "rules",
+        help="earned rules and the proposals awaiting an authority; 'rules accept|reject' records the verdict",
     )
+    s.add_argument("sub", nargs="?", choices=["accept", "reject"], help="record an authority's verdict on a proposal")
+    s.add_argument("proposal", nargs="?", help="proposal number from `gitvow rules`, or the finding text")
+    s.add_argument("--all", action="store_true", help="every proposal standing, in one commit")
+    s.add_argument("--reason", help="one phrase, optional")
+    s.add_argument("--by", help="whose verdict this is, when not the committer")
     s.add_argument("--json", action="store_true")
     s.add_argument("--write", action="store_true", help="write the managed section into the instruction file")
     s.add_argument(
@@ -613,18 +672,20 @@ def main(argv: list[str] | None = None) -> int:
     s.set_defaults(f=cmd_rules)
     s = sub.add_parser("revisit", help="answer a decision already on the branch again: gitvow revisit <commit> accept")
     s.add_argument("commit")
-    s.add_argument("answer", nargs="?", choices=["accept", "decline"])
+    s.add_argument("answer", nargs="?", choices=["accept", "decline", "refer"])
     s.add_argument("--finding", help="which decision on the commit, when it carries several")
     s.add_argument("--scope")
     s.add_argument("--reason")
     s.add_argument("--by")
+    s.add_argument("--to", help="with refer: who the question should go to")
     s.set_defaults(f=cmd_revisit)
     s = sub.add_parser("decide", help="record a person's answer: gitvow decide 1 accept --scope staging")
     s.add_argument("finding", help="finding number from `gitvow decisions`, or 'all'")
-    s.add_argument("answer", choices=["accept", "decline"])
+    s.add_argument("answer", choices=["accept", "decline", "refer"], help="refer: not this person's call to make")
     s.add_argument("--scope", help="environment or branch the answer is limited to")
     s.add_argument("--reason", help="one phrase, optional")
     s.add_argument("--by", help="who decided, when not the committer")
+    s.add_argument("--to", help="with refer: who the question should go to")
     s.set_defaults(f=cmd_decide)
     s = sub.add_parser(
         "snapshots", help="list working-tree snapshots taken after agent edits; 'snapshots prune' deletes"

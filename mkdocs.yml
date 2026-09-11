@@ -49,7 +49,7 @@ nav:
       - Provider protocol: reference/provider-protocol.md
       - Adapters for other agents: reference/adapters.md
       - External adapter protocol: reference/adapter-protocol.md
-  - Security: security.md
+  - Security and the bypass surface: security.md
   - Roadmap: roadmap.md
   - FAQ: faq.md
   - Architecture: ARCHITECTURE.md

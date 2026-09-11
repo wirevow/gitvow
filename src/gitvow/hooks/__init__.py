@@ -18,8 +18,18 @@ from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 5
-COMMIT_RE = re.compile(r"\bgit\s+commit\b")
+NOTE_SCHEMA = 6  # 6 added `to` to decisions[]: a referral may name who the question should have gone to
+# `git commit`, including the global options that may sit between the two words. `git -c k=v commit` and
+# `git -C dir commit` are the same act and used to slip past a `\bgit\s+commit\b` match entirely, which made
+# the card trivially avoidable by anyone who knew it. Options are enumerated rather than matched loosely so
+# that plumbing with a similar name (`git commit-tree`, `git commit-graph`) still does not match.
+_GIT_GLOBAL_VALUED = r"-[cC]|--git-dir|--work-tree|--namespace|--exec-path|--config-env|--super-prefix"
+_GIT_GLOBAL_BARE = (
+    r"--no-pager|--paginate|-p|-P|--bare|--literal-pathspecs|--no-replace-objects|--no-optional-locks|--glob-pathspecs"
+)
+COMMIT_RE = re.compile(
+    rf"\bgit\b(?:\s+(?:(?:{_GIT_GLOBAL_VALUED})(?:=\S+|\s+\S+)|(?:{_GIT_GLOBAL_BARE})))*\s+commit(?![\w-])"
+)
 EDIT_TOOLS = ("Edit", "Write", "MultiEdit", "NotebookEdit")
 REDACTION_UNAVAILABLE = "redaction rules invalid; nothing written for this event"
 
