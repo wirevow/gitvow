@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.16.1 — 2026-09-15
 - **`user_turns` counted the harness as a person.** The filter for text the agent writes into the user's own turn accepted only `[a-z_]` inside a tag, and every wrapper Claude Code uses is hyphenated — `<local-command-caveat>`, `<task-notification>`, `<system-reminder>`, `<command-name>` — so all of them were counted as something a human typed. The summary a session writes when it resumes after running out of context is plain prose with no tag at all and was never filtered. Both are now excluded, along with `Caveat:` and `[Request interrupted` prefixes.
 - This is not cosmetic. `user_turns` feeds `card_user_turns`, and the difference between them is `human_turns_after_card` — the autonomy meter, and the number the whole compounding claim is measured by. On three engineers' real sessions, the injected text outnumbered what they actually typed, so the meter was reporting people as far more engaged with the card than they were. Measured numbers from before this fix should be treated as upper bounds.
 - Loaded skill prose is still not caught. It carries no marker and is only detectable by its repetition across sessions, which a single transcript cannot see; the parser says nothing it cannot know.
