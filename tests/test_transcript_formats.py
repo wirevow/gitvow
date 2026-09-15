@@ -185,3 +185,40 @@ def test_codex_wrapped_tool_calls_and_user_turns(tmp_path):
     assert s["files_written"] == ["/r/calc.py"]
     # the injected <recommended_plugins> block is not a person speaking; the two real prompts are
     assert s["user_turns"] == 2
+
+
+def _claude_user(content):
+    return {"type": "user", "message": {"role": "user", "content": content}}
+
+
+CLAUDE_WITH_INJECTIONS = [
+    _claude_user("Why will there be a GetObject here? We only do List, CopyObject and DeleteObject."),
+    {"type": "assistant", "message": {"role": "assistant", "content": [{"type": "text", "text": "Checking."}]}},
+    # a tool result rides in the user turn but nobody typed it
+    _claude_user([{"type": "tool_result", "tool_use_id": "t1", "content": "ok"}]),
+    # every Claude Code injection tag is hyphenated; the old [a-z_] pattern let all of these through
+    _claude_user("<local-command-caveat>Caveat: generated while running local commands.</local-command-caveat>"),
+    _claude_user("<task-notification>agent finished</task-notification>"),
+    _claude_user("<system-reminder>context</system-reminder>"),
+    _claude_user("<command-name>/model</command-name><command-message>model</command-message>"),
+    # the resume-after-compaction summary is plain prose in the user turn, written by the harness
+    _claude_user(
+        "This session is being continued from a previous conversation that ran out of context. "
+        "The summary below covers the earlier portion.\n\nSummary:\n1. Primary Request and Intent: ..."
+    ),
+    _claude_user("[Request interrupted by user]"),
+    # a second real message, so the count is 2 and not merely non-zero
+    _claude_user("go to main and pull always when investigating"),
+]
+
+
+def test_claude_user_turns_count_people_not_the_harness(tmp_path):
+    """`user_turns` feeds `card_user_turns` and the autonomy meter, so counting harness text as a person
+    silently flatters the one number the whole compounding claim rests on.
+
+    On three engineers' real sessions the injected text outnumbered what they typed; every wrapper Claude
+    Code uses is hyphenated and the original pattern accepted only [a-z_]. Compaction summaries carry no
+    tag at all and are caught by their fixed opening sentence.
+    """
+    s = summarize(_write(tmp_path, "claude.jsonl", CLAUDE_WITH_INJECTIONS))
+    assert s["user_turns"] == 2

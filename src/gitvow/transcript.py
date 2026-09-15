@@ -166,7 +166,16 @@ def _finish_usage(usage: dict[str, Any]) -> None:
     )
 
 
-INJECTED_RE = re.compile(r"^\s*<[a-z_]+>")  # Codex prepends <recommended_plugins>, <environment_context> and the like
+# Text the harness writes into the user's turn that no person typed. Codex prepends <recommended_plugins> and
+# <environment_context>; Claude Code injects <local-command-caveat>, <task-notification>, <system-reminder>
+# and <command-name> blocks, and when a session resumes after running out of context it writes the compaction
+# summary as a plain-prose user message. Until 0.16.1 this pattern accepted only [a-z_], so every hyphenated
+# Claude Code tag slipped through and was counted as a human turn. That inflated `user_turns`, and with it
+# `card_user_turns` and the autonomy meter built on the difference between them — measured on three
+# engineers' real sessions, the injected text outnumbered what they actually typed.
+INJECTED_RE = re.compile(
+    r"^\s*(<[a-z][a-z0-9_-]*>|Caveat:|\[Request interrupted|This session is being continued from a previous conversation)"
+)
 PERSON_TEXT = ("text", "input_text")
 
 
