@@ -73,6 +73,18 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
+## 0.22 — The collector (shipped)
+
+- `gitvow sync` moves the export bundle to sinks the customer runs: a store repository (`git`) or a directory or
+  mounted object-store prefix (`dir`). Idempotent by digest; an unreachable sink queues the bundle in
+  `~/.gitvow/outbox` and the next sync drains it oldest first; nothing ever blocks a commit or a tool call.
+- Sinks are configured only in files that are never committed (`.gitvow/export.local.json`, which `gitvow
+  install` excludes from the index, or `~/.gitvow/sinks.json`). A sink named in a committed file is ignored with a
+  warning, so a fork can never inherit an upstream project's store. This is the footgun the session-recorder
+  competitor hit, designed out before the first customer.
+- Exit: two sinks, one reachable and one not, receive the same digest exactly once each, the second after the
+  outbox drains; a committed sink is warned about and never used.
+
 ## 0.21 — Proposed policy rules (shipped)
 
 - The loop closes. A batch job that replays the policy over recorded sessions proposes rules for what the gate

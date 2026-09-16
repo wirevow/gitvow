@@ -564,6 +564,19 @@ def uninstall_user(
     return done
 
 
+def _exclude_local_sinks(repo: str) -> None:
+    """A destination for the record is never committed: a fork must not inherit an upstream project's store."""
+    rc, gd, _ = git(["rev-parse", "--git-dir"], repo)
+    if rc != 0:
+        return
+    p = os.path.join(repo if not os.path.isabs(gd) else "", gd, "info", "exclude")
+    os.makedirs(os.path.dirname(p), exist_ok=True)
+    existing = open(p).read() if os.path.exists(p) else ""
+    if ".gitvow/export.local.json" not in existing:
+        with open(p, "a") as fh:
+            fh.write(("" if existing.endswith("\n") or not existing else "\n") + ".gitvow/export.local.json\n")
+
+
 def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -> list[str]:
     base = os.path.join(repo, ".gitvow")
     os.makedirs(base, exist_ok=True)
@@ -583,6 +596,7 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -
         merge_agent_settings(os.path.join(repo, repo_rel), agent, cmd_prefix)
     git(["config", "core.hooksPath", ".gitvow/git-hooks"], repo)
     _set_notes_config(repo, [])
+    _exclude_local_sinks(repo)
     return [
         f"policy → {pol}",
         f"hooks merged into {repo_rel}",

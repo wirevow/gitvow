@@ -55,6 +55,18 @@ Parts are serialised canonically: rows sorted, keys sorted, no timestamps the ex
 
 Every row carries `source` and `sha` so it is meaningful on its own. `decisions.jsonl` rows carry `finding`, `kind`, `path`, `answer`, `by`, `authority`, `scope`, `to`, `note`, `human_turns_after_card`, `proposed`, `session_id`, `reason` and `binding` (`note` when the session note was present, `trivial` otherwise). `class` is `null` in this version: not computed, never "no class". `sessions.jsonl` rows carry `last_stated_plan: null`; the plan text is a sub-class that is off and not exportable here. Paths of edits made in other checkouts are never exported, only their counts.
 
+## Sinks and `gitvow sync`
+
+A sink is where bundles go. Two kinds, both run by the customer: `git`, a store repository in the layout the store protocol describes (the bundle is committed under `bundles/<source>/<digest>/` and the source's frontier file appended; the store's own tooling projects the index), and `dir`, a directory or mounted object-store prefix (the bundle is copied to `<source>/<digest>/`).
+
+```json
+{"sinks": [{"name": "acme", "type": "git", "path": "~/acme-store"}, {"name": "archive", "type": "dir", "path": "/mnt/records"}]}
+```
+
+Sinks are configured only in files that are never committed: `.gitvow/export.local.json` in the repository, which `gitvow install` adds to `.git/info/exclude`, or `~/.gitvow/sinks.json`. A sink named in the committed `.gitvow/export.json` is ignored with a warning: a committed destination is how a contributor's record ends up in an upstream project's store.
+
+`gitvow sync [--sink NAME] [--since 90d] [--dry-run]` builds the bundle and delivers it to every configured sink. Delivery is idempotent by digest: a bundle a sink already holds is reported, not resent. When a sink is unreachable, the bundle waits in `~/.gitvow/outbox/<sink>/<source>/<digest>/` and the next sync drains the outbox oldest first. A sync never blocks a commit or a tool call, and it moves `kind: record` bundles only.
+
 ## What never leaves
 
 Transcripts, working trees, snapshots, command lines, prompts, and person-reach claims (a person's own preferences, which live in their `~/.gitvow/claims/` and nowhere else). The attestation states this list so it is on the record, not in a footnote.

@@ -236,6 +236,37 @@ def cmd_decisions(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sync(a: argparse.Namespace) -> int:
+    """The collector: export the record and deliver it to the configured sinks; queue when a sink is unreachable."""
+    from . import sync as sy
+
+    cwd = os.getcwd()
+    try:
+        rules = load_rules(cwd, os.path.expanduser("~"))
+    except RedactionError as e:
+        print(f"redaction rules invalid: {e}", file=sys.stderr)
+        return 2
+    try:
+        out = sy.sync(cwd, None, only=a.sink, since=a.since, rules=rules, dry_run=a.dry_run)
+    except (ValueError, OSError) as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(sy.render(out), end="")
+    return 0
+
+
+def cmd_sinks(a: argparse.Namespace) -> int:
+    from . import sync as sy
+
+    try:
+        rows = sy.sinks(os.getcwd())
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(json.dumps(rows, indent=1) if a.json else sy.render_sinks(rows), end="" if not a.json else "\n")
+    return 0
+
+
 def cmd_policy(a: argparse.Namespace) -> int:
     """Proposed policy rules from a batch loop: the queue, or a verdict that becomes a reviewed commit."""
     from . import proposals as pr
@@ -802,6 +833,17 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_status)
+    s = sub.add_parser("sync", help="export the record and deliver it to the configured sinks; never the session")
+    s.add_argument("--sink", help="deliver to this sink only")
+    s.add_argument("--since", default="90d", help="window of history to carry (default 90d)")
+    s.add_argument("--dry-run", action="store_true", help="build the bundle and say where it would go; move nothing")
+    s.set_defaults(f=cmd_sync)
+    s = sub.add_parser(
+        "sinks", help="the configured sinks: .gitvow/export.local.json (never committed) and ~/.gitvow/sinks.json"
+    )
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_sinks)
+
     s = sub.add_parser(
         "policy",
         help="proposed policy rules from a batch loop: the queue, or accept one into .gitvow/policy.json as a reviewed commit",
