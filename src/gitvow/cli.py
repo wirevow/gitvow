@@ -236,6 +236,58 @@ def cmd_decisions(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_policy(a: argparse.Namespace) -> int:
+    """Proposed policy rules from a batch loop: the queue, or a verdict that becomes a reviewed commit."""
+    from . import proposals as pr
+
+    cwd = os.getcwd()
+    try:
+        pol = load_policy(cwd)
+    except PolicyError:
+        pol = {}
+    try:
+        rules = load_rules(cwd, os.path.expanduser("~"))
+    except RedactionError as e:
+        print(f"redaction rules invalid: {e}", file=sys.stderr)
+        return 2
+    if a.sub == "import":
+        try:
+            counts = pr.import_proposals(cwd, a.file, rules)
+        except (OSError, ValueError) as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        print("  ".join(f"{k} {v}" for k, v in counts.items()))
+        return 0
+    if a.sub in ("accept", "reject"):
+        try:
+            head, line = pr.decide(
+                cwd,
+                a.proposal,
+                "accepted" if a.sub == "accept" else "rejected",
+                pol,
+                when=a.when,
+                reason=a.reason,
+                by=a.by,
+                rules=rules,
+            )
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        print(line)
+        tail = (
+            f"the rule is in .gitvow/policy.json as of commit {head[:7]}; the gate uses it from the next tool call"
+            if a.sub == "accept"
+            else f"recorded as an empty commit {head[:7]}; the loop that proposed it will not propose it again"
+        )
+        print(tail, file=sys.stderr)
+        return 0
+    if a.json:
+        print(json.dumps({"queue": pr.queue(cwd), "verdicts": pr.verdicts(cwd)}, indent=1))
+        return 0
+    print(pr.render_queue(pr.queue(cwd)), end="")
+    return 0
+
+
 def cmd_export(a: argparse.Namespace) -> int:
     """The export bundle: the record as an inspectable directory, one file per consented class; --dry-run --why
     prints what would leave and sends nothing."""
@@ -750,6 +802,27 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_status)
+    s = sub.add_parser(
+        "policy",
+        help="proposed policy rules from a batch loop: the queue, or accept one into .gitvow/policy.json as a reviewed commit",
+    )
+    s.add_argument("--json", action="store_true")
+    ps = s.add_subparsers(dest="sub")
+    pi = ps.add_parser("import", help="queue proposals from the loop's JSON output or a policy fragment")
+    pi.add_argument("file")
+    for name, help_ in (
+        ("accept", "write the rule into the policy file and commit that change alone"),
+        ("reject", "record a rejection on an empty commit"),
+    ):
+        pv = ps.add_parser(name, help=help_)
+        pv.add_argument("proposal", help="queue number from `gitvow policy`, or the proposal id")
+        pv.add_argument(
+            "--when", choices=["commit", "observe", "immediate"], help="the tier to accept into (default: as proposed)"
+        )
+        pv.add_argument("--reason", help="one phrase, optional")
+        pv.add_argument("--by", help="who decided, when not the committer")
+    s.set_defaults(f=cmd_policy)
+
     s = sub.add_parser(
         "export",
         help="the export bundle: the record as an inspectable directory, one file per consented class; never the session",

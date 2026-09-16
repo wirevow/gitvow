@@ -73,6 +73,18 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
+## 0.21 — Proposed policy rules (shipped)
+
+- The loop closes. A batch job that replays the policy over recorded sessions proposes rules for what the gate
+  let through; `gitvow policy import` queues them with their evidence and price; `gitvow policy accept` writes
+  the rule into `.gitvow/policy.json` and commits that change alone with `Gitvow-Policy-Accepted` and the
+  evidence in the message; `reject` is an empty commit with `Gitvow-Policy-Rejected`, which the loop reads to
+  stop proposing. Authority follows rule verdicts. A repository with no policy file gets one from the shipped
+  default in the same commit, so accepting never silently drops the defaults.
+- Why: the gate is only as rich as its rules, and nobody writes rules for their own paths. The replay of three
+  engineers' sessions produced a proposal in one afternoon; this is where it lands as reviewed code rather than
+  a pasted fragment.
+
 ## 0.20 — The export bundle (shipped)
 
 - `gitvow export` assembles the record into a directory a security team can read before anything moves: one

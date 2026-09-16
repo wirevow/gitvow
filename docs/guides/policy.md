@@ -23,6 +23,10 @@ gitvow check -- <a command>      # dry-run any rule
 
 Patterns are Python `re` syntax, searched (not anchored) against the Bash command text or the file path; MCP patterns are matched against the whole tool name.
 
+## Rules proposed by a loop
+
+A batch job outside gitvow can replay the policy over recorded sessions and propose rules for what the gate let through, each with evidence (events, repositories, engineers) and a price in questions per engineer per week. `gitvow policy import <file>` queues them; `gitvow policy` lists them, highest consequence first; `gitvow policy accept <n> [--when observe]` writes the rule into `.gitvow/policy.json` and commits that change alone, with `Gitvow-Policy-Accepted` and the evidence in the message; `reject` records `Gitvow-Policy-Rejected` on an empty commit so the loop does not propose it again. The policy stays code and every rule in it has a reviewed commit that says why it is there. Accepting into `observe` is the cheap first step: the rule records without asking, and the count it accumulates is the evidence for moving it to `commit` later.
+
 ## Advice from running it
 - Put things you never want in `bash_deny`. Put things you want to hear about in `bash_confirm`. Confirm is cheap: it costs one question and the log shows how often it fires.
 - Name the files that decide who can do what in `path_confirm`: authorization filters, allow-lists, production deployment values, CI definitions. The default includes gitvow's own policy and the agent settings file, so an agent cannot quietly loosen the gate.
