@@ -14,11 +14,23 @@
       "reason": "destructive git history/worktree operation"
     },
     {
-      "pattern": "\\bkubectl\\s+(delete|drain|cordon)\\b",
+      "program": "kubectl",
+      "verbs": [
+        "delete",
+        "drain",
+        "cordon"
+      ],
       "reason": "destructive kubectl"
     },
     {
-      "pattern": "\\b(terraform|pulumi)\\s+(destroy|apply)\\b",
+      "program": [
+        "terraform",
+        "pulumi"
+      ],
+      "verbs": [
+        "destroy",
+        "apply"
+      ],
       "reason": "infrastructure mutation"
     },
     {
@@ -26,7 +38,7 @@
       "reason": "destructive SQL"
     },
     {
-      "pattern": "\\baws\\s+\\S+\\s+(delete|terminate|deregister)\\S*",
+      "pattern": "\\baws(?:\\s+(?:-{1,2}[\\w.-]+=\\S*|-{1,2}[\\w.-]+\\s+[^-\\s|;&<>()]\\S*))*\\s+[a-z0-9-]+(?:\\s+(?:-{1,2}[\\w.-]+=\\S*|-{1,2}[\\w.-]+\\s+[^-\\s|;&<>()]\\S*))*\\s+(?:[a-z-]*(?:delete|terminate|deregister)[a-z-]*|rm|rb)\\b",
       "reason": "destructive AWS CLI"
     },
     {
@@ -40,16 +52,43 @@
       "reason": "pushing to a remote"
     },
     {
-      "pattern": "\\bkubectl\\s+(apply|rollout|set|scale|exec)\\b",
+      "program": "kubectl",
+      "verbs": [
+        "apply",
+        "create",
+        "replace",
+        "patch",
+        "rollout",
+        "set",
+        "scale",
+        "exec"
+      ],
       "reason": "cluster mutation"
     },
     {
-      "pattern": "\\bhelm\\s+(install|upgrade|uninstall)\\b",
+      "program": "helm",
+      "verbs": [
+        "install",
+        "upgrade",
+        "uninstall",
+        "rollback"
+      ],
       "reason": "helm release change"
     },
     {
-      "pattern": "\\bgh\\s+(pr\\s+merge|release\\s+create|repo\\s+delete)\\b",
+      "program": "gh",
+      "verbs": [
+        "pr\\s+merge",
+        "release\\s+create",
+        "repo\\s+delete",
+        "secret\\s+set"
+      ],
       "reason": "GitHub mutation"
+    },
+    {
+      "pattern": "\\b(mysql|mariadb|psql|cockroach|sqlite3|mongosh|clickhouse-client)\\b.*\\b(?i:update\\s+\\w+|delete\\s+from|insert\\s+into|replace\\s+into|alter\\s+table|truncate\\s+table|create\\s+(table|index|database|schema))\\b",
+      "reason": "direct write to a database",
+      "when": "commit"
     }
   ],
   "path_confirm": [
@@ -78,7 +117,11 @@
   "decisions": {
     "mode": "open",
     "authorities": [],
-    "production_branches": ["main", "master", "production"],
+    "production_branches": [
+      "main",
+      "master",
+      "production"
+    ],
     "rule_threshold": 3,
     "rule_decay_days": 90,
     "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (the agent's commit is stopped once with the card, then goes through with Gitvow-Open for every finding nobody answered; a person's commit goes through the same way) or strict (agent and person alike: refused until every finding has a gitvow decide answer). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
@@ -87,5 +130,6 @@
     "enabled": false,
     "command": "",
     "_doc": "Optional: a command that reads the hook JSON on stdin and prints ALLOW|CONFIRM|DENY <reason>. Used only for calls not matched above."
-  }
+  },
+  "_doc_commands": "A command rule is either {pattern} or {program, verbs}. The second form allows options between the program and the verb (kubectl --context prod delete), which a hand-written \\bkubectl\\s+delete silently does not; write new command rules in that form. Reads are never rules: kubectl get, aws s3 ls, SELECT. The database-write rule matches a client program on the line and a writing statement anywhere after it; grep for UPDATE in a source tree is not a write."
 }

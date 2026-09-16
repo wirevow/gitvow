@@ -3,7 +3,8 @@
 ```json
 {
   "_doc": "optional free text",
-  "bash_deny":    [{"pattern": "<regex>", "reason": "<text>"}],
+  "bash_deny":    [{"pattern": "<regex>", "reason": "<text>"},
+                   {"program": "kubectl", "verbs": ["delete", "drain"], "reason": "<text>"}],
   "bash_confirm": [{"pattern": "<regex>", "reason": "<text>", "when": "immediate"}],
   "path_confirm": [{"pattern": "<regex>", "reason": "<text>", "when": "commit"}],
   "mcp_allow":    ["<regex matched against the full tool name>"],
@@ -18,8 +19,8 @@
 
 | Key | Applies to | Match | Outcome |
 |---|---|---|---|
-| `bash_deny` | Bash command text | `re.search` | deny |
-| `bash_confirm` | Bash command text | `re.search` | confirm; `when` defaults to `immediate` |
+| `bash_deny` | Bash command text | `re.search` on `pattern`, or on the regex built from `program` and `verbs` | deny |
+| `bash_confirm` | Bash command text | as above | confirm; `when` defaults to `immediate` |
 | `path_confirm` | file path of Edit, Write, MultiEdit, NotebookEdit | `re.search` | confirm; `when` defaults to `commit` |
 | `mcp_deny` | MCP tool name | `re.fullmatch` | deny |
 | `mcp_allow` | MCP tool name | `re.fullmatch`; if the list is non-empty, non-matching tools → confirm | |
@@ -28,6 +29,9 @@
 | `snapshots` | after each agent edit | not a gate rule; controls working-tree snapshots, see [Snapshots](../concepts/snapshots.md) | |
 | `llm_classifier` | anything not decided above | command prints `ALLOW` / `CONFIRM reason` / `DENY reason` | as printed, immediately; failure → confirm |
 | `decisions` | the card and the git hooks | not a gate rule; `mode` `open` (default: the agent's commit is stopped once with the card, then goes through with `Gitvow-Open` for every unanswered finding; a person's commit goes through the same way) or `strict` (agent and person alike refused until every finding is decided); `authorities` names whose decisions count and who alone may accept a proposed rule, matched against committer email, its local part or name; `production_branches` where scoped decisions are reopened by the report; `rule_threshold` consistent **unscoped** answers by authorities before a finding is *proposed* as a rule, and the number of answers dated after a rejection before it is proposed again; `rule_decay_days` days without a new confirmation before a rule lapses | |
+
+### `program` and `verbs`
+A command rule may name a `program` (or a list of them) and the `verbs` that make it consequential, instead of a hand-written regex. gitvow builds the regex and allows options between the two: `kubectl --context prod delete pod x` is a `kubectl delete`. A hand-written `\bkubectl\s+delete` is not, and until 0.17.1 the default policy was written that way; replaying three engineers' real sessions found 163 cluster mutations that had walked past it on a `--context` flag. Each verb is a regex fragment, so multi-word verbs are written `pr\s+merge`. The finding a `program` rule raises is `run <program> (<reason>)`, so the program name is what precedent attaches to. Write new command rules in this form; keep `pattern` for shapes it cannot express, such as the database-write rule, which needs a client program and a statement anywhere after it.
 
 ### `when`
 `"when": "immediate"` refuses the call and asks now. `"when": "commit"` records a finding and lets the call run; the finding is put to a person when the agent commits, see [Decisions](../concepts/decisions.md). Deny rules have no `when`; a denial is always immediate. The default policy keeps edits to gitvow's own policy and hooks immediate, so a loosened policy can never take effect before a person has seen it.

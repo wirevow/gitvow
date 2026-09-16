@@ -22,6 +22,25 @@ class PolicyError(Exception):
 WHEN = ("immediate", "commit")
 DECISION_MODES = ("open", "strict")
 
+# Options that may sit between a program and its verb: `--context prod`, `-n ns`, `--kubeconfig=x`, `-v`. Three
+# shapes: `--k=v`, `--k v` where v does not start with a dash or a shell metacharacter, and a bare flag. Rules written
+# as {"program": ..., "verbs": [...]} are compiled with this between the two, so `kubectl --context prod delete`
+# is a kubectl delete. Until 0.17.1 the default rules anchored the verb to the word right after the program, and a
+# replay of three engineers' real sessions found 163 cluster mutations, 49 of them deletes against
+# production-named contexts, that had walked past the gate on a `--context` flag. Same bug class as the `git -c`
+# form the commit gate mis-parsed until 0.16.
+OPTS = r"(?:\s+(?:-{1,2}[\w.-]+=\S*|-{1,2}[\w.-]+\s+[^-\s|;&<>()]\S*|-{1,2}[\w.-]+))*"
+
+
+def rule_pattern(rule: dict[str, Any]) -> str:
+    """The regex a command rule matches with: its `pattern`, or one built from `program` and `verbs`."""
+    if "pattern" in rule:
+        return rule["pattern"]
+    progs = rule["program"] if isinstance(rule["program"], list) else [rule["program"]]
+    verbs = "|".join(rule["verbs"])
+    return rf"\b(?:{'|'.join(re.escape(p) for p in progs)}){OPTS}\s+(?:{verbs})\b"
+
+
 
 @dataclass(frozen=True)
 class Decision:
@@ -63,12 +82,23 @@ def load_policy(cwd: str | None = None, home: str | None = None) -> dict[str, An
 def _validate(pol: dict[str, Any], path: str) -> None:
     for key in ("bash_deny", "bash_confirm", "path_confirm"):
         for rule in pol.get(key, []):
-            if not isinstance(rule, dict) or "pattern" not in rule:
-                raise PolicyError(f"{path}: {key} entries need a 'pattern'")
+            if not isinstance(rule, dict):
+                raise PolicyError(f"{path}: {key} entries must be objects")
+            has_verbs = key != "path_confirm" and "program" in rule and "verbs" in rule
+            if "pattern" not in rule and not has_verbs:
+                need = "a 'pattern'" if key == "path_confirm" else "a 'pattern', or 'program' and 'verbs'"
+                raise PolicyError(f"{path}: {key} entries need {need}")
+            if has_verbs and "pattern" not in rule:
+                progs = rule["program"] if isinstance(rule["program"], list) else [rule["program"]]
+                if not progs or not all(isinstance(p, str) and p for p in progs):
+                    raise PolicyError(f"{path}: {key} 'program' must be a non-empty string or list of them")
+                if not isinstance(rule["verbs"], list) or not rule["verbs"] or not all(isinstance(v, str) and v for v in rule["verbs"]):
+                    raise PolicyError(f"{path}: {key} 'verbs' must be a non-empty list of strings")
+            pat = rule_pattern(rule) if key != "path_confirm" else rule["pattern"]
             try:
-                re.compile(rule["pattern"])
+                re.compile(pat)
             except re.error as e:
-                raise PolicyError(f"{path}: bad regex in {key}: {rule['pattern']} ({e})") from e
+                raise PolicyError(f"{path}: bad regex in {key}: {pat} ({e})") from e
             if "when" in rule and rule["when"] not in WHEN:
                 raise PolicyError(f"{path}: {key} 'when' must be one of {WHEN}")
     dec = pol.get("decisions", {})
@@ -149,10 +179,10 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
     findings: list[dict[str, Any]] = []
     if tool == "Bash":
         for r in pol.get("bash_deny", []):
-            if re.search(r["pattern"], text):
+            if re.search(rule_pattern(r), text):
                 return Decision("deny", r.get("reason", "denied"), text)
         for r in pol.get("bash_confirm", []):
-            m = re.search(r["pattern"], text)
+            m = re.search(rule_pattern(r), text)
             if m:
                 when = r.get("when", "immediate")
                 reason = r.get("reason", "needs confirmation")
