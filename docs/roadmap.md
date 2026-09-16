@@ -73,6 +73,16 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
+## 0.24 — A store over the network (shipped)
+
+- The `http` sink. A sink was a local path; a laptop delivered to a shared clone and nothing pushed. The
+  collector now speaks the store protocol's verbs to a store the customer serves over HTTPS behind their own
+  proxy: begin (idempotent by digest, parts already held are not resent), one PUT per part, commit with the
+  attestation. Pack and brief come back from the same server. A refusal is reported with the reason and never
+  queued; unreachable still queues.
+- Exit: thirty laptops deliver to one store with no shared filesystem; the same bundle sent twice costs one
+  request; a wrong token is a reported refusal, not a growing outbox.
+
 ## 0.23 — The pack and the brief come back (shipped)
 
 - `gitvow sync` now also fetches what a git-sink store publishes for the repository into `~/.gitvow/cache/`: the

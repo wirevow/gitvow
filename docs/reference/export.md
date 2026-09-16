@@ -57,10 +57,10 @@ Every row carries `source` and `sha` so it is meaningful on its own. `decisions.
 
 ## Sinks and `gitvow sync`
 
-A sink is where bundles go. Two kinds, both run by the customer: `git`, a store repository in the layout the store protocol describes (the bundle is committed under `bundles/<source>/<digest>/` and the source's frontier file appended; the store's own tooling projects the index), and `dir`, a directory or mounted object-store prefix (the bundle is copied to `<source>/<digest>/`).
+A sink is where bundles go. Three kinds, all run by the customer: `git`, a store repository in the layout the store protocol describes (the bundle is committed under `bundles/<source>/<digest>/` and the source's frontier file appended; the store's own tooling projects the index); `dir`, a directory or mounted object-store prefix (the bundle is copied to `<source>/<digest>/`); and `http`, a store served over HTTPS that speaks the store protocol's verbs (begin, one PUT per part, commit; idempotent by digest, parts already held are not resent). An `http` sink names a `url` and, for its bearer token, `token_env` (an environment variable, preferred) or `token`; TLS is the reverse proxy's job. A 4xx from an http store is a refusal, reported with the server's reason and never queued.
 
 ```json
-{"sinks": [{"name": "acme", "type": "git", "path": "~/acme-store"}, {"name": "archive", "type": "dir", "path": "/mnt/records"}]}
+{"sinks": [{"name": "acme", "type": "git", "path": "~/acme-store"}, {"name": "archive", "type": "dir", "path": "/mnt/records"}, {"name": "store", "type": "http", "url": "https://store.acme.internal", "token_env": "WIREVOW_STORE_TOKEN"}]}
 ```
 
 Sinks are configured only in files that are never committed: `.gitvow/export.local.json` in the repository, which `gitvow install` adds to `.git/info/exclude`, or `~/.gitvow/sinks.json`. A sink named in the committed `.gitvow/export.json` is ignored with a warning: a committed destination is how a contributor's record ends up in an upstream project's store.
@@ -69,7 +69,7 @@ Sinks are configured only in files that are never committed: `.gitvow/export.loc
 
 ## What comes back: the pack and the brief
 
-After delivering to a `git` sink, `sync` copies what the store publishes for this repository into `~/.gitvow/cache/`: the organisation **pack** (`packs/<source>.json`, see [Policy schema](policy.md)) and the **brief** (`brief/<source>.json`): standing per finding class across the organisation's repositories, accepted rules, confirmed claims, and gaps (conflict, unratified, decaying). Both are read from the cache only, never fetched during a tool call. `gitvow brief` prints the cached brief with its age and `source: cache`, marks it stale past the store's `stale_after`, and falls back to the repository's own record as `source: repo`; session start hands the same to the agent. A `dir` sink is a drop, not a store, so nothing comes back from it.
+After delivering to a `git` or `http` sink, `sync` copies what the store publishes for this repository into `~/.gitvow/cache/`: the organisation **pack** (`packs/<source>.json` or `GET /v1/rules`, see [Policy schema](policy.md)) and the **brief** (`brief/<source>.json` or `GET /v1/brief`): standing per finding class across the organisation's repositories, accepted rules, confirmed claims, and gaps (conflict, unratified, decaying). Both are read from the cache only, never fetched during a tool call. `gitvow brief` prints the cached brief with its age and `source: cache`, marks it stale past the store's `stale_after`, and falls back to the repository's own record as `source: repo`; session start hands the same to the agent. A `dir` sink is a drop, not a store, so nothing comes back from it.
 
 ## What never leaves
 

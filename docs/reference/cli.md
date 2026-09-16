@@ -25,7 +25,7 @@ gitvow policy import <file.json>                          queue proposals: the l
 gitvow policy accept <n|id> [--when commit|observe|immediate] [--reason R] [--by WHO]
                                                           write the rule into .gitvow/policy.json (created from the shipped default if absent) and commit that change alone, with Gitvow-Policy-Accepted and the evidence in the message
 gitvow policy reject <n|id> [--reason R] [--by WHO]      an empty commit carrying Gitvow-Policy-Rejected; the loop stops proposing it
-gitvow sync [--sink NAME] [--since 90d] [--dry-run]   the collector: export the record and deliver it to the configured sinks (git store or directory); queues in ~/.gitvow/outbox when a sink is unreachable; idempotent by digest
+gitvow sync [--sink NAME] [--since 90d] [--dry-run]   the collector: export the record and deliver it to the configured sinks (git store, directory, or a store over http); queues in ~/.gitvow/outbox when a sink is unreachable, reports a refusal without queueing; idempotent by digest
 gitvow sinks [--json]                                     the configured sinks, read only from .gitvow/export.local.json (never committed) and ~/.gitvow/sinks.json
 gitvow pack [--json]                                      the organisation pack cached for this repository: rules it adds, who accepted them, when it lapses; NOT applied and why, when it is not
 gitvow brief [--json]                                     what the record says about this repository: the store's cached brief with its age (source: cache), or the repository's own record (source: repo)
