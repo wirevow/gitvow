@@ -571,7 +571,10 @@ def _exclude_local_sinks(repo: str) -> None:
         return
     p = os.path.join(repo if not os.path.isabs(gd) else "", gd, "info", "exclude")
     os.makedirs(os.path.dirname(p), exist_ok=True)
-    existing = open(p).read() if os.path.exists(p) else ""
+    existing = ""
+    if os.path.exists(p):
+        with open(p) as fh:
+            existing = fh.read()
     if ".gitvow/export.local.json" not in existing:
         with open(p, "a") as fh:
             fh.write(("" if existing.endswith("\n") or not existing else "\n") + ".gitvow/export.local.json\n")
