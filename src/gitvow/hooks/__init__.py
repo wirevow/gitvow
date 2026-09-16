@@ -74,8 +74,9 @@ def _rules_context(cwd: str, home: str | None) -> str:
     if not toplevel(cwd):
         return ""
     from ..claims import context as claims_context
+    from ..pack import context as pack_context
 
-    return render(derive(cwd, pol)) + claims_context(cwd, home)
+    return render(derive(cwd, pol)) + claims_context(cwd, home) + pack_context(cwd, home, pol)
 
 
 def _policy_or_empty(cwd: str, home: str | None) -> dict[str, Any]:

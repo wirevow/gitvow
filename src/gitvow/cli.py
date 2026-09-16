@@ -267,6 +267,64 @@ def cmd_sinks(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_pack(a: argparse.Namespace) -> int:
+    """The organisation pack cached for this repository: which rules it adds, who accepted them, when it lapses."""
+    from . import pack as pk
+
+    cwd = os.getcwd()
+    try:
+        pol = load_policy(cwd)
+    except PolicyError as e:
+        print(f"policy error: {e}", file=sys.stderr)
+        return 2
+    if a.json:
+        print(json.dumps({"pack": pol.get("_pack"), "path": pk.pack_path(None, pk.source_of(cwd))}, indent=1))
+        return 0
+    print(pk.render_pack(pol, for_agent=False), end="")
+    return 0
+
+
+def cmd_brief(a: argparse.Namespace) -> int:
+    """What the record says about this repository: the store's brief from the cache when there is one, with its
+    age; the repository's own record otherwise. The source is always named."""
+    from . import pack as pk
+    from .rules import derive, render
+
+    cwd = os.getcwd()
+    b = pk.load_brief(cwd)
+    if b is None:
+        try:
+            pol = load_policy(cwd)
+        except PolicyError as e:
+            print(f"policy error: {e}", file=sys.stderr)
+            return 2
+        d = derive(cwd, pol)
+        if a.json:
+            print(
+                json.dumps(
+                    {
+                        "protocol": pk.BRIEF_PROTOCOL,
+                        "source": "repo",
+                        "repo": pk.source_of(cwd),
+                        "rules": d["rules"],
+                        "proposals": d.get("proposals", []),
+                    },
+                    indent=1,
+                )
+            )
+            return 0
+        print(
+            f"source: repo (no store brief cached; gitvow sync fetches one from a git sink)\n{render(d, for_agent=False)}",
+            end="",
+        )
+        return 0
+    if a.json:
+        print(json.dumps(b, indent=1))
+        return 0
+    print(pk.render_brief(b, for_agent=False), end="")
+    return 0
+
+
 def cmd_policy(a: argparse.Namespace) -> int:
     """Proposed policy rules from a batch loop: the queue, or a verdict that becomes a reviewed commit."""
     from . import proposals as pr
@@ -843,6 +901,16 @@ def main(argv: list[str] | None = None) -> int:
     )
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_sinks)
+    s = sub.add_parser(
+        "pack", help="the organisation pack cached for this repository: rules added, who accepted, when it lapses"
+    )
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_pack)
+    s = sub.add_parser(
+        "brief", help="what the record says about this repository: the store's cached brief, or the repository's own"
+    )
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_brief)
 
     s = sub.add_parser(
         "policy",

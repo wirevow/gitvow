@@ -27,6 +27,8 @@ gitvow policy accept <n|id> [--when commit|observe|immediate] [--reason R] [--by
 gitvow policy reject <n|id> [--reason R] [--by WHO]      an empty commit carrying Gitvow-Policy-Rejected; the loop stops proposing it
 gitvow sync [--sink NAME] [--since 90d] [--dry-run]   the collector: export the record and deliver it to the configured sinks (git store or directory); queues in ~/.gitvow/outbox when a sink is unreachable; idempotent by digest
 gitvow sinks [--json]                                     the configured sinks, read only from .gitvow/export.local.json (never committed) and ~/.gitvow/sinks.json
+gitvow pack [--json]                                      the organisation pack cached for this repository: rules it adds, who accepted them, when it lapses; NOT applied and why, when it is not
+gitvow brief [--json]                                     what the record says about this repository: the store's cached brief with its age (source: cache), or the repository's own record (source: repo)
 gitvow export [--since 90d] [--out DIR] [--consent a,b] [--dry-run] [--why]
                                                           the export bundle: decisions, confirmed claims, observed findings, rule verdicts and the meter, plus sessions and gate-event counts when consented, as one directory with a manifest and a redaction attestation; never a transcript, working tree, snapshot, command or prompt
 gitvow claims [--json] [--write [--agent NAME | --file PATH]]  candidate claims waiting for a person, most confident first; --write renders the confirmed ones into the agent's instruction file under their own managed section

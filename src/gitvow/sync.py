@@ -65,9 +65,47 @@ def committed_sink_named(cwd: str) -> bool:
 
 
 def _source_dir(source: str) -> str:
-    import re
+    from .pack import source_dir
 
-    return re.sub(r"[^A-Za-z0-9._-]+", "_", source)
+    return source_dir(source)
+
+
+def fetch(sink: dict[str, Any], source: str, home: str | None) -> dict[str, str]:
+    """Pull what the store publishes for this repository, the pack (`packs/<source>.json`) and the brief
+    (`brief/<source>.json`), into `~/.gitvow/cache/`. Git sinks only: a `dir` sink is a drop, not a store. The
+    cache is advisory; a file that is not JSON is left out and reported."""
+    from .pack import brief_path, meta_path, pack_path
+
+    if sink["type"] != "git":
+        return {}
+    out: dict[str, str] = {}
+    for kind, sub, dest in (
+        ("pack", "packs", pack_path(home, source)),
+        ("brief", "brief", brief_path(home, source)),
+    ):
+        src = os.path.join(sink["path"], sub, f"{_source_dir(source)}.json")
+        if not os.path.exists(src):
+            out[kind] = "none"
+            continue
+        with open(src, "rb") as fh:
+            data = fh.read()
+        try:
+            json.loads(data)
+        except ValueError:
+            out[kind] = "invalid"
+            continue
+        if os.path.exists(dest):
+            with open(dest, "rb") as fh:
+                if fh.read() == data:
+                    out[kind] = "unchanged"
+                    continue
+        os.makedirs(os.path.dirname(dest), exist_ok=True)
+        with open(dest, "wb") as fh:
+            fh.write(data)
+        with open(meta_path(dest), "w", encoding="utf-8") as fh:
+            json.dump({"sink": sink["name"], "fetched": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())}, fh)
+        out[kind] = "fetched"
+    return out
 
 
 def deliver(sink: dict[str, Any], bundle_dir: str) -> dict[str, Any]:
@@ -215,6 +253,8 @@ def sync(
             r = deliver(s, staging)
             if r["status"] == "unreachable":
                 r["queued_at"] = queue(home, s, staging, source, digest)
+            else:
+                r["fetched"] = fetch(s, source, home)
             results.append(r)
     finally:
         shutil.rmtree(staging, ignore_errors=True)
@@ -234,6 +274,9 @@ def render(out: dict[str, Any]) -> str:
         extra = " (from outbox)" if r.get("from_outbox") else ""
         where = f" → {r['path']}" if r.get("path") else (f", waiting in {r['queued_at']}" if r.get("queued_at") else "")
         lines.append(f"  {r['sink']}: {r['status']}{extra} {r['source']} {r['digest'][:12]}{where}")
+        got = {k: v for k, v in (r.get("fetched") or {}).items() if v != "none"}
+        if got:
+            lines.append("    from the store: " + ", ".join(f"{k} {v}" for k, v in got.items()))
     return "\n".join(lines) + "\n"
 
 

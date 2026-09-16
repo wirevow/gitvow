@@ -67,6 +67,10 @@ Sinks are configured only in files that are never committed: `.gitvow/export.loc
 
 `gitvow sync [--sink NAME] [--since 90d] [--dry-run]` builds the bundle and delivers it to every configured sink. Delivery is idempotent by digest: a bundle a sink already holds is reported, not resent. When a sink is unreachable, the bundle waits in `~/.gitvow/outbox/<sink>/<source>/<digest>/` and the next sync drains the outbox oldest first. A sync never blocks a commit or a tool call, and it moves `kind: record` bundles only.
 
+## What comes back: the pack and the brief
+
+After delivering to a `git` sink, `sync` copies what the store publishes for this repository into `~/.gitvow/cache/`: the organisation **pack** (`packs/<source>.json`, see [Policy schema](policy.md)) and the **brief** (`brief/<source>.json`): standing per finding class across the organisation's repositories, accepted rules, confirmed claims, and gaps (conflict, unratified, decaying). Both are read from the cache only, never fetched during a tool call. `gitvow brief` prints the cached brief with its age and `source: cache`, marks it stale past the store's `stale_after`, and falls back to the repository's own record as `source: repo`; session start hands the same to the agent. A `dir` sink is a drop, not a store, so nothing comes back from it.
+
 ## What never leaves
 
 Transcripts, working trees, snapshots, command lines, prompts, and person-reach claims (a person's own preferences, which live in their `~/.gitvow/claims/` and nowhere else). The attestation states this list so it is on the record, not in a footnote.

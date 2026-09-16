@@ -68,10 +68,23 @@ is a brief the agent should ignore or, worse, obeys.
 - A scoped answer is an exception and never counts towards a rule in either direction.
 - `gitvow decide <n> refer [--to who]`: "you asked the wrong person" separated from "nobody has decided",
   with its own trailer and its own line in the digest and the pull request report.
-- Still missing, and deliberately: organisation-wide rules pushed *down* into repositories. That is where
-  the second kind of decision belongs, and there is no organisation store yet.
+- Organisation-wide rules pushed *down* into repositories arrived in 0.23 as the pack, once a store existed to
+  publish one.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
+
+## 0.23 — The pack and the brief come back (shipped)
+
+- `gitvow sync` now also fetches what a git-sink store publishes for the repository into `~/.gitvow/cache/`: the
+  organisation **pack** and the **brief**. The pack is applied under the repository's own policy: rules added
+  and tagged with their pack, settings tightened (open → strict, session scope off, higher threshold) and never
+  loosened, every pack with a decay date, and a missing, expired or malformed pack changes nothing. The brief is
+  handed to the agent at session start with its age and `source: cache`, marked stale past the store's
+  `stale_after`, falling back to the repository's own record as `source: repo`. Nothing is fetched during a tool
+  call. `gitvow pack` and `gitvow brief` show both to a person.
+- Exit: a rule accepted in the store for the organisation is raised by the gate in a repository that never wrote
+  it, after one sync; a repository set to strict stays strict when the pack says open; a decision in repository
+  A appears in B's session-start context as standing with `also in A`.
 
 ## 0.22 — The collector (shipped)
 

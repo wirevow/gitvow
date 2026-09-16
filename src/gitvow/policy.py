@@ -63,8 +63,10 @@ class Decision:
         return self.outcome == "confirm" and self.when == "observe"
 
 
-def load_policy(cwd: str | None = None, home: str | None = None) -> dict[str, Any]:
-    """Precedence: <repo>/.gitvow/policy.json → ~/.gitvow/policy.json → package default."""
+def load_policy(cwd: str | None = None, home: str | None = None, pack: bool = True) -> dict[str, Any]:
+    """Precedence: <repo>/.gitvow/policy.json → ~/.gitvow/policy.json → package default. Then the organisation
+    pack cached by `gitvow sync`, if any, is applied as a layer: rules added, settings tightened, never loosened
+    (see pack.py). A pack that is missing, expired or malformed changes nothing."""
     cwd = cwd or os.getcwd()
     home = home or os.path.expanduser("~")
     for p in (
@@ -79,8 +81,25 @@ def load_policy(cwd: str | None = None, home: str | None = None) -> dict[str, An
             except (OSError, json.JSONDecodeError) as e:
                 raise PolicyError(f"{p}: {e}") from e
             _validate(pol, p)
-            return pol
+            return _with_pack(pol, cwd, home) if pack else pol
     raise PolicyError("no policy.json found")
+
+
+def _with_pack(pol: dict[str, Any], cwd: str, home: str) -> dict[str, Any]:
+    from . import pack as pk
+
+    try:
+        found = pk.load_pack(cwd, home)
+    except Exception:  # the cache is advisory; nothing in it may stop the gate from loading its own policy
+        return pol
+    if found is None:
+        return pol
+    try:
+        return pk.apply(pol, found)
+    except PolicyError as e:
+        out = dict(pol)
+        out["_pack"] = {"applied": False, "error": str(e)[:300], "path": found.get("path"), "names": found.get("names")}
+        return out
 
 
 def _validate(pol: dict[str, Any], path: str) -> None:

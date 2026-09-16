@@ -41,3 +41,13 @@ Evaluation order: deny, confirm, MCP lists, providers, classifier, allow. Missin
 No key grants a rule. Reaching `rule_threshold` proposes one; a person named under `decisions.authorities` accepts it with `gitvow rules accept`, and that acceptance is a trailer on a commit rather than a line in this file, so no edit here can give a repository rules nobody agreed to. A scoped answer is an exception and never counts towards the threshold. See [Decisions](../concepts/decisions.md).
 
 Lookup order: `<repo>/.gitvow/policy.json`, `~/.gitvow/policy.json`, package default.
+
+### The organisation pack
+
+A store may publish a **pack** for a repository: rules and settings a named person accepted for the whole organisation. `gitvow sync` copies it from a git sink (`packs/<source>.json`) to `~/.gitvow/cache/packs/<source>.json`, and the policy loader applies it as a layer under the repository's own policy:
+
+- pack rules (`bash_deny`, `bash_confirm`, `path_confirm` only) are **added**, each tagged with the pack it came from; a pattern the repository already has is not added twice, so the repository's own tier for it stands;
+- pack settings may **tighten** `decisions.mode` (open → strict), turn `session_scope` off, or raise `rule_threshold`; a pack can never loosen any of them;
+- a pack must carry `expires`; past that date it is not applied. A pack that is missing, expired or malformed changes nothing and `gitvow pack` says why.
+
+The cache is advisory: nothing in it can stop the gate from loading its own policy. The pack is never written into `.gitvow/policy.json`, so `gitvow policy accept` and a pull request to the policy file see the repository's own rules only. `gitvow pack` shows what is in force; session start hands the same to the agent as context.
