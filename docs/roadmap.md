@@ -73,6 +73,25 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
+## 0.19 — Claims, what the owners said (shipped)
+
+- A claim is a statement a person made about their system, in their own words, with a source, bound to paths.
+  Candidates arrive from a batch job outside this package (sessions, documents) as a JSONL file; `gitvow claims
+  import` queues the repo-reach ones locally and keeps person-reach preferences in the speaker's own
+  `~/.gitvow/claims/`, never in git. `gitvow claims` is the queue, most confident first. `confirm` and `reject`
+  are empty commits carrying two new trailer names, `Gitvow-Claim-Confirmed` and `Gitvow-Claim-Rejected`, with a
+  note on `refs/notes/gitvow/claims` holding the verbatim text, the edit if any beside the original, the source
+  pointer and who confirmed with what standing. An older gitvow matches neither trailer, which is the safe
+  direction.
+- Confirmed claims are context, never permission: rendered into the agent's instruction files under their own
+  managed section, attributed and dated, and handed over at session start with the person's own preferences.
+  The gate still asks.
+- Why: the departure pass. A departing engineer's knowledge of their systems leaves with them unless it is said,
+  extracted, put back in front of them in their own words, and confirmed. The extraction runs outside this
+  package; this release is where a confirmation lands, and it is the same primitive a rule verdict uses.
+- Exit: a confirmed claim reads with `git log` and `gitvow show` alone; a later rejection withdraws it from every
+  rendered surface; nothing person-reach ever appears in the repository or a bundle.
+
 ## 0.18 — The price of a question (shipped)
 
 - Replaying three engineers' real sessions (15,549 tool calls) through the default policy priced the gate at

@@ -41,7 +41,6 @@ def rule_pattern(rule: dict[str, Any]) -> str:
     return rf"\b(?:{'|'.join(re.escape(p) for p in progs)}){OPTS}\s+(?:{verbs})\b"
 
 
-
 @dataclass(frozen=True)
 class Decision:
     outcome: str  # "allow" | "deny" | "confirm"
@@ -97,7 +96,11 @@ def _validate(pol: dict[str, Any], path: str) -> None:
                 progs = rule["program"] if isinstance(rule["program"], list) else [rule["program"]]
                 if not progs or not all(isinstance(p, str) and p for p in progs):
                     raise PolicyError(f"{path}: {key} 'program' must be a non-empty string or list of them")
-                if not isinstance(rule["verbs"], list) or not rule["verbs"] or not all(isinstance(v, str) and v for v in rule["verbs"]):
+                if (
+                    not isinstance(rule["verbs"], list)
+                    or not rule["verbs"]
+                    or not all(isinstance(v, str) and v for v in rule["verbs"])
+                ):
                     raise PolicyError(f"{path}: {key} 'verbs' must be a non-empty list of strings")
             pat = rule_pattern(rule) if key != "path_confirm" else rule["pattern"]
             try:
@@ -279,7 +282,7 @@ def confirm_message(d: Decision, n: int | None, session_scope: bool) -> str:
         return message_for(d)
     return (
         f"CONFIRMATION REQUIRED ({d.reason}). Ask the user before doing this. If they agree, record it and run the "
-        f"command again:\n  gitvow decide {n} accept --scope session [--reason \"<phrase>\"]\n"
+        f'command again:\n  gitvow decide {n} accept --scope session [--reason "<phrase>"]\n'
         f"The answer holds for this session, so this question is not asked again until the session ends, and it goes "
         f"into the next commit. If they refuse: gitvow decide {n} decline."
     )

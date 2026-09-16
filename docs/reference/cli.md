@@ -20,6 +20,12 @@ gitvow rules accept <n|finding|--all> [--reason R] [--by WHO]
                                                           an authority accepts a proposed rule, making it a rule: empty commit carrying Gitvow-Rule-Accepted plus its evidence on refs/notes/gitvow/rules; --all adopts every proposal standing, which is the upgrade path for rules earned before 0.16; refused when the person is not named under decisions.authorities
 gitvow rules reject <n|finding|--all> [--reason R] [--by WHO]
                                                           an authority rejects a proposed rule; it returns only after a full rule_threshold of answers dated later than the rejection
+gitvow claims [--json] [--write [--agent NAME | --file PATH]]  candidate claims waiting for a person, most confident first; --write renders the confirmed ones into the agent's instruction file under their own managed section
+gitvow claims import <file.jsonl>                         queue candidates (one JSON object per line: claim_id, text, speaker, kind, paths, confidence, source); person-reach preferences go to ~/.gitvow/claims, never into the repository
+gitvow claims confirm <n|id> [--paths a/,b/] [--edit TEXT] [--reason R] [--by WHO]
+                                                          confirm a claim as true of this repository: empty commit carrying Gitvow-Claim-Confirmed plus a note with the verbatim text, its source and the edit if any
+gitvow claims reject <n|id> [--reason R] [--by WHO]      reject a claim; it is not asked again, and a later rejection withdraws an earlier confirmation
+gitvow claims show <id>                                   one claim's record
 gitvow revisit <commit> [accept|decline|refer] [--finding N] [--scope S] [--to WHO] [--reason R] [--by WHO]
                                                           list a commit's decisions, or answer one again with an empty commit carrying Gitvow-Revisits; the earlier trailer stays
 gitvow decide <n|all> accept|decline|refer [--scope S] [--to WHO] [--reason R] [--by WHO]

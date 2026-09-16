@@ -38,7 +38,13 @@ TRAILER_RE = re.compile(
 # `Observed` (0.18) is a finding nobody was asked about: a rule with `when: observe` recorded it on the commit and the
 # call ran. It is not debt (nobody owed an answer) and not an answer (nobody gave one); it is the record growing at
 # zero cost, and it can never reach rules.py. A new trailer name, so an older gitvow does not match it at all.
-ANSWERS = {"Accepted": "accepted", "Declined": "declined", "Open": "open", "Referred": "referred", "Observed": "observed"}
+ANSWERS = {
+    "Accepted": "accepted",
+    "Declined": "declined",
+    "Open": "open",
+    "Referred": "referred",
+    "Observed": "observed",
+}
 # Answers that can establish a precedent. A referral answers nothing about the finding itself and an open
 # finding has not been answered at all, so neither may ever reach rules.py.
 PRECEDENT_ANSWERS = ("accepted", "declined")
@@ -286,7 +292,7 @@ def card(
     elsewhere = st.get("edits_elsewhere") or {}
     if not fs:
         tail = _observed_line(observed) + _elsewhere_line(elsewhere)
-        return ("No open findings.\n" + tail) if not tail else tail
+        return tail if tail else "No open findings.\n"
     pending = [f for f in fs if not f.get("decision")]
     # Derived once, not once per finding: deriving walks the whole branch and reads a note per trailered
     # commit, and a card with six findings used to pay for that six times over.

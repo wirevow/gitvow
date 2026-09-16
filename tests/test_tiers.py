@@ -45,8 +45,12 @@ def test_observe_rule_records_without_asking(repo, home, payload, transcript):
     d = evaluate(pol, "Edit", {"file_path": str(repo / "Dockerfile")}, str(repo))
     assert d.outcome == "confirm" and d.observed and not d.deferred and not d.blocks and d.findings[0]["observe"]
     session_start(payload("SessionStart"), str(home))
-    assert pre_tool_use(payload("PreToolUse", "Edit", {"file_path": str(repo / "Dockerfile")}, transcript), str(home)) == (0, "")
-    assert pre_tool_use(payload("PreToolUse", "Bash", {"command": "aws --profile p s3 cp a s3://b/"}, transcript), str(home)) == (0, "")
+    assert pre_tool_use(
+        payload("PreToolUse", "Edit", {"file_path": str(repo / "Dockerfile")}, transcript), str(home)
+    ) == (0, "")
+    assert pre_tool_use(
+        payload("PreToolUse", "Bash", {"command": "aws --profile p s3 cp a s3://b/"}, transcript), str(home)
+    ) == (0, "")
     log = (repo / ".git" / "gitvow-hooks.log").read_text()
     assert log.count('"kind": "observed"') == 2 and '"kind": "finding"' not in log
     # nothing is owed, so no card: the commit goes straight through, in open and in strict mode alike
@@ -77,14 +81,20 @@ def test_observe_rule_records_without_asking(repo, home, payload, transcript):
 
 
 def test_mixed_observe_and_commit_findings_still_reach_the_card(repo, home, payload, transcript):
-    pol = _policy(repo, path_confirm=[{"pattern": r"(^|/)Dockerfile$", "reason": "container build", "when": "observe"}] + json.loads(Path(DEFAULT_POLICY_PATH).read_text())["path_confirm"])
+    pol = _policy(
+        repo,
+        path_confirm=[{"pattern": r"(^|/)Dockerfile$", "reason": "container build", "when": "observe"}]
+        + json.loads(Path(DEFAULT_POLICY_PATH).read_text())["path_confirm"],
+    )
     d = evaluate(pol, "Edit", {"file_path": str(repo / "core/authz_rules.go")}, str(repo))
     assert d.deferred and not d.observed
     session_start(payload("SessionStart"), str(home))
     pre_tool_use(payload("PreToolUse", "Edit", {"file_path": str(repo / "Dockerfile")}, transcript), str(home))
     pre_tool_use(payload("PreToolUse", "Edit", {"file_path": str(repo / "core/authz_rules.go")}, transcript), str(home))
     code, msg = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
-    assert code == 2 and "before this commit: 1 finding" in msg and "Dockerfile" not in msg.split("Recorded, not asked")[0]
+    assert (
+        code == 2 and "before this commit: 1 finding" in msg and "Dockerfile" not in msg.split("Recorded, not asked")[0]
+    )
     assert "Recorded, not asked: 1 observe-tier finding" in msg
 
 
@@ -108,7 +118,10 @@ def test_immediate_confirm_is_answered_once_per_session(repo, home, payload, tra
     # the person says yes; the agent records it; the same question is not asked again this session
     dec.decide(str(repo), "1", "accept", {}, scope="session", reason="release branch")
     assert pre_tool_use(push, str(home)) == (0, "")
-    assert pre_tool_use(payload("PreToolUse", "Bash", {"command": "git push origin other"}, transcript), str(home)) == (0, "")
+    assert pre_tool_use(payload("PreToolUse", "Bash", {"command": "git push origin other"}, transcript), str(home)) == (
+        0,
+        "",
+    )
     log = (repo / ".git" / "gitvow-hooks.log").read_text()
     assert log.count('"kind": "allowed_by_session_answer"') == 2
     # the answer rides on the next commit as a scoped decision, and a scoped decision is never precedent
@@ -141,7 +154,9 @@ def test_declined_immediate_confirm_stays_blocked_for_the_session(repo, home, pa
     (repo / "a.txt").write_text("d\n")
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     git(repo, "commit", "-qam", "carries the decline")
-    assert "Gitvow-Declined: run git (pushing to a remote) by t: not from this branch" in git(repo, "log", "-1", "--format=%B")
+    assert "Gitvow-Declined: run git (pushing to a remote) by t: not from this branch" in git(
+        repo, "log", "-1", "--format=%B"
+    )
 
 
 def test_the_agents_own_approve_button_is_recorded_as_the_sessions_answer(repo, home, payload, transcript):
@@ -150,10 +165,17 @@ def test_the_agents_own_approve_button_is_recorded_as_the_sessions_answer(repo, 
     session_start(payload("SessionStart"), str(home))
     push = payload("PreToolUse", "Bash", {"command": "git push origin feat"}, transcript)
     assert pre_tool_use(push, str(home))[0] == 2
-    code, msg = post_tool_use(payload("PostToolUse", "Bash", {"command": "git push origin feat"}, transcript), str(home))
+    code, _msg = post_tool_use(
+        payload("PostToolUse", "Bash", {"command": "git push origin feat"}, transcript), str(home)
+    )
     assert code == 0
     d = dec.open_findings(str(repo))[0]["decision"]
-    assert d["answer"] == "accepted" and d["scope"] == "session" and d["note"] == "approved at the agent's prompt" and d["by"] == "t"
+    assert (
+        d["answer"] == "accepted"
+        and d["scope"] == "session"
+        and d["note"] == "approved at the agent's prompt"
+        and d["by"] == "t"
+    )
     assert '"kind": "prompt_approval_recorded"' in (repo / ".git" / "gitvow-hooks.log").read_text()
     assert pre_tool_use(push, str(home)) == (0, "")
     # recorded once: a second run does not add a second decision
@@ -190,7 +212,10 @@ def test_edits_in_another_checkout_are_counted_and_named(repo, home, payload, tr
     assert st["edits_elsewhere"] == {"other-repo": {"count": 2, "paths": ["svc/main.go"]}}
     assert "here.txt" in st["agent_blobs"] and "svc/main.go" not in st["agent_blobs"]
     card = dec.card(str(repo), for_agent=False)
-    assert "Edits outside this repository: 2 in other-repo" in card and "recorded in this repository's note, not in theirs" in card
+    assert (
+        "Edits outside this repository: 2 in other-repo" in card
+        and "recorded in this repository's note, not in theirs" in card
+    )
     _hooks(repo)
     git(repo, "add", "here.txt")
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))

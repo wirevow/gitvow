@@ -236,6 +236,80 @@ def cmd_decisions(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_claims(a: argparse.Namespace) -> int:
+    """Claims: a person's statement about the system, confirmed by them, kept in git. The queue, or a verdict."""
+    from . import claims as clm
+    from .state import toplevel
+
+    cwd = os.getcwd()
+    home = os.path.expanduser("~")
+    try:
+        pol = load_policy(cwd)
+    except PolicyError:
+        pol = {}
+    try:
+        rules = load_rules(cwd, home)
+    except RedactionError as e:
+        print(f"redaction rules invalid: {e}", file=sys.stderr)
+        return 2
+    if a.sub == "import":
+        try:
+            counts = clm.import_candidates(cwd, a.file, home, rules)
+        except (OSError, ValueError) as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        print("  ".join(f"{k} {v}" for k, v in counts.items()))
+        return 0
+    if a.sub in ("confirm", "reject"):
+        try:
+            head, line, _payload = clm.decide(
+                cwd,
+                a.claim,
+                "confirmed" if a.sub == "confirm" else "rejected",
+                pol,
+                paths=(a.paths.split(",") if a.paths else None),
+                edit=a.edit,
+                reason=a.reason,
+                by=a.by,
+                rules=rules,
+            )
+        except ValueError as e:
+            print(str(e), file=sys.stderr)
+            return 1
+        print(line)
+        tail = (
+            "it is context for the agent from the next session; it never answers the gate"
+            if a.sub == "confirm"
+            else "it will not be asked again"
+        )
+        print(
+            f"recorded as an empty commit {head[:7]} with the text and source on refs/notes/{clm.CLAIMS_NOTES_REF}; {tail}",
+            file=sys.stderr,
+        )
+        return 0
+    if a.sub == "show":
+        rows = [r for r in clm.confirmed_and_rejected(cwd) if r["claim_id"] == a.claim] or [
+            r for r in clm.queue(cwd) if r["claim_id"] == a.claim
+        ]
+        if not rows:
+            print(f"no claim {a.claim}", file=sys.stderr)
+            return 1
+        print(json.dumps(rows[0], indent=1))
+        return 0
+    if a.json:
+        print(json.dumps({"queue": clm.queue(cwd), "confirmed": clm.confirmed(cwd)}, indent=1))
+        return 0
+    if a.write:
+        from .rules import INSTRUCTION_FILES
+
+        top = toplevel(cwd) or cwd
+        target = a.file or INSTRUCTION_FILES.get(a.agent, "CLAUDE.md")
+        print(clm.write_section(os.path.join(top, target), clm.render(clm.confirmed(cwd))))
+        return 0
+    print(clm.render_queue(clm.queue(cwd)), end="")
+    return 0
+
+
 def cmd_rules(a: argparse.Namespace) -> int:
     """Earned rules and the proposals awaiting an authority; `rules accept|reject` records the verdict."""
     from .rules import (
@@ -413,11 +487,12 @@ def cmd_show(a: argparse.Namespace) -> int:
         return 1
     print(msg)
     m = re.search(r"^Gitvow-Session:\s*(\S+)", msg, re.M)
+    from .claims import CLAIMS_NOTES_REF
     from .rules import RULES_NOTES_REF
 
     # A rule decision has no session, so its note lives on one ref of its own; try it too rather than
     # printing "(no session note)" on a commit that does carry the evidence for the rule it created.
-    refs = ([notes_ref(m.group(1))] if m else []) + [RULES_NOTES_REF, LEGACY_NOTES_REF]
+    refs = ([notes_ref(m.group(1))] if m else []) + [RULES_NOTES_REF, CLAIMS_NOTES_REF, LEGACY_NOTES_REF]
     for ref in refs:
         rc, note, _ = git(["notes", f"--ref={ref}", "show", a.commit], os.getcwd())
         if rc == 0:
@@ -649,6 +724,35 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_status)
+    s = sub.add_parser(
+        "claims",
+        help="claims: what a person said about the system, confirmed by them, kept in git; the queue, or a verdict",
+    )
+    s.add_argument("--json", action="store_true")
+    s.add_argument("--write", action="store_true", help="render confirmed claims into the agent's instruction file")
+    s.add_argument(
+        "--agent", default="claude", help="with --write: which agent's file (claude, codex, gemini, cursor, copilot)"
+    )
+    s.add_argument("--file", help="with --write: an explicit file; with import: the candidates JSONL")
+    cs = s.add_subparsers(dest="sub")
+    ci = cs.add_parser("import", help="queue candidate claims from a JSONL file (one candidate per line)")
+    ci.add_argument("file")
+    for name, help_ in (
+        ("confirm", "confirm a queued claim as true of this repository"),
+        ("reject", "reject a queued claim"),
+    ):
+        cv = cs.add_parser(name, help=help_)
+        cv.add_argument("claim", help="queue number from `gitvow claims`, or the claim id")
+        cv.add_argument("--paths", help="comma-separated repository paths the claim is about (confirm)")
+        cv.add_argument(
+            "--edit", help="the claim as the person wants it recorded; the original is kept beside it (confirm)"
+        )
+        cv.add_argument("--reason", help="one phrase, optional")
+        cv.add_argument("--by", help="who decided, when not the committer")
+    cw = cs.add_parser("show", help="one claim's record: verdict, text, source, paths")
+    cw.add_argument("claim")
+    s.set_defaults(f=cmd_claims)
+
     s = sub.add_parser("decisions", help="the card: open findings in this repository with evidence and the record")
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_decisions)

@@ -60,6 +60,10 @@ An object keyed by the name of another checkout the agent edited during the sess
 
 The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields. Schema 7 added `observed` as an `answer` and the `edits_outside_repository` object; schema 6 added `to` to `decisions[]`; a note written by an older gitvow reads the same as it always did.
 
+## The claim note
+
+Stored under `refs/notes/gitvow/claims` on the empty commit `gitvow claims confirm|reject` writes. First line `gitvow-claim`, then JSON (schema 1): `claim_id`, `verdict` (`confirmed` or `rejected`), `by`, `authority` (`speaker` when the confirmer is the person who said it, else `policy`, `commit-access` or `none`), `decided_at`, `text` (as recorded), `original_text` (as extracted, verbatim), `edited`, `paths`, `reach` (`repo`), `speaker`, `kind`, `source` (a pointer: kind, file, message index; never the source content), `said_at`, `classification` (the extractor's opinion), `reason`. The trailer carries the id, the person, the bound paths and the first 120 characters; the note carries the rest. Person-reach preferences are never written to git; they live in `~/.gitvow/claims/preferences.jsonl` on the speaker's own machine.
+
 ## The rule-decision note
 
 Accepting or rejecting a proposed rule is itself a decision, so it is recorded the way decisions are. `gitvow rules accept|reject` writes an empty commit carrying the trailer and attaches a note under `refs/notes/gitvow/rules` — its own ref, because a rule decision is not a session. First line `gitvow-rule-decision`, then JSON:
@@ -89,6 +93,8 @@ Gitvow-Observed: <finding>
 Gitvow-Revisits: <commit>
 Gitvow-Rule-Accepted: <finding> by <person>[ answer=<accepted|declined>][: <reason>]
 Gitvow-Rule-Rejected: <finding> by <person>[ answer=<accepted|declined>][: <reason>]
+Gitvow-Claim-Confirmed: <claim-id> by <person>[ paths=<p1>,<p2>][: <verbatim text, first 120 chars>]
+Gitvow-Claim-Rejected: <claim-id> by <person>[: <reason>]
 ```
 Added by `prepare-commit-msg` when `.git/gitvow-session.json` holds a session id and a `pending_commit` timestamp younger than five minutes, which the PreToolUse gate sets when the agent runs `git commit` and PostToolUse clears afterwards. Idempotent: a message that already has `Gitvow-Session:` is left alone. A note is written only when the commit at HEAD carries the trailer.
 

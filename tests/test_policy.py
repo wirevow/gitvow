@@ -104,7 +104,9 @@ def test_command_rule_may_be_written_as_program_and_verbs(pol, tmp_path):
         with pytest.raises(PolicyError):
             load_policy(str(tmp_path), str(tmp_path))
     # path rules are paths, not programs: the verbs form is not accepted there
-    (tmp_path / ".gitvow" / "policy.json").write_text(json.dumps({"path_confirm": [{"program": "x", "verbs": ["y"], "reason": "r"}]}))
+    (tmp_path / ".gitvow" / "policy.json").write_text(
+        json.dumps({"path_confirm": [{"program": "x", "verbs": ["y"], "reason": "r"}]})
+    )
     with pytest.raises(PolicyError):
         load_policy(str(tmp_path), str(tmp_path))
 

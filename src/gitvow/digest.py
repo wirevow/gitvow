@@ -202,7 +202,15 @@ def _decisions_in_period(top: str, since_day: str) -> dict[str, int]:
     rc, out, _ = git(["log", "-5000", f"--since={since_day}", "--format=%H%x00%B%x01"], top)
     c: collections.Counter[str] = collections.Counter()
     if rc != 0:
-        return {"accepted": 0, "declined": 0, "open": 0, "referred": 0, "observed": 0, "revisited": 0, "matched_proposal": 0}
+        return {
+            "accepted": 0,
+            "declined": 0,
+            "open": 0,
+            "referred": 0,
+            "observed": 0,
+            "revisited": 0,
+            "matched_proposal": 0,
+        }
     for rec in out.split("\x01"):
         rec = rec.strip("\n")
         if not rec.strip() or "Gitvow-" not in rec:

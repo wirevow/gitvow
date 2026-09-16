@@ -277,7 +277,10 @@ def run() -> int:
             fh.write("human\n")
         code, msg = pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
         results.append(
-            (code == 2 and "before this commit" in msg and "2 findings" in msg, "card: commit stopped once with the card")
+            (
+                code == 2 and "before this commit" in msg and "2 findings" in msg,
+                "card: commit stopped once with the card",
+            )
         )
         nums = {f["finding"]: str(f["n"]) for f in dec.open_findings(repo)}
         dec.decide(repo, nums["edit x/authz_rules.py"], "accept", {}, scope="staging", reason="selftest")
