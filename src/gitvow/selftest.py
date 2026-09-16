@@ -277,7 +277,7 @@ def run() -> int:
             fh.write("human\n")
         code, msg = pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
         results.append(
-            (code == 2 and "DECISIONS REQUIRED" in msg and "2 findings" in msg, "card: commit waits for decisions")
+            (code == 2 and "before this commit" in msg and "2 findings" in msg, "card: commit stopped once with the card")
         )
         dec.decide(repo, "1", "accept", {}, scope="staging", reason="selftest")
         dec.decide(repo, "2", "decline", {}, reason="selftest")

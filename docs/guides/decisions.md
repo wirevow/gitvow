@@ -62,15 +62,17 @@ gitvow show HEAD                          # a commit's decisions with evidence, 
 
 Identity comes from `git config user.email` (its local part) or `user.name`. `--by` overrides it when you record a decision someone else made in a review.
 
-## Committing from a terminal
+## Not answering now
 
-If you commit by hand while the agent's findings are open, the default is non-blocking: the commit carries `Gitvow-Open: <finding>` for each undecided finding, and `gitvow report` and the digest list it as decision debt until someone runs `gitvow decide`. To make the commit wait for an answer instead, set in the repository policy:
+You do not have to answer on the spot. Say "go ahead" and the agent runs the commit again; it goes through carrying `Gitvow-Open: <finding>` for each finding you left, and `gitvow decisions`, `gitvow report` and the digest list it as decision debt until someone runs `gitvow decide` or `gitvow revisit`. Committing by hand from a terminal while findings are open does the same, with no prompt.
+
+That is the default, open mode. To make every commit wait for an answer instead, set in the repository policy:
 
 ```json
 "decisions": {"mode": "strict"}
 ```
 
-The pre-commit hook then prints the card and refuses until every finding is decided.
+Then the agent's commit is refused by the card, and a terminal commit by the pre-commit hook, until every finding is decided. Destructive commands are refused in both modes; the mode is about questions, not denials.
 
 ## Who may decide
 

@@ -15,15 +15,16 @@ An at-commit finding is not live until it is committed, so the agent keeps worki
 
 ## The decision card
 
-When the agent runs `git commit` with open findings, the gate refuses the commit once and hands the agent a card: each finding, why it was raised, the evidence, and what the record proposes based on earlier decisions on the same finding in this repository.
+When the agent runs `git commit` with open findings, the gate stops the commit once and hands the agent a card: each finding, why it was raised, the evidence, and what the record proposes based on earlier decisions on the same finding in this repository. What happens next depends on the policy's `decisions.mode` (see [Two modes](#two-modes) below). In the default, open mode, the card reads:
 
 ```
-DECISIONS REQUIRED before this commit: 2 findings from this session.
-Put this card to the user. Record each answer with
+OPEN FINDINGS before this commit: 2 findings from this session.
+Put this card to the user. They can answer now, and the answer goes into the commit:
   gitvow decide <n> accept|decline [--scope <env-or-branch>] [--reason "<phrase>"]
-If the person says this is not their call, record that instead of guessing:
-  gitvow decide <n> refer [--to <person-or-team>] [--reason "<phrase>"]
-then run the commit again.
+  gitvow decide <n> refer [--to <person-or-team>] [--reason "<phrase>"]   (not their call)
+Or they can let it through: run the commit again, and every finding without an answer is recorded
+on it as Gitvow-Open. Open findings stay listed by `gitvow decisions` and the digest until someone
+answers them. (decisions.mode is open; strict refuses the commit until every finding has an answer.)
 
 1. edit auth/AuthorizeWhitelistedPaths.java
    why: edits an authorization or gate-bearing file
@@ -33,7 +34,7 @@ then run the commit again.
    record: no earlier decision.
 ```
 
-The agent puts the card to the person. The person answers in the conversation, one word or one phrase each. The agent records the answers with `gitvow decide` and commits again. The card is the only surface a developer meets: no new command to learn, no rules to curate.
+The agent puts the card to the person. The person answers in the conversation, one word or one phrase each. The agent records the answers with `gitvow decide` and commits again. Or, in open mode, the person says "go ahead" and the commit carries the unanswered findings as `Gitvow-Open`: the gap is on the record rather than in the way. The card is the only surface a developer meets: no new command to learn, no rules to curate.
 
 A proposal is context, not permission. Nothing is accepted on the record's behalf in this release.
 
@@ -86,14 +87,18 @@ The policy may name people or teams under `decisions.authorities`, matched again
 
 A scoped answer is therefore an exception, and an exception is never a precedent: it is set aside before any rule is counted. Three accepts for staging are three exceptions, not a rule that the unconditional thing is fine — nobody ever said that. A finding's exceptions are counted and shown next to it, because a finding collecting exceptions and never a plain answer is worth a person's attention, but they cannot add up to a rule in either direction and they do not break a run of plain answers either.
 
-## When a person commits from a terminal
+## Two modes
 
-Agent hooks do not fire; git hooks do. The agent's findings from the session are still in the repository state.
+The policy's `decisions.mode` decides what a commit with unanswered findings does, and since 0.17 it decides it the same way for the agent's commit and for a person's. The repository owns the setting; nothing about it is configured anywhere else.
 
-- **Default, open.** The commit goes through with a `Gitvow-Open: <finding>` trailer for each undecided finding. A person committing is not thereby deciding, and a hook that asks questions breaks IDEs and scripts. Open findings appear in `gitvow report` and the digest as decision debt, and `gitvow decide` closes them later.
-- **Strict.** With `"decisions": {"mode": "strict"}` in the repository policy, the pre-commit hook prints the card and refuses the commit until `gitvow decide` has recorded an answer for every finding.
+- **Open, the default.** The agent's commit is stopped once with the card. If the person answers, the answers go into the commit. If they do not, running the commit again lets it through with a `Gitvow-Open: <finding>` trailer for each unanswered finding. A person committing from a terminal gets the same trailers with no prompt, because a hook that asks questions breaks IDEs and scripts. Open findings appear in `gitvow decisions`, `gitvow report` and the digest as decision debt, and `gitvow decide` or `gitvow revisit` closes them later. Nothing is blocked; nothing is lost; "nobody decided" becomes a number instead of a gap.
+- **Strict.** With `"decisions": {"mode": "strict"}`, the commit is refused, by the gate for the agent and by the pre-commit hook for a person, until `gitvow decide` has recorded an answer for every finding.
 
-A person working without an agent triggers nothing. gitvow adds no ceremony to sessions that did not happen.
+On agents with their own approve button (Cursor, Copilot) the open-mode card is delivered as a question, so approving it is the answer "let it through" and the commit runs with the findings recorded as open. The strict card is delivered as a refusal there, because a click on approve would run the commit with the findings still open and no decision recorded anywhere.
+
+Hard denies are the same in both modes: a force push or a dropped table is refused, not recorded for later. The two modes govern findings, which are questions, never denials.
+
+Open is the default because a gate that blocks by default gets uninstalled, and an uninstalled gate records nothing. Strict is one line in the policy for a repository that has decided the questions are worth the wait. A person working without an agent triggers nothing. gitvow adds no ceremony to sessions that did not happen.
 
 ## Through the merge
 

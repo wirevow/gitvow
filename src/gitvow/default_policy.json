@@ -81,7 +81,7 @@
     "production_branches": ["main", "master", "production"],
     "rule_threshold": 3,
     "rule_decay_days": 90,
-    "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (a person's commit records Gitvow-Open for undecided findings) or strict (pre-commit refuses until gitvow decide). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
+    "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (the agent's commit is stopped once with the card, then goes through with Gitvow-Open for every finding nobody answered; a person's commit goes through the same way) or strict (agent and person alike: refused until every finding has a gitvow decide answer). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
   },
   "llm_classifier": {
     "enabled": false,

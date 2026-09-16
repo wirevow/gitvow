@@ -66,9 +66,9 @@ def test_findings_accumulate_then_card_then_trailers_and_note(repo, home, payloa
     assert fs[0]["raised"] == 2 and fs[0]["decision"] is None
     log = (repo / ".git" / "gitvow-hooks.log").read_text()
     assert log.count('"kind": "finding"') == 3
-    # the commit is refused once, with the card
+    # the commit is stopped once, with the card (default mode open, so the card is a question, not a refusal)
     code, msg = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
-    assert code == 2 and "DECISIONS REQUIRED before this commit: 2 findings" in msg
+    assert code == 2 and "OPEN FINDINGS before this commit: 2 findings" in msg and "run the commit again" in msg
     assert "1. edit core/authz_rules.go" in msg and "raised 2 times" in msg and "record: no earlier decision." in msg
     assert '"kind": "card"' in (repo / ".git" / "gitvow-hooks.log").read_text()
     st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
@@ -335,3 +335,65 @@ def test_the_grammar_grows_by_trailer_name_never_by_a_tail_token():
     assert m is not None and m.group(2) == "edit foo.go class=k7"
     # Today's parser has the same shape, so the forked identity is what any future token would cost.
     assert dec.parse_trailers("Gitvow-Accepted: edit foo.go class=k7 by nikhil")[0]["finding"] != "edit foo.go"
+
+
+def test_open_mode_stops_the_agent_commit_once_then_records_open(repo, home, payload, transcript):
+    """decisions.mode open (the default) governs the agent's commit as it always governed a person's.
+
+    The card is shown once. A second attempt with nothing new pending is the person declining to answer, and
+    the commit goes through carrying Gitvow-Open for each unanswered finding, so the gap is on the record
+    rather than in the way. Only strict keeps refusing.
+    """
+    session_start(payload("SessionStart"), str(home))
+    edit = payload("PreToolUse", "Edit", {"file_path": str(repo / "core/authz_rules.go")}, transcript)
+    assert pre_tool_use(edit, str(home)) == (0, "")
+    commit = payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript)
+    code, msg = pre_tool_use(commit, str(home))
+    assert code == 2 and msg.startswith("OPEN FINDINGS before this commit: 1 finding")
+    assert "Gitvow-Open" in msg and "DECISIONS REQUIRED" not in msg
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert st["card_ack"] == ["edit core/authz_rules.go"] and st["card_user_turns"] == 1
+    # the second attempt goes through, and the log says the card was acknowledged rather than answered
+    code, msg = pre_tool_use(commit, str(home))
+    assert code == 0 and msg == ""
+    log = (repo / ".git" / "gitvow-hooks.log").read_text()
+    assert log.count('"kind": "card"') == 1 and '"kind": "card_ack"' in log and '"mode": "open"' in log
+    _install_hooks(repo)
+    (repo / "a.txt").write_text("open\n")
+    git(repo, "commit", "-qam", "agent commit, nobody answered")
+    body = git(repo, "log", "-1", "--format=%B")
+    assert "Gitvow-Session: sess-1" in body and "Gitvow-Open: edit core/authz_rules.go" in body
+    assert "Gitvow-Accepted" not in body
+    code, msg = post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
+    assert code == 0
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert "card_ack" not in st and "pending_commit" not in st
+    # the open finding is debt the record can see, and a new finding earns a new card
+    assert [f["finding"] for f in dec.open_debt(str(repo))] == ["edit core/authz_rules.go"]
+    ci = payload("PreToolUse", "Write", {"file_path": ".github/workflows/ci.yml"}, transcript)
+    assert pre_tool_use(ci, str(home)) == (0, "")
+    code, msg = pre_tool_use(commit, str(home))
+    assert code == 2 and "OPEN FINDINGS before this commit: 1 finding" in msg and "ci.yml" in msg
+
+
+def test_strict_mode_refuses_the_agent_commit_until_every_finding_is_answered(repo, home, payload, transcript):
+    from gitvow.policy import DEFAULT_POLICY_PATH
+
+    strict = json.loads(Path(DEFAULT_POLICY_PATH).read_text())
+    strict["decisions"]["mode"] = "strict"
+    (repo / ".gitvow").mkdir(exist_ok=True)
+    (repo / ".gitvow" / "policy.json").write_text(json.dumps(strict))
+    session_start(payload("SessionStart"), str(home))
+    edit = payload("PreToolUse", "Edit", {"file_path": str(repo / "core/authz_rules.go")}, transcript)
+    assert pre_tool_use(edit, str(home)) == (0, "")
+    commit = payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript)
+    for _ in range(3):  # no number of retries lets it through
+        code, msg = pre_tool_use(commit, str(home))
+        assert code == 2 and msg.startswith("DECISIONS REQUIRED before this commit: 1 finding")
+        assert "OPEN FINDINGS" not in msg and "Gitvow-Open" not in msg
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert "card_ack" not in st and "pending_commit" not in st
+    assert (repo / ".git" / "gitvow-hooks.log").read_text().count('"mode": "strict"') == 3
+    dec.decide(str(repo), "all", "accept", strict, reason="reviewed")
+    code, msg = pre_tool_use(commit, str(home))
+    assert code == 0 and msg == ""

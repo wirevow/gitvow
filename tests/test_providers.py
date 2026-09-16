@@ -150,7 +150,7 @@ def test_hook_and_cli_ask_end_to_end(repo, home, payload, tmp_path, monkeypatch,
     log = (repo / ".git" / "gitvow-hooks.log").read_text()
     assert '"kind": "finding"' in log and "provider facts" in log
     code, msg = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}), str(home))
-    assert code == 2 and "DECISIONS REQUIRED" in msg and "route /v1/orders/export in src/Orders.java" in msg
+    assert code == 2 and "before this commit" in msg and "route /v1/orders/export in src/Orders.java" in msg
     assert "AuthorizeWhitelistedPaths.java" in msg  # the provider's evidence travels to the card
     monkeypatch.chdir(repo)
     assert cli.main(["ask", "route_gate", "/v1/orders/export", "--path", "src/Orders.java"]) == 0

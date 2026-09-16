@@ -73,7 +73,23 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
-## 0.17 — Signed decisions (next)
+## 0.17 — Two modes for the agent's commit (shipped)
+
+- `decisions.mode` had governed only a person's commit: `open` let it through with `Gitvow-Open` trailers, `strict`
+  refused it. The agent's commit was refused by the card in both. So the tool was advisory for people and
+  blocking for agents, and nobody had chosen that. The same setting now governs both. In `open`, the default,
+  the agent's commit is stopped once with the card, and a second attempt with nothing new pending goes through
+  carrying every unanswered finding as `Gitvow-Open`. In `strict` it is refused until every finding is answered.
+- On agents with a native approve button the open card is delivered as a question, so approving it is the
+  answer "let it through"; the strict card stays a refusal there, as before.
+- Why the default is open: a gate that blocks by default gets uninstalled, and an uninstalled gate records
+  nothing. "Nobody decided" is more useful as a count in the digest than as a wall. Strict is one line in the
+  policy, and a repository that wants the wait can have it.
+- Exit: the same session, the same finding, the same commit command, run under each mode, produces `Gitvow-Open`
+  on the commit in one and no commit at all in the other; and the open card is `ask` where the strict card is
+  `deny` on every adapter with a permission object.
+
+## Signed decisions (after an organisation store exists)
 
 The record can say who agreed. It cannot yet say that they did. A `Gitvow-Accepted` trailer is written by
 the hook, but nothing stops a person writing the same line by hand with every hook live, and `gitvow report`
@@ -86,6 +102,9 @@ round: a *deleted* record leaves a hole anyone can see, and a *forged* one does 
   supply-chain rails is the intended shape, so an acceptance becomes an attestation whose subject is the
   commit and whose predicate is the decision — no new infrastructure to trust, and admission control gets it
   for free.
+- Sequenced behind the organisation store rather than ahead of it: a signature is verified against something,
+  and until a store holds keys and identities the only verifier is the same machine that wrote the trailer.
+  Coverage's corroboration column is the interim.
 - Coverage grew a corroboration column first (0.16), which is the cheap half of this and needs no keys: a
   session trailer is compared against the note the hook would have written, and claims with nothing behind
   them are counted and listed separately. It raises the floor from "type one line" to "understand the note

@@ -43,6 +43,10 @@ TRAILER_KEYS = {"accepted": "Gitvow-Accepted", "declined": "Gitvow-Declined", "r
 ANSWER_VERBS = {"accept": "accepted", "decline": "declined", "refer": "referred"}  # what a person types -> recorded
 REVISITS_RE = re.compile(r"^Gitvow-Revisits:\s*([0-9a-f]{7,40})\b", re.M)
 CARD_HEADER = "DECISIONS REQUIRED"
+# The open-mode card. It must not share a prefix with CARD_HEADER or "BLOCKED": adapters with a native
+# approve button map those to a refusal and everything else to a question, and in open mode the card *is*
+# a question — approving it runs the commit with the findings recorded as open, which is the mode's promise.
+OPEN_CARD_HEADER = "OPEN FINDINGS"
 MAX_EVIDENCE = 8
 HISTORY_COMMITS = 3000
 
@@ -245,8 +249,15 @@ def card(
     findings: list[dict[str, Any]] | None = None,
     for_agent: bool = True,
     pol: dict[str, Any] | None = None,
+    mode: str = "strict",
 ) -> str:
-    """The one surface a developer meets: every open finding with its evidence and what the record proposes."""
+    """The one surface a developer meets: every open finding with its evidence and what the record proposes.
+
+    `mode` is the policy's `decisions.mode` and changes only the instructions at the top. Strict: the commit is
+    refused until every finding has an answer. Open: the card is shown once; running the commit again lets it
+    through with every unanswered finding recorded on it as `Gitvow-Open`, where the digest and `gitvow
+    decisions` keep it visible until someone answers.
+    """
     fs = findings if findings is not None else open_findings(cwd)
     if not fs:
         return "No open findings.\n"
@@ -263,7 +274,18 @@ def card(
             **{r["finding"]: {**r, "state": "rule"} for r in derived["rules"]},
         }
     lines = []
-    if for_agent:
+    if for_agent and mode == "open":
+        lines += [
+            f"{OPEN_CARD_HEADER} before this commit: {len(pending)} finding{'s' if len(pending) != 1 else ''} from this session.",
+            "Put this card to the user. They can answer now, and the answer goes into the commit:",
+            '  gitvow decide <n> accept|decline [--scope <env-or-branch>] [--reason "<phrase>"]',
+            '  gitvow decide <n> refer [--to <person-or-team>] [--reason "<phrase>"]   (not their call)',
+            "Or they can let it through: run the commit again, and every finding without an answer is recorded",
+            "on it as Gitvow-Open. Open findings stay listed by `gitvow decisions` and the digest until someone",
+            "answers them. (decisions.mode is open; strict refuses the commit until every finding has an answer.)",
+            "",
+        ]
+    elif for_agent:
         lines += [
             f"{CARD_HEADER} before this commit: {len(pending)} finding{'s' if len(pending) != 1 else ''} from this session.",
             "Put this card to the user. Record each answer with",

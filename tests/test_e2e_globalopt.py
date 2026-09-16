@@ -25,7 +25,7 @@ def test_card_fires_for_every_global_option_form(repo, home, payload, transcript
         _raise_finding(payload, home, repo, transcript)
         code, msg = pre_tool_use(payload("PreToolUse", "Bash", {"command": cmd}, transcript), str(home))
         assert code == 2, f"no card for {cmd!r}"
-        assert "DECISIONS REQUIRED" in msg, f"card text missing for {cmd!r}"
+        assert "before this commit: 1 finding" in msg, f"card text missing for {cmd!r}"
 
 
 def test_plumbing_that_merely_starts_with_commit_does_not_raise_the_card(repo, home, payload, transcript):

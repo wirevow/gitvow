@@ -79,7 +79,7 @@ Start a session in any repository and let the agent work. Two things will happen
 
 **Destructive commands are refused outright**, with the reason. Risky ones are put to you first.
 
-**Consequential edits wait for the commit.** When the agent runs `git commit`, the commit is refused once and the agent shows you a card: each finding, its evidence, and what this repository decided last time. You answer in the conversation, the agent records it, and the commit goes through carrying your answer:
+**Consequential edits wait for the commit.** When the agent runs `git commit`, the commit is stopped once and the agent shows you a card: each finding, its evidence, and what this repository decided last time. You answer in the conversation, the agent records it, and the commit goes through carrying your answer. If you would rather not answer now, say so: the commit goes through with each finding recorded as `Gitvow-Open`, visible until someone does. (That is the default, open mode; `"decisions": {"mode": "strict"}` in the policy refuses the commit until every finding has an answer.)
 
 ```sh
 git log -1 --format=%B

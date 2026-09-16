@@ -149,7 +149,7 @@ def test_cli_hook_per_agent_end_to_end(repo, home, monkeypatch, capsys):
         "PreToolUse",
         {"session_id": "c1", "cwd": str(repo), "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}},
     )
-    assert code == 2 and "DECISIONS REQUIRED" in err and "edit core/authz_rules.go" in err
+    assert code == 2 and "OPEN FINDINGS before this commit" in err and "edit core/authz_rules.go" in err
     # gemini: allowed shell command exits 0 silently
     code, out, err = _run_hook(
         monkeypatch,
@@ -460,3 +460,15 @@ def test_unused_events_still_answer_in_the_agents_form(repo, home, monkeypatch, 
     assert cli.main(["hook", "--agent", "copilot", "sessionStart"]) == 0
     out = capsys.readouterr().out
     assert not out or json.loads(out).get("permissionDecision") in (None, "allow")
+
+
+def test_the_open_card_is_a_question_the_person_may_approve(repo, home):
+    """In open mode approving the card is the answer "let it through": the commit runs and the findings are
+    recorded as Gitvow-Open. So on agents with their own approve button it is asked, not refused."""
+    from gitvow.adapters import respond
+    from gitvow.decisions import CARD_HEADER, OPEN_CARD_HEADER
+
+    assert not OPEN_CARD_HEADER.startswith(CARD_HEADER) and not OPEN_CARD_HEADER.startswith("BLOCKED")
+    card = f"{OPEN_CARD_HEADER} before this commit: 1 finding from this session."
+    for agent, key in (("cursor", "permission"), ("copilot", "permissionDecision")):
+        assert json.loads(respond(agent, 2, card)[1])[key] == "ask"

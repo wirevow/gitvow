@@ -55,6 +55,7 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         }
     )
     st.pop("pending_commit", None)
+    st.pop("card_ack", None)
     save_state(cwd, st)
     log_event(cwd, "session_start", {"session_id": h.get("session_id")})
     return 0, _rules_context(cwd, home)
@@ -133,17 +134,34 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         )
     if tool == "Bash" and COMMIT_RE.search(inp.get("command", "")):
         pending = dec.undecided(cwd)
+        mode = (pol.get("decisions") or {}).get("mode", "open")
+        st = load_state(cwd)
+        # Open mode: the card is shown once per set of findings. A second commit attempt with nothing new
+        # pending means the person has seen it and chose not to answer; the commit goes through and the
+        # prepare-commit-msg hook records each unanswered finding as Gitvow-Open. Strict mode never takes
+        # this branch, so the card keeps refusing until every finding has an answer.
+        acked = set(st.get("card_ack") or [])
+        if pending and mode == "open" and all(f["finding"] in acked for f in pending):
+            log_event(cwd, "card_ack", {"findings": len(pending), "session_id": h.get("session_id")})
+            pending = []
         if pending:
-            st = load_state(cwd)
             tp = h.get("transcript_path") or st.get("transcript_path")
             if rules is not None and tp and st.get("card_user_turns") is None:
                 st["card_user_turns"] = summarize(tp, rules=rules)["user_turns"]
                 st["card_shown_at"] = time.strftime("%Y-%m-%dT%H:%M:%S")
-                save_state(cwd, st)
+            if mode == "open":
+                st["card_ack"] = [f["finding"] for f in pending]
+                # An agent with its own approve button runs the commit the moment the person clicks yes, with
+                # no second pass through this gate; mark the commit as the agent's so it still gets its trailers.
+                st["pending_commit"] = time.time()
+            save_state(cwd, st)
             proposed = dec.mark_proposals(cwd, pol)
-            log_event(cwd, "card", {"findings": len(pending), "proposed": proposed, "session_id": h.get("session_id")})
-            return 2, dec.card(cwd, pol=pol)
-        st = load_state(cwd)
+            log_event(
+                cwd,
+                "card",
+                {"findings": len(pending), "proposed": proposed, "mode": mode, "session_id": h.get("session_id")},
+            )
+            return 2, dec.card(cwd, pol=pol, mode=mode)
         st["session_id"] = h.get("session_id") or st.get("session_id")
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")
         st["steps"] = st.get("steps", 0) + 1
@@ -246,8 +264,9 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     if tool != "Bash" or not COMMIT_RE.search(inp.get("command", "")):
         return 0, ""
     st = load_state(cwd)
-    if "pending_commit" in st:
-        del st["pending_commit"]
+    if "pending_commit" in st or "card_ack" in st:
+        st.pop("pending_commit", None)
+        st.pop("card_ack", None)  # the commit happened; the next set of findings earns its own card
         save_state(cwd, st)
     rc, head, _ = git(["rev-parse", "HEAD"], cwd)
     if rc != 0:
