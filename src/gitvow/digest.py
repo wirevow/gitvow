@@ -202,7 +202,7 @@ def _decisions_in_period(top: str, since_day: str) -> dict[str, int]:
     rc, out, _ = git(["log", "-5000", f"--since={since_day}", "--format=%H%x00%B%x01"], top)
     c: collections.Counter[str] = collections.Counter()
     if rc != 0:
-        return {"accepted": 0, "declined": 0, "open": 0, "referred": 0, "revisited": 0, "matched_proposal": 0}
+        return {"accepted": 0, "declined": 0, "open": 0, "referred": 0, "observed": 0, "revisited": 0, "matched_proposal": 0}
     for rec in out.split("\x01"):
         rec = rec.strip("\n")
         if not rec.strip() or "Gitvow-" not in rec:
@@ -213,12 +213,12 @@ def _decisions_in_period(top: str, since_day: str) -> dict[str, int]:
         ts = dec.parse_trailers(body)
         for t in ts:
             c[t["answer"]] += 1
-        if any(t["answer"] != "open" for t in ts):
+        if any(t["answer"] not in ("open", "observed") for t in ts):
             for n in dec._note_decisions(top, sha, body).values():
                 wanted = {"accept": "accepted", "decline": "declined"}.get(n.get("proposed") or "")
                 if wanted and wanted == n.get("answer"):
                     c["matched_proposal"] += 1
-    return {k: c[k] for k in ("accepted", "declined", "open", "referred", "revisited", "matched_proposal")}
+    return {k: c[k] for k in ("accepted", "declined", "open", "referred", "observed", "revisited", "matched_proposal")}
 
 
 def render(d: dict[str, Any]) -> str:

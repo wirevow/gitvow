@@ -26,6 +26,10 @@ Gitvow-Declined: route /v1/orders/export in src/api/orders.py by nikhil: needs s
 
 A reason is optional and one phrase is enough. A required reason produces "ok"; an optional one produces information.
 
+## The agent asks before a push or a cluster change
+
+Some things are asked at once rather than at commit: pushing to a remote, `kubectl apply`, a helm upgrade. The agent stops and asks you. Say yes and it records `gitvow decide <n> accept --scope session`, runs the command, and does not ask about that again until the session ends; the next commit carries the answer as a session-scoped decision. Say no and the command stays blocked for the session. If your agent has its own approve button, clicking it is the answer and gitvow records it as one.
+
 ## Scope
 
 If an acceptance holds only for an environment or a branch, say so: "accept for staging". The agent records `--scope staging`, the trailer shows `scope=staging`, and a pull request that later takes this commit to a production branch reopens the question in the report.

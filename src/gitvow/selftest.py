@@ -279,8 +279,9 @@ def run() -> int:
         results.append(
             (code == 2 and "before this commit" in msg and "2 findings" in msg, "card: commit stopped once with the card")
         )
-        dec.decide(repo, "1", "accept", {}, scope="staging", reason="selftest")
-        dec.decide(repo, "2", "decline", {}, reason="selftest")
+        nums = {f["finding"]: str(f["n"]) for f in dec.open_findings(repo)}
+        dec.decide(repo, nums["edit x/authz_rules.py"], "accept", {}, scope="staging", reason="selftest")
+        dec.decide(repo, nums["route /v1/new in api.py"], "decline", {}, reason="selftest")
         code, _ = pre_tool_use({**base, "tool_name": "Bash", "tool_input": {"command": "git commit -m x"}}, home)
         results.append((code == 0, "card: commit proceeds once every finding is decided"))
         hooks_dir = os.path.join(repo, ".gitvow", "git-hooks")

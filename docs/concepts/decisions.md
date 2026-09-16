@@ -10,8 +10,15 @@ Not every finding needs to interrupt the agent when it happens.
 |---|---|---|
 | **Immediate** | force push, history rewrite, `terraform apply`, `kubectl delete`, pushing to a remote, editing gitvow's own policy | at once, as before, because nothing after them can undo them |
 | **At commit** | a new route without a filter, an edit to an authorization file, a change to production values or CI, a provider answering yes | when the agent runs `git commit`, all findings on one card |
+| **Observe** | a Dockerfile edit, a dependency bump, an `aws s3 cp`, anything a team wants counted before it decides whether it deserves a question | never; recorded on the commit as `Gitvow-Observed` and listed in the digest |
 
-An at-commit finding is not live until it is committed, so the agent keeps working and the finding accumulates silently in the session state. One question per commit replaces several per session. Rules choose their class with `"when": "immediate"` or `"when": "commit"`; Bash rules default to immediate, path and provider rules to commit. See [Policy schema](../reference/policy.md).
+An at-commit finding is not live until it is committed, so the agent keeps working and the finding accumulates silently in the session state. One question per commit replaces several per session. Rules choose their class with `"when": "immediate"`, `"when": "commit"` or `"when": "observe"`; Bash rules default to immediate, path and provider rules to commit.
+
+**Observe costs nothing and records everything.** An observe-tier finding rides on the commit as `Gitvow-Observed: <finding>`, appears in the digest and `gitvow report`, and is never on the card, never owed, and never precedent. It exists because the alternative to a question is usually silence, and silence is how a pattern runs for a year with nobody knowing it happens. Put a pattern in observe first; when the record shows it recurs and matters, move it to commit. That is a one-word change in the policy, and the record of how often it happened is already there to justify it.
+
+**An immediate confirm is answered once per session.** Since 0.18 an immediate confirm is recorded as a finding too, with a number. The agent asks the person; if they agree, `gitvow decide <n> accept --scope session` records it, and the same question is not asked again until the session ends. On agents with their own approve button, the click is the answer and gitvow records it as such (`approved at the agent's prompt`). Either way the answer rides on the next commit as `Gitvow-Accepted: run git (pushing to a remote) by <person> scope=session`, and a scoped answer is an exception, so it never counts towards a rule. A decline blocks the command for the rest of the session. A confirm nobody answers is not on the card and leaves nothing on the commit: the command never ran. `"decisions": {"session_scope": false}` restores asking every time.
+
+Why: replaying three engineers' real sessions through the default policy priced it at 19 questions per engineer per week, and two thirds of those were one immediate confirm, `git push`, asked every time and able to earn nothing. A gate that asks that often is uninstalled, and an uninstalled gate records nothing. See [Policy schema](../reference/policy.md).
 
 ## The decision card
 
@@ -97,6 +104,10 @@ The policy's `decisions.mode` decides what a commit with unanswered findings doe
 On agents with their own approve button (Cursor, Copilot) the open-mode card is delivered as a question, so approving it is the answer "let it through" and the commit runs with the findings recorded as open. The strict card is delivered as a refusal there, because a click on approve would run the commit with the findings still open and no decision recorded anywhere.
 
 Hard denies are the same in both modes: a force push or a dropped table is refused, not recorded for later. The two modes govern findings, which are questions, never denials.
+
+## Edits outside the repository
+
+A session belongs to one repository, and its agent does not always stay in it: in three engineers' real sessions 28% of edits landed in a different checkout than the session's own. The gate evaluates every path regardless, and since 0.18 the record says where the file actually lives. Edits to another repository are counted under that repository's name in the session state, named on the card ("Edits outside this repository: 2 in other-repo"), and written into the note as `edits_outside_repository`. They are recorded in this repository's note, not in theirs, and the card says so, because a reader of the other repository's history will not find them.
 
 Open is the default because a gate that blocks by default gets uninstalled, and an uninstalled gate records nothing. Strict is one line in the policy for a repository that has decided the questions are worth the wait. A person working without an agent triggers nothing. gitvow adds no ceremony to sessions that did not happen.
 

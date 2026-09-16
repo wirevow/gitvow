@@ -102,7 +102,7 @@ def test_findings_accumulate_then_card_then_trailers_and_note(repo, home, payloa
     code, msg = post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     assert code == 0 and "2 decisions recorded" in msg
     note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
-    assert note["schema"] == 6 and len(note["decisions"]) == 2
+    assert note["schema"] == 7 and len(note["decisions"]) == 2
     d0 = note["decisions"][0]
     assert d0["answer"] == "accepted" and d0["scope"] == "staging" and d0["human_turns_after_card"] == 1
     assert note["decisions"][1]["authority"] == "none"
@@ -181,6 +181,7 @@ def test_report_lists_decisions_reopens_scope_and_summarises(repo, home, payload
         "accepted": 1,
         "declined": 0,
         "open": 1,
+        "observed": 0,
         "referred": 0,
         "reopened": 1,
         "pre_answered": 0,

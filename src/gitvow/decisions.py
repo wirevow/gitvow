@@ -31,11 +31,14 @@ from .state import git, load_state, save_state
 # additive. `Gitvow-Rule-Accepted` (see rules.py, which is bound by the same constraint) deliberately does
 # not match here: accepting a proposed rule is not an answer to a finding on that commit.
 TRAILER_RE = re.compile(
-    r"^Gitvow-(Accepted|Declined|Open|Referred):\s*(.+?)"
+    r"^Gitvow-(Accepted|Declined|Open|Referred|Observed):\s*(.+?)"
     r"(?: by (\S+))?(?: scope=(\S+))?(?: to=(\S+))?(?:: (.*))?$",
     re.M,
 )
-ANSWERS = {"Accepted": "accepted", "Declined": "declined", "Open": "open", "Referred": "referred"}
+# `Observed` (0.18) is a finding nobody was asked about: a rule with `when: observe` recorded it on the commit and the
+# call ran. It is not debt (nobody owed an answer) and not an answer (nobody gave one); it is the record growing at
+# zero cost, and it can never reach rules.py. A new trailer name, so an older gitvow does not match it at all.
+ANSWERS = {"Accepted": "accepted", "Declined": "declined", "Open": "open", "Referred": "referred", "Observed": "observed"}
 # Answers that can establish a precedent. A referral answers nothing about the finding itself and an open
 # finding has not been answered at all, so neither may ever reach rules.py.
 PRECEDENT_ANSWERS = ("accepted", "declined")
@@ -61,7 +64,21 @@ def open_findings(cwd: str) -> list[dict[str, Any]]:
 
 
 def undecided(cwd: str) -> list[dict[str, Any]]:
-    return [f for f in open_findings(cwd) if not f.get("decision")]
+    """Findings a person still owes an answer to. Observed findings are recorded, never owed."""
+    return [f for f in open_findings(cwd) if not f.get("decision") and not f.get("observe") and not f.get("immediate")]
+
+
+def observed_open(cwd: str) -> list[dict[str, Any]]:
+    """Observe-tier findings waiting to ride on the next commit."""
+    return [f for f in open_findings(cwd) if f.get("observe") and not f.get("decision")]
+
+
+def session_answer(cwd: str, finding: str) -> dict[str, Any] | None:
+    """The decision already recorded in this session for `finding`, if any (used for immediate confirms)."""
+    for f in open_findings(cwd):
+        if f["finding"] == finding and f.get("decision"):
+            return f["decision"]
+    return (load_state(cwd).get("session_answers") or {}).get(finding)
 
 
 def add(cwd: str, findings: list[dict[str, Any]], step: int, tool: str, rules: list[tuple[str, str]] | None) -> int:
@@ -91,6 +108,8 @@ def add(cwd: str, findings: list[dict[str, Any]], step: int, tool: str, rules: l
                     "raised_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
                     "last_tool": tool,
                     "decision": None,
+                    **({"observe": True} if f.get("observe") else {}),
+                    **({"immediate": True} if f.get("immediate") else {}),
                 }
             )
             new += 1
@@ -259,8 +278,15 @@ def card(
     decisions` keep it visible until someone answers.
     """
     fs = findings if findings is not None else open_findings(cwd)
+    observed = [f for f in fs if f.get("observe") and not f.get("decision")]
+    # An immediate confirm nobody answered is not on the card: the command did not run, so there is nothing to
+    # decide about at commit. It keeps its number so `gitvow decide` can still answer it for the session.
+    fs = [f for f in fs if f not in observed and not (f.get("immediate") and not f.get("decision"))]
+    st = load_state(cwd)
+    elsewhere = st.get("edits_elsewhere") or {}
     if not fs:
-        return "No open findings.\n"
+        tail = _observed_line(observed) + _elsewhere_line(elsewhere)
+        return ("No open findings.\n" + tail) if not tail else tail
     pending = [f for f in fs if not f.get("decision")]
     # Derived once, not once per finding: deriving walks the whole branch and reads a note per trailered
     # commit, and a card with six findings used to pay for that six times over.
@@ -331,7 +357,25 @@ def card(
                     f"{r['answer']} {r['count']} times by authorities since {r['first']}. "
                     f'An authority may accept it with: gitvow rules accept "{r["finding"]}"'
                 )
-    return "\n".join(lines) + "\n"
+    return "\n".join(lines) + "\n" + _observed_line(observed) + _elsewhere_line(elsewhere)
+
+
+def _observed_line(observed: list[dict[str, Any]]) -> str:
+    if not observed:
+        return ""
+    n = len(observed)
+    return f"Recorded, not asked: {n} observe-tier finding{'s' if n != 1 else ''} will ride on the next commit as Gitvow-Observed.\n"
+
+
+def _elsewhere_line(elsewhere: dict[str, Any]) -> str:
+    if not elsewhere:
+        return ""
+    total = sum(int(v.get("count", 0)) for v in elsewhere.values())
+    names = ", ".join(sorted(elsewhere)[:4])
+    return (
+        f"Edits outside this repository: {total} in {names}. They were gated by this repository's policy and are "
+        f"recorded in this repository's note, not in theirs.\n"
+    )
 
 
 def decide(
@@ -379,6 +423,10 @@ def decide(
             "decided_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "user_turns": user_turns,
         }
+        if fs[i].get("immediate"):
+            # The finding leaves the state with the commit that carries it; the session's answer must not, or
+            # the same question returns after every commit. Cleared when a new session starts.
+            st.setdefault("session_answers", {})[fs[i]["finding"]] = fs[i]["decision"]
         done.append({"n": i + 1, **fs[i]})
     save_state(cwd, st)
     return done
@@ -387,7 +435,7 @@ def decide(
 def trailer_line(f: dict[str, Any]) -> str:
     d = f.get("decision")
     if not d:
-        return f"Gitvow-Open: {f['finding']}"
+        return f"Gitvow-{'Observed' if f.get('observe') else 'Open'}: {f['finding']}"
     line = f"{TRAILER_KEYS[d['answer']]}: {f['finding']} by {d['by']}"
     if d.get("scope"):
         line += f" scope={d['scope']}"
@@ -402,6 +450,8 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
     out = []
     for f in findings:
         d = f.get("decision") or {}
+        if f.get("immediate") and not d:
+            continue  # asked, never answered, never ran: nothing happened on this commit to record
         turns = None
         if d.get("user_turns") is not None and card_user_turns is not None:
             turns = max(int(d["user_turns"]) - int(card_user_turns), 0)
@@ -414,7 +464,7 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
                 "reason": f["reason"],
                 "evidence": f.get("evidence") or [],
                 "raised": f.get("raised", 1),
-                "answer": d.get("answer", "open"),
+                "answer": d.get("answer", "observed" if f.get("observe") else "open"),
                 "by": d.get("by"),
                 "authority": d.get("authority", "none") if d else "none",
                 "scope": d.get("scope"),
@@ -535,6 +585,16 @@ def _unanswered(cwd: str, answer: str, limit: int) -> list[dict[str, Any]]:
 def open_debt(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
     """Gitvow-Open findings on the branch that no later revisit has answered."""
     return _unanswered(cwd, "open", limit)
+
+
+def observed(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
+    """Gitvow-Observed findings on the branch: recorded at zero cost, never owed and never precedent.
+
+    Kept apart from open debt for the same reason referrals are: the remedy differs. Open debt wants an answer;
+    an observed finding wants nothing until its class recurs often enough that a person decides it deserves the
+    card, which is exactly the fifth-stratum question ("this happens and nobody ever decided it").
+    """
+    return _unanswered(cwd, "observed", limit)
 
 
 def referrals(cwd: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:

@@ -10,7 +10,7 @@ from typing import Any
 
 from .. import decisions as dec
 from .. import snapshots
-from ..policy import PolicyError, evaluate, load_policy, message_for
+from ..policy import PolicyError, confirm_message, evaluate, load_policy, message_for
 from ..pricing import estimate
 from ..redact import RedactionError, load_rules, redact
 from ..state import git, load_state, log_event, save_state, toplevel
@@ -18,7 +18,7 @@ from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 6  # 6 added `to` to decisions[]: a referral may name who the question should have gone to
+NOTE_SCHEMA = 7  # 7 (0.18): decisions[].answer may be "observed"; note gains edits_outside_repository. 6 added `to` to decisions[]: a referral may name who the question should have gone to
 # `git commit`, including the global options that may sit between the two words. `git -c k=v commit` and
 # `git -C dir commit` are the same act and used to slip past a `\bgit\s+commit\b` match entirely, which made
 # the card trivially avoidable by anyone who knew it. Options are enumerated rather than matched loosely so
@@ -50,6 +50,8 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
             "started": st.get("started") if same_session and st.get("started") else time.strftime("%Y-%m-%dT%H:%M:%S"),
             "steps": st.get("steps", 0) if same_session else 0,
             "agent_blobs": st.get("agent_blobs", {}) if same_session else {},
+            "edits_elsewhere": st.get("edits_elsewhere", {}) if same_session else {},
+            "session_answers": st.get("session_answers", {}) if same_session else {},
             "snapshots": st.get("snapshots", 0) if same_session else 0,
             "last_snapshot": st.get("last_snapshot") if same_session else None,
         }
@@ -122,14 +124,33 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         payload: dict[str, Any] = {"tool": tool, "reason": d.reason, "session_id": h.get("session_id")}
         if rules is not None:
             payload["detail"] = redact(d.detail, rules)[:200]
-        log_event(cwd, "blocked" if d.outcome == "deny" else "confirm_required", payload)
-        return 2, message_for(d)
-    if d.deferred:
+        if d.outcome == "deny" or not d.findings:
+            log_event(cwd, "blocked" if d.outcome == "deny" else "confirm_required", payload)
+            return 2, message_for(d)
+        # An immediate confirm is a finding too. It is recorded so a person can answer it once for the
+        # session; after that the same question is not asked again until the session ends, and the answer
+        # rides on the next commit as a scoped decision (scope=session), which is an exception, never precedent.
+        session_scope = (pol.get("decisions") or {}).get("session_scope", True)
+        f = dict(d.findings[0], immediate=True)
+        text = redact(f["finding"], rules) if rules is not None else f["finding"]
+        prior = dec.session_answer(cwd, text)
+        if session_scope and prior and prior.get("answer") == "accepted" and prior.get("scope") == "session":
+            log_event(cwd, "allowed_by_session_answer", {**payload, "by": prior.get("by")})
+            return 0, ""
+        if prior and prior.get("answer") == "declined":
+            log_event(cwd, "confirm_required", {**payload, "declined_by": prior.get("by")})
+            return 2, f"BLOCKED: {text} was declined by {prior.get('by')} this session ({d.reason})."
+        st = load_state(cwd)
+        dec.add(cwd, [f], st.get("steps", 0) + 1, tool, rules)
+        n = next((x["n"] for x in dec.open_findings(cwd) if x["finding"] == text), None)
+        log_event(cwd, "confirm_required", {**payload, "finding": n})
+        return 2, confirm_message(d, n, session_scope)
+    if d.deferred or d.observed:
         st = load_state(cwd)
         new = dec.add(cwd, list(d.findings), st.get("steps", 0) + 1, tool, rules)
         log_event(
             cwd,
-            "finding",
+            "observed" if d.observed else "finding",
             {"tool": tool, "reason": d.reason[:200], "new": new, "session_id": h.get("session_id")},
         )
     if tool == "Bash" and COMMIT_RE.search(inp.get("command", "")):
@@ -178,8 +199,44 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     return 0, ""
 
 
+def _record_prompt_approval(cwd: str, inp: dict[str, Any], home: str | None) -> None:
+    """A command an immediate-confirm rule stops has just *run*: the agent's own prompt approved it.
+
+    On agents with a native approve button the confirm is delivered as a question, and a click on yes runs the
+    command with nothing recorded. PostToolUse fires only for calls that executed, so reaching here for such a
+    command means a person approved it. Record that as the session's answer, so the record says what happened and
+    the same question is not asked again this session. Nothing to do if `gitvow decide` already recorded one.
+    """
+    try:
+        pol = load_policy(cwd, home)
+    except PolicyError:
+        return
+    if not (pol.get("decisions") or {}).get("session_scope", True):
+        return
+    d = evaluate(pol, "Bash", inp, cwd)
+    if not (d.blocks and d.outcome == "confirm" and d.findings):
+        return
+    rules, _ = _rules_or_none(cwd, home)
+    text = redact(d.findings[0]["finding"], rules) if rules is not None else d.findings[0]["finding"]
+    if dec.session_answer(cwd, text):
+        return
+    st = load_state(cwd)
+    if not any(f["finding"] == text for f in st.get("findings") or []):
+        dec.add(cwd, [dict(d.findings[0], immediate=True)], st.get("steps", 0) + 1, "Bash", rules)
+    n = next((x["n"] for x in dec.open_findings(cwd) if x["finding"] == text), None)
+    if n is None:
+        return
+    dec.decide(cwd, str(n), "accept", pol, scope="session", reason="approved at the agent's prompt", rules=rules)
+    log_event(cwd, "prompt_approval_recorded", {"finding": n, "reason": d.reason[:120]})
+
+
 def _record_agent_blob(cwd: str, file_path: str) -> None:
-    """After an agent edit, remember the blob id of what the agent wrote (repo-relative path -> blob)."""
+    """After an agent edit, remember the blob id of what the agent wrote (repo-relative path -> blob).
+
+    An edit outside this repository's tree is counted under the repository it did land in, because the replay
+    of three engineers' sessions found 28% of edits going to a different checkout than the session's own. The
+    gate still evaluated the path; the record needs to say where the file actually lives.
+    """
     top = toplevel(cwd)
     if not top:
         return
@@ -188,6 +245,16 @@ def _record_agent_blob(cwd: str, file_path: str) -> None:
         return
     rel = os.path.relpath(os.path.realpath(abs_path), os.path.realpath(top))
     if rel.startswith(".."):
+        other = toplevel(os.path.dirname(abs_path))
+        if other and os.path.realpath(other) != os.path.realpath(top):
+            st = load_state(cwd)
+            key = os.path.basename(other.rstrip("/")) or other
+            ent = st.setdefault("edits_elsewhere", {}).setdefault(key, {"count": 0, "paths": []})
+            ent["count"] += 1
+            p = os.path.relpath(os.path.realpath(abs_path), os.path.realpath(other))
+            if p not in ent["paths"] and len(ent["paths"]) < 20:
+                ent["paths"].append(p)
+            save_state(cwd, st)
         return
     rc, blob, _ = git(["hash-object", "-w", "--", abs_path], top)
     if rc != 0:
@@ -261,7 +328,10 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
             if ref:
                 log_event(cwd, "snapshot", {"ref": ref, "tool": tool})
         return 0, ""
-    if tool != "Bash" or not COMMIT_RE.search(inp.get("command", "")):
+    if tool == "Bash" and not COMMIT_RE.search(inp.get("command", "")):
+        _record_prompt_approval(cwd, inp, home)
+        return 0, ""
+    if tool != "Bash":
         return 0, ""
     st = load_state(cwd)
     if "pending_commit" in st or "card_ack" in st:
@@ -303,6 +373,7 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "subagents": summ["subagents"],
         "snapshot": st.get("last_snapshot"),
         "decisions": decisions,
+        "edits_outside_repository": st.get("edits_elsewhere") or {},
         "transcript": "kept local; see ledger",
         "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time",
     }

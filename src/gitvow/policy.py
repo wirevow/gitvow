@@ -19,7 +19,7 @@ class PolicyError(Exception):
     """Raised when no valid policy can be loaded. Callers must fail closed."""
 
 
-WHEN = ("immediate", "commit")
+WHEN = ("immediate", "commit", "observe")
 DECISION_MODES = ("open", "strict")
 
 # Options that may sit between a program and its verb: `--context prod`, `-n ns`, `--kubeconfig=x`, `-v`. Three
@@ -57,6 +57,11 @@ class Decision:
     @property
     def deferred(self) -> bool:
         return self.outcome == "confirm" and self.when == "commit"
+
+    @property
+    def observed(self) -> bool:
+        """Findings recorded on the commit that nobody is asked about. The call runs; the record grows; no card."""
+        return self.outcome == "confirm" and self.when == "observe"
 
 
 def load_policy(cwd: str | None = None, home: str | None = None) -> dict[str, Any]:
@@ -113,6 +118,8 @@ def _validate(pol: dict[str, Any], path: str) -> None:
         v = dec.get(key, 1)
         if not isinstance(v, int) or isinstance(v, bool) or v < 1:
             raise PolicyError(f"{path}: decisions.{key} must be a positive integer")
+    if not isinstance(dec.get("session_scope", True), bool):
+        raise PolicyError(f"{path}: decisions.session_scope must be true or false")
     for key in ("mcp_allow", "mcp_deny"):
         for pat in pol.get(key, []):
             try:
@@ -186,17 +193,21 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
             if m:
                 when = r.get("when", "immediate")
                 reason = r.get("reason", "needs confirmation")
+                f = _finding("command", _command_subject(text, m, reason), "", reason, [text.strip()[:200]])
                 if when == "immediate":
-                    return Decision("confirm", reason, text)
-                findings.append(
-                    _finding("command", _command_subject(text, m, reason), "", reason, [text.strip()[:200]])
-                )
+                    # The finding travels with the confirm so the hook can record it and a person can answer
+                    # it once for the session; the outcome is still an immediate stop.
+                    return Decision("confirm", reason, text, "immediate", (f,))
+                f["observe"] = when == "observe"
+                findings.append(f)
     if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit") and path:
         for r in pol.get("path_confirm", []):
             if re.search(r["pattern"], path):
+                f = _finding("edit", _rel(path, cwd), _rel(path, cwd), r.get("reason", "sensitive path"))
                 if r.get("when", "commit") == "immediate":
-                    return Decision("confirm", r.get("reason", "sensitive path"), path)
-                findings.append(_finding("edit", _rel(path, cwd), _rel(path, cwd), r.get("reason", "sensitive path")))
+                    return Decision("confirm", r.get("reason", "sensitive path"), path, "immediate", (f,))
+                f["observe"] = r.get("when", "commit") == "observe"
+                findings.append(f)
                 break
     if tool.startswith("mcp__"):
         if any(re.fullmatch(p, tool) for p in pol.get("mcp_deny", [])):
@@ -213,9 +224,9 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
         for h in hits:
             findings.append(_finding(kinds[h.question], h.subject, _rel(path, cwd), h.text(), h.evidence))
     if findings:
-        return Decision(
-            "confirm", "; ".join(f["reason"] for f in findings[:3]), path or text, "commit", tuple(findings)
-        )
+        # A call that raised only observe findings is not deferred to the card; it is recorded and runs.
+        when = "observe" if all(f.get("observe") for f in findings) else "commit"
+        return Decision("confirm", "; ".join(f["reason"] for f in findings[:3]), path or text, when, tuple(findings))
     clf = pol.get("llm_classifier") or {}
     if clf.get("enabled") and clf.get("command"):
         return _classify(clf["command"], tool, tool_input, text or path or tool)
@@ -254,7 +265,21 @@ def message_for(d: Decision) -> str:
         return f"BLOCKED by policy ({d.reason})."
     if d.deferred:
         return f"RECORDED for decision at commit ({d.reason})."
+    if d.observed:
+        return f"RECORDED ({d.reason}); nobody is asked."
     return (
         f"CONFIRMATION REQUIRED ({d.reason}). Ask the user explicitly before doing this; "
         "if they confirm, tell them to re-run with the policy exception or perform it manually."
+    )
+
+
+def confirm_message(d: Decision, n: int | None, session_scope: bool) -> str:
+    """The immediate-confirm message, with the finding's number so a person's answer can be recorded once."""
+    if n is None or not session_scope:
+        return message_for(d)
+    return (
+        f"CONFIRMATION REQUIRED ({d.reason}). Ask the user before doing this. If they agree, record it and run the "
+        f"command again:\n  gitvow decide {n} accept --scope session [--reason \"<phrase>\"]\n"
+        f"The answer holds for this session, so this question is not asked again until the session ends, and it goes "
+        f"into the next commit. If they refuse: gitvow decide {n} decline."
     )

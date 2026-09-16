@@ -73,6 +73,28 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
+## 0.18 — The price of a question (shipped)
+
+- Replaying three engineers' real sessions (15,549 tool calls) through the default policy priced the gate at
+  19 questions per engineer per week, two thirds of them `git push`, asked on every push and able to earn
+  nothing because an immediate confirm recorded no finding. That number is an uninstall, and an uninstalled
+  gate records nothing. Three changes, all inside one repository and all free.
+- **`when: observe`**, a third tier. The finding is recorded on the commit as `Gitvow-Observed`, counted by the
+  digest and the report, and never put to anyone. Zero interruptions; the record grows; a team moves a pattern
+  to `commit` once the record shows it recurs and matters. Never precedent.
+- **An immediate confirm is answered once per session.** It is recorded as a numbered finding; `gitvow decide
+  <n> accept --scope session` (or the agent's own approve button, which PostToolUse now records) holds for the
+  session and rides on the next commit as a scoped decision, which is an exception and never a rule. A decline
+  blocks for the session. A confirm nobody answered leaves nothing on the commit, because nothing ran.
+  `decisions.session_scope: false` asks every time, as before.
+- **Edits outside the repository are counted and named.** 28% of edits in the replay went to a different
+  checkout than the session's own. They are now counted per target repository in the session state, named on
+  the card, and written into the note as `edits_outside_repository`.
+- Note schema 7, additive. The `prepare-commit-msg` and `pre-commit` hook bodies changed: **re-run `gitvow
+  install` in every repository**; `gitvow status` names the ones still on the old body.
+- Exit: the same replay against the 0.18 default asks once per session for a push instead of once per push,
+  and the observe tier lets the loop propose rules that cost nothing to adopt.
+
 ## 0.17 — Two modes for the agent's commit (shipped)
 
 - `decisions.mode` had governed only a person's commit: `open` let it through with `Gitvow-Open` trailers, `strict`

@@ -44,7 +44,7 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `reason` | string | the rule's reason or the provider's summary |
 | `evidence` | string[] | provider evidence, redacted, at most 8 lines |
 | `raised` | int | how many tool calls raised the same finding in the session |
-| `answer` | string | `accepted`, `declined`, `referred` or `open` |
+| `answer` | string | `accepted`, `declined`, `referred`, `open`, or `observed` (schema 7: an observe-tier rule recorded it and nobody was asked) |
 | `by` | string or null | committer identity used in the trailer: email local part or name |
 | `authority` | string | `policy` (named in `decisions.authorities`), `commit-access` (no list configured), `none` |
 | `scope` | string or null | environment or branch the answer is limited to. A scoped answer is an exception, so it never counts towards a proposed rule |
@@ -54,7 +54,11 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `human_turns_after_card` | int or null | user messages in the transcript between the card and the answer; `0` means the agent answered without a person speaking |
 | `proposed` | string or null | what the record proposed on the card from earlier decisions on the same finding: `accept`, `decline` or null |
 
-The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields. Schema 6 added `to` to `decisions[]`; a note written by an older gitvow reads the same as it always did.
+### `edits_outside_repository` (schema 7)
+
+An object keyed by the name of another checkout the agent edited during the session, each with `count` and up to 20 `paths` relative to that checkout. Empty when every edit stayed inside this repository. The gate evaluated those edits; this repository's note is the only record of them.
+
+The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields. Schema 7 added `observed` as an `answer` and the `edits_outside_repository` object; schema 6 added `to` to `decisions[]`; a note written by an older gitvow reads the same as it always did.
 
 ## The rule-decision note
 
@@ -81,12 +85,13 @@ Gitvow-Accepted: <finding> by <person>[ scope=<scope>][: <reason>]
 Gitvow-Declined: <finding> by <person>[ scope=<scope>][: <reason>]
 Gitvow-Referred: <finding> by <person>[ to=<person-or-team>][: <reason>]
 Gitvow-Open: <finding>
+Gitvow-Observed: <finding>
 Gitvow-Revisits: <commit>
 Gitvow-Rule-Accepted: <finding> by <person>[ answer=<accepted|declined>][: <reason>]
 Gitvow-Rule-Rejected: <finding> by <person>[ answer=<accepted|declined>][: <reason>]
 ```
 Added by `prepare-commit-msg` when `.git/gitvow-session.json` holds a session id and a `pending_commit` timestamp younger than five minutes, which the PreToolUse gate sets when the agent runs `git commit` and PostToolUse clears afterwards. Idempotent: a message that already has `Gitvow-Session:` is left alone. A note is written only when the commit at HEAD carries the trailer.
 
-`Gitvow-Accepted`, `Gitvow-Declined` and `Gitvow-Referred` are written for every finding decided with `gitvow decide` before the commit, on agent and human commits alike. `Gitvow-Open` is written for each finding nobody decided, on the agent's commit once the card has been shown and on a person's commit directly (policy `decisions.mode` `open`; in `strict` neither commit happens until every finding is decided). The `post-commit` hook clears the findings the commit carried. `Gitvow-Revisits` marks an empty commit written by `gitvow revisit`; its decision trailers answer the named commit's findings again. `Gitvow-Rule-Accepted` and `Gitvow-Rule-Rejected` mark an empty commit written by `gitvow rules accept|reject`; `answer=` says which run the verdict was about, so a later contradicting decision does not inherit it. See [Decisions](../concepts/decisions.md).
+`Gitvow-Accepted`, `Gitvow-Declined` and `Gitvow-Referred` are written for every finding decided with `gitvow decide` before the commit, on agent and human commits alike. `Gitvow-Open` is written for each finding nobody decided, on the agent's commit once the card has been shown and on a person's commit directly (policy `decisions.mode` `open`; in `strict` neither commit happens until every finding is decided). `Gitvow-Observed` is written for each finding an observe-tier rule recorded; it is neither debt nor an answer and never reaches the card. An immediate confirm nobody answered writes nothing: the command never ran. The `post-commit` hook clears the findings the commit carried. `Gitvow-Revisits` marks an empty commit written by `gitvow revisit`; its decision trailers answer the named commit's findings again. `Gitvow-Rule-Accepted` and `Gitvow-Rule-Rejected` mark an empty commit written by `gitvow rules accept|reject`; `answer=` says which run the verdict was about, so a later contradicting decision does not inherit it. See [Decisions](../concepts/decisions.md).
 
 The grammar grows by new trailer **names**, never by new tail tokens on a name that has already shipped. `Gitvow-Referred` and its `to=` arrived together in 0.16: an older gitvow does not match the new name at all, so it reads the commit exactly as it would have before, which is the safe direction. Adding a token to a trailer that already exists is not safe, and the reason is in the pattern above — the finding is matched lazily and every suffix is optional, so an older parser that does not know the token backtracks it *into* the finding. `Gitvow-Accepted: edit foo.go class=k7 by nikhil` would parse on 0.15 as a decision about `edit foo.go class=k7`, silently forking the identity of every decision that carried it, with nothing anywhere reporting an error. Treat the token set of a released trailer as closed: a new fact belongs in a new trailer name, or in the note, which is versioned and genuinely additive. Within that constraint every part after the finding is optional, so a commit written by any earlier gitvow parses exactly as it did when it was made, and no existing trailer name has changed meaning. `Gitvow-Rule-Accepted` is deliberately not a `Gitvow-Accepted`: accepting a rule is not an answer to a finding on that commit, and a parser looking for decisions must not pick it up.

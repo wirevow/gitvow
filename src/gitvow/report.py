@@ -139,6 +139,7 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             "accepted": sum(1 for d in alld if d["answer"] == "accepted"),
             "declined": sum(1 for d in alld if d["answer"] == "declined"),
             "open": sum(1 for d in alld if d["answer"] == "open"),
+            "observed": sum(1 for d in alld if d["answer"] == "observed"),
             # Counted apart from open on purpose: a reviewer seeing "3 open" and a reviewer seeing
             # "3 waiting on security" have different next actions.
             "referred": sum(1 for d in alld if d["answer"] == "referred"),
@@ -226,6 +227,9 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
         if d["answer"] == "open":
             out.append(f"**Open:** {d['finding']} — nobody decided; `gitvow decide` closes it")
             continue
+        if d["answer"] == "observed":
+            out.append(f"**Observed:** {d['finding']} — recorded by an observe-tier rule; nobody was asked")
+            continue
         if d["answer"] == "referred":
             # Not debt and not an answer. Naming the person is the whole remediation, so it leads the line.
             whom = f" to {d['to']}" if d.get("to") else ""
@@ -259,10 +263,11 @@ def decisions_summary(r: dict[str, Any]) -> str:
                 "accepted": "Gitvow-Accepted",
                 "declined": "Gitvow-Declined",
                 "open": "Gitvow-Open",
+                "observed": "Gitvow-Observed",
                 "referred": "Gitvow-Referred",
             }[d["answer"]]
             line = f"{key}: {d['finding']}"
-            if d["answer"] != "open":
+            if d["answer"] not in ("open", "observed"):
                 line += f" by {d.get('by') or 'unknown'}"
                 if d.get("scope"):
                     line += f" scope={d['scope']}"
