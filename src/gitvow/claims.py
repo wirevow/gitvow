@@ -108,7 +108,9 @@ def import_candidates(
                 continue
             if rules is not None:
                 text = redact(text, rules)
-                if not text.strip() or (text.strip().startswith("[") and text.strip().endswith("]") and " " not in text):
+                if not text.strip() or (
+                    text.strip().startswith("[") and text.strip().endswith("]") and " " not in text
+                ):
                     counts["refused"] += 1
                     continue
             if cid in already:
