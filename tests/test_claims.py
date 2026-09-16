@@ -181,3 +181,20 @@ def test_hooks_disabled_commit_does_not_fire_the_card(repo):
     """A claim verdict is written with hooks disabled, like a rule verdict: it carries nothing but the verdict."""
     r = subprocess.run(["git", "log", "--oneline", "-1"], cwd=repo, capture_output=True, text=True)
     assert r.returncode == 0
+
+
+def test_paths_are_suggested_from_the_tree_and_accepted_with_suggested(repo, home, tmp_path):
+    for p in ("ingest/s3/copier.py", "ingest/s3/lister.py", "etl/currency/partition.py", "docs/readme.md"):
+        (repo / p).parent.mkdir(parents=True, exist_ok=True)
+        (repo / p).write_text("x\n")
+    git(repo, "add", ".")
+    git(repo, "commit", "-qm", "tree")
+    clm.import_candidates(str(repo), _candidates(tmp_path, ROWS), str(home))
+    q = clm.queue(str(repo))
+    assert q[0]["paths"] == ["ingest/s3/"] and "suggested" not in q[0]  # already bound, nothing to suggest
+    assert q[1]["suggested"] == ["etl/currency/"]  # "currency" in the claim matches the directory
+    assert "suggested: etl/currency/" in clm.render_queue(q)
+    assert clm.suggest_paths("nothing in common with any file", clm.repo_tree(str(repo))) == []
+    assert clm.suggest_paths("the s3 copier lists objects", clm.repo_tree(str(repo)))[0] == "ingest/s3/"
+    _h, line, payload = clm.decide(str(repo), CID2, "confirmed", {}, paths=["suggested"])
+    assert payload["paths"] == ["etl/currency/"] and "paths=etl/currency/" in line

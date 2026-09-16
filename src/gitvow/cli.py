@@ -236,6 +236,32 @@ def cmd_decisions(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_export(a: argparse.Namespace) -> int:
+    """The export bundle: the record as an inspectable directory, one file per consented class; --dry-run --why
+    prints what would leave and sends nothing."""
+    from . import export as ex
+
+    cwd = os.getcwd()
+    try:
+        rules = load_rules(cwd, os.path.expanduser("~"))
+    except RedactionError as e:
+        print(f"redaction rules invalid: {e}", file=sys.stderr)
+        return 2
+    try:
+        b = ex.build(cwd, since=a.since, override=(a.consent.split(",") if a.consent else None), rules=rules)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    if a.why or a.dry_run:
+        print(ex.render_why(b), end="")
+    if a.dry_run:
+        return 0
+    out = a.out or os.path.join(b["top"], ".gitvow", "out", f"bundle-{b['manifest']['frontier']['head'][:7]}")
+    written = ex.write(b, out)
+    print(f"wrote {len(written)} files to {out}  digest {b['manifest']['digest'][:19]}…", file=sys.stderr)
+    return 0
+
+
 def cmd_claims(a: argparse.Namespace) -> int:
     """Claims: a person's statement about the system, confirmed by them, kept in git. The queue, or a verdict."""
     from . import claims as clm
@@ -725,6 +751,17 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--json", action="store_true")
     s.set_defaults(f=cmd_status)
     s = sub.add_parser(
+        "export",
+        help="the export bundle: the record as an inspectable directory, one file per consented class; never the session",
+    )
+    s.add_argument("--since", default="90d", help="window of history to carry (90d, 6m, 1y, or a date); default 90d")
+    s.add_argument("--out", help="directory to write; default .gitvow/out/bundle-<head>")
+    s.add_argument("--consent", help="comma-separated classes to export this run, overriding .gitvow/export.json")
+    s.add_argument("--dry-run", action="store_true", help="build in memory, write nothing")
+    s.add_argument("--why", action="store_true", help="print what would leave, what would not, and what was refused")
+    s.set_defaults(f=cmd_export)
+
+    s = sub.add_parser(
         "claims",
         help="claims: what a person said about the system, confirmed by them, kept in git; the queue, or a verdict",
     )
@@ -743,7 +780,7 @@ def main(argv: list[str] | None = None) -> int:
     ):
         cv = cs.add_parser(name, help=help_)
         cv.add_argument("claim", help="queue number from `gitvow claims`, or the claim id")
-        cv.add_argument("--paths", help="comma-separated repository paths the claim is about (confirm)")
+        cv.add_argument("--paths", help="comma-separated repository paths the claim is about, or `suggested` (confirm)")
         cv.add_argument(
             "--edit", help="the claim as the person wants it recorded; the original is kept beside it (confirm)"
         )

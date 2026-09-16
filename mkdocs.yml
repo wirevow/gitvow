@@ -48,6 +48,7 @@ nav:
       - Session note schema: reference/note.md
       - Policy schema: reference/policy.md
       - Provider protocol: reference/provider-protocol.md
+      - The export bundle: reference/export.md
       - Adapters for other agents: reference/adapters.md
       - External adapter protocol: reference/adapter-protocol.md
   - Security and the bypass surface: security.md

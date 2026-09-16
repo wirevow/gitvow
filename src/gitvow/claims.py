@@ -148,10 +148,145 @@ def import_candidates(
     return counts
 
 
-def queue(cwd: str) -> list[dict[str, Any]]:
-    """Unanswered repo-reach candidates, most confident first, numbered from 1."""
+def queue(cwd: str, suggest: bool = True) -> list[dict[str, Any]]:
+    """Unanswered repo-reach candidates, most confident first, numbered from 1, with suggested paths for those
+    that arrived without a binding."""
     rows = sorted(load_queue(cwd), key=lambda r: -float(r.get("confidence") or 0))
-    return [{"n": i, **r} for i, r in enumerate(rows, 1)]
+    tree = repo_tree(cwd) if suggest else []
+    out = []
+    for i, r in enumerate(rows, 1):
+        row = {"n": i, **r}
+        if tree and not r.get("paths"):
+            row["suggested"] = suggest_paths(r["text"], tree)
+        out.append(row)
+    return out
+
+
+_STOP = frozenset(
+    [
+        "the",
+        "this",
+        "that",
+        "with",
+        "from",
+        "into",
+        "only",
+        "when",
+        "where",
+        "which",
+        "while",
+        "about",
+        "after",
+        "before",
+        "also",
+        "just",
+        "have",
+        "has",
+        "had",
+        "will",
+        "would",
+        "should",
+        "could",
+        "been",
+        "being",
+        "were",
+        "was",
+        "are",
+        "not",
+        "and",
+        "for",
+        "but",
+        "its",
+        "it's",
+        "they",
+        "them",
+        "then",
+        "than",
+        "these",
+        "those",
+        "there",
+        "here",
+        "what",
+        "your",
+        "our",
+        "you",
+        "all",
+        "any",
+        "each",
+        "every",
+        "some",
+        "such",
+        "very",
+        "more",
+        "most",
+        "other",
+        "same",
+        "own",
+        "over",
+        "under",
+        "again",
+        "once",
+        "because",
+        "since",
+        "although",
+        "though",
+        "whether",
+        "either",
+        "neither",
+        "both",
+    ]
+)
+
+
+def repo_tree(cwd: str) -> list[str]:
+    top = toplevel(cwd)
+    if not top:
+        return []
+    rc, out, _ = git(["ls-files"], top)
+    return out.splitlines() if rc == 0 else []
+
+
+def _terms(text: str) -> set[str]:
+    words = set()
+    for w in re.findall(r"[A-Za-z][A-Za-z0-9_./-]{1,}", text):
+        w = w.strip("./-")
+        for part in re.split(r"[_./-]", w):
+            if len(part) >= 3 and part.lower() not in _STOP and not part.isdigit():
+                words.add(part.lower())
+        for part in re.findall(r"[A-Z]?[a-z]+|[A-Z]+(?![a-z])", w):  # camelCase pieces
+            if len(part) >= 4 and part.lower() not in _STOP:
+                words.add(part.lower())
+        if len(w) >= 4 and w.lower() not in _STOP:
+            words.add(w.lower())
+    return words
+
+
+def suggest_paths(text: str, tree: list[str], limit: int = 3) -> list[str]:
+    """Directories (and single files) whose names share terms with the claim, best first. No model; equality on
+    lower-cased path pieces against the claim's words, so a suggestion is checkable by reading it."""
+    terms = _terms(text)
+    if not terms or not tree:
+        return []
+    scores: dict[str, float] = {}
+    for path in tree:
+        pieces = [p.lower() for p in re.split(r"[/._-]", path) if p]
+        hits = {t for t in terms if any(t == p or (len(t) >= 5 and len(p) >= 4 and (t in p or p in t)) for p in pieces)}
+        if not hits:
+            continue
+        parts = path.split("/")
+        # credit the file and every ancestor directory; directories win ties because they generalise
+        for depth in range(1, min(len(parts), 3) + 1):
+            key = "/".join(parts[:depth]) + ("/" if depth < len(parts) else "")
+            scores[key] = scores.get(key, 0) + len(hits) * (1.0 if key.endswith("/") else 0.6)
+    # deeper directories win ties: `etl/currency/` says more than `etl/`; one exact term is enough to suggest
+    ranked = sorted(scores.items(), key=lambda kv: (-kv[1], -kv[0].count("/"), kv[0]))
+    best = ranked[0][1] if ranked else 0
+    kept = [k for k, v in ranked if v >= max(1.0, best * 0.6)]
+    # a parent adds nothing when a child scored at least as well: suggest `etl/currency/`, not also `etl/`
+    kept = [k for k in kept if not any(c != k and c.startswith(k) and scores[c] >= scores[k] for c in kept)]
+    # and a file adds nothing when its directory is suggested
+    kept = [k for k in kept if k.endswith("/") or not any(d.endswith("/") and k.startswith(d) for d in kept)]
+    return kept[:limit]
 
 
 def _pick(cwd: str, which: str) -> dict[str, Any]:
@@ -204,6 +339,10 @@ def decide(
             "there are staged changes; commit or stash them first, so the claim decision is an empty commit "
             "carrying nothing but the verdict"
         )
+    if paths and [p.strip() for p in paths] == ["suggested"]:
+        paths = suggest_paths(row["text"], repo_tree(cwd))
+        if not paths:
+            raise ValueError("no path suggestion for this claim; pass --paths explicitly or confirm without one")
     text = row["text"]
     original = text
     if edit is not None and edit.strip() and verdict == "confirmed":
@@ -392,6 +531,8 @@ def render_queue(rows: list[dict[str, Any]]) -> str:
     out = [f"{len(rows)} candidate claim{'s' if len(rows) != 1 else ''} waiting, most confident first:", ""]
     for r in rows:
         where = f"  paths: {', '.join(r['paths'])}" if r.get("paths") else ""
+        if not where and r.get("suggested"):
+            where = f"  suggested: {', '.join(r['suggested'])}  (confirm with --paths suggested, or name them)"
         out.append(
             f'{r["n"]}. [{r.get("kind", "system")} {float(r.get("confidence") or 0):.2f}] {r["speaker"]}: "{r["text"]}"{where}'
         )

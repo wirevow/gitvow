@@ -73,6 +73,20 @@ is a brief the agent should ignore or, worse, obeys.
 - Exit: a repository upgrading from 0.15 keeps every rule it was using, as a proposal its authority adopts in
   one command, and the rules it runs on afterwards each name the person who accepted them.
 
+## 0.20 — The export bundle (shipped)
+
+- `gitvow export` assembles the record into a directory a security team can read before anything moves: one
+  file per consented data class (decisions, confirmed claims, observed findings, rule verdicts, the meter, and
+  sessions and gate-event counts only when the repository has consented), a manifest with a sha256 per part and a
+  digest over the whole, and an attestation. Consent is the committed `.gitvow/export.json`; `--consent` overrides
+  it for one run; a class not consented has no file and the manifest says so.
+- Redaction is re-verified, never applied: a row that trips a rule at export is refused and counted in the
+  attestation. Sessions carry counts and attribution, never the plan text or the paths of edits made elsewhere.
+- Nothing here sends. The bundle is the shape every sink (the customer's git, an object store, a database, a
+  hosted store) will receive; `--dry-run --why` shows what would leave and what never does.
+- Exit: the same repository yields the same digest twice; a planted token in a decision note is refused and
+  named in the attestation; a reviewer learns what travels by listing the directory.
+
 ## 0.19 — Claims, what the owners said (shipped)
 
 - A claim is a statement a person made about their system, in their own words, with a source, bound to paths.
