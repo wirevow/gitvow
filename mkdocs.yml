@@ -52,6 +52,7 @@ nav:
       - Adapters for other agents: reference/adapters.md
       - External adapter protocol: reference/adapter-protocol.md
   - Security and the bypass surface: security.md
+  - What gitvow reads, writes, executes and sends: trust.md
   - Roadmap: roadmap.md
   - FAQ: faq.md
   - Architecture: ARCHITECTURE.md

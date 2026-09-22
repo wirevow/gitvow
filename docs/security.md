@@ -1,7 +1,8 @@
 # Security and the bypass surface
 
 This page is the honest version. It says where gitvow's enforcement holds, where it does not, and what
-you can run yourself to check each statement. Every command below was run against 0.15.2 in a throwaway
+you can run yourself to check each statement. Its companion, [What gitvow reads, writes, executes and
+sends](trust.md), states exactly what the tool touches on your machine and in your repository. Every command below was run against 0.15.2 in a throwaway
 repository with a per-repository install, and the outcomes are what was observed rather than what was
 expected.
 

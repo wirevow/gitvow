@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.26 — What gitvow touches, stated and enforced (shipped)
+A trust page a reviewer can check against the code; credential-store paths excluded by path from snapshots and attribution; every repository write preflighted and skipped when unchanged; a one-line status badge for the agent's status bar.
+
 ## 0.25 — The record lives in the repository the change is about (shipped)
 A session opened in one checkout that edits or commits into another is gated by, and recorded in, that other repository: its policy, its state, its trailers, its notes. Found by our own history carrying no decisions: every session ran from a directory that was not the repository being changed.
 

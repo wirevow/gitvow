@@ -8,6 +8,7 @@ import shutil
 import sys
 from typing import Any
 
+from .safewrite import check_target, write_if_changed
 from .state import git
 
 GIT_HOOK = """#!/bin/sh
@@ -263,7 +264,7 @@ def _external_files(info: dict[str, Any]) -> tuple[str, str]:
     )
 
 
-def merge_external_settings(path: str, info: dict[str, Any], cmd_prefix: str) -> None:
+def merge_external_settings(path: str, info: dict[str, Any], cmd_prefix: str, root: str | None = None) -> None:
     inst = info.get("install") or {}
     cur: dict[str, Any] = {}
     if os.path.exists(path):
@@ -276,9 +277,12 @@ def merge_external_settings(path: str, info: dict[str, Any], cmd_prefix: str) ->
         rendered = json.loads(json.dumps(entries).replace("__GITVOW__", cmd_prefix))
         kept = [x for x in hooks.get(ev, []) if not _is_ours(x)]
         hooks[ev] = kept + rendered
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w") as fh:
-        json.dump(cur, fh, indent=2)
+    _write_json(path, cur, root)
+
+
+def _write_json(path: str, data: dict[str, Any], root: str | None) -> None:
+    target = check_target(path, root)
+    write_if_changed(target, json.dumps(data, indent=2))
 
 
 def _is_ours(entry: dict[str, Any]) -> bool:
@@ -287,7 +291,7 @@ def _is_ours(entry: dict[str, Any]) -> bool:
     return any(MARKER in (h.get("command") or "") for h in entry.get("hooks", []))
 
 
-def merge_agent_settings(path: str, agent: str, cmd_prefix: str) -> None:
+def merge_agent_settings(path: str, agent: str, cmd_prefix: str, root: str | None = None) -> None:
     cur: dict[str, Any] = {}
     if os.path.exists(path):
         with open(path) as fh:
@@ -298,9 +302,7 @@ def merge_agent_settings(path: str, agent: str, cmd_prefix: str) -> None:
     for ev, entries in _agent_entries(agent, cmd_prefix).items():
         kept = [x for x in hooks.get(ev, []) if not _is_ours(x)]
         hooks[ev] = kept + entries
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w") as fh:
-        json.dump(cur, fh, indent=2)
+    _write_json(path, cur, root)
 
 
 def unmerge_agent_settings(path: str) -> None:
@@ -322,7 +324,7 @@ def unmerge_agent_settings(path: str) -> None:
         os.remove(path)
 
 
-def merge_settings(path: str, cmd_prefix: str) -> None:
+def merge_settings(path: str, cmd_prefix: str, root: str | None = None) -> None:
     cur: dict[str, Any] = {}
     if os.path.exists(path):
         with open(path) as fh:
@@ -331,9 +333,7 @@ def merge_settings(path: str, cmd_prefix: str) -> None:
     for ev, entries in _hook_entries(cmd_prefix).items():
         kept = [x for x in hooks.get(ev, []) if not any(MARKER in (h.get("command") or "") for h in x.get("hooks", []))]
         hooks[ev] = kept + entries
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w") as fh:
-        json.dump(cur, fh, indent=2)
+    _write_json(path, cur, root)
 
 
 def unmerge_settings(path: str) -> None:
@@ -497,13 +497,13 @@ def stale_git_hooks(dirpath: str) -> list[str]:
     return out
 
 
-def _write_git_hook(dirpath: str) -> str:
+def _write_git_hook(dirpath: str, root: str | None = None) -> str:
+    """Write the four hooks. Bytes that are already current are left alone, so a rerun does not move the
+    install stamp `status` reads; inside a repository every target is preflighted (safewrite)."""
     os.makedirs(dirpath, exist_ok=True)
     for name, body in GIT_HOOK_BODIES.items():
-        p = os.path.join(dirpath, name)
-        with open(p, "w") as fh:
-            fh.write(body)
-        os.chmod(p, 0o755)  # noqa: S103  # nosec B103 - git runs hooks as the invoking user; must be executable
+        p = check_target(os.path.join(dirpath, name), root)
+        write_if_changed(p, body, mode=0o755)  # nosec B103 - git runs hooks as the invoking user
     return os.path.join(dirpath, "prepare-commit-msg")
 
 
@@ -588,15 +588,15 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -
     pol = os.path.join(base, "policy.json")
     if not os.path.exists(pol):
         shutil.copy(DEFAULT_POLICY_PATH, pol)
-    _write_git_hook(os.path.join(base, "git-hooks"))
+    _write_git_hook(os.path.join(base, "git-hooks"), root=repo)
     ext = None if agent in AGENT_FILES else _external(agent)
     repo_rel = AGENT_FILES[agent][1] if agent in AGENT_FILES else _external_files(ext[1])[1]  # type: ignore[index]
     if agent == "claude":
-        merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix)
+        merge_settings(os.path.join(repo, ".claude", "settings.json"), cmd_prefix, root=repo)
     elif ext:
-        merge_external_settings(os.path.join(repo, repo_rel), ext[1], cmd_prefix)
+        merge_external_settings(os.path.join(repo, repo_rel), ext[1], cmd_prefix, root=repo)
     else:
-        merge_agent_settings(os.path.join(repo, repo_rel), agent, cmd_prefix)
+        merge_agent_settings(os.path.join(repo, repo_rel), agent, cmd_prefix, root=repo)
     git(["config", "core.hooksPath", ".gitvow/git-hooks"], repo)
     _set_notes_config(repo, [])
     _exclude_local_sinks(repo)

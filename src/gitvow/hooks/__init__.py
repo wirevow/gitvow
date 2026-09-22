@@ -10,6 +10,7 @@ from typing import Any
 
 from .. import decisions as dec
 from .. import snapshots
+from ..paths import is_credential_path
 from ..policy import PolicyError, confirm_message, evaluate, load_policy, message_for
 from ..pricing import estimate
 from ..redact import RedactionError, load_rules, redact
@@ -311,6 +312,10 @@ def _record_agent_blob(cwd: str, file_path: str) -> None:
         other = toplevel(os.path.dirname(abs_path))
         if other and os.path.realpath(other) != os.path.realpath(top):
             _count_elsewhere(cwd, other, abs_path)
+        return
+    if is_credential_path(rel):
+        # the path says credential store: attribution loses one file, the object store never holds its content
+        log_event(cwd, "blob_skipped", {"reason": "credential-store path", "path": rel})
         return
     rc, blob, _ = git(["hash-object", "-w", "--", abs_path], top)
     if rc != 0:

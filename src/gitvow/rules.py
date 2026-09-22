@@ -490,7 +490,10 @@ def write_section(path: str, block: str) -> str:
         action = "added"
     else:
         return "nothing to write"
-    os.makedirs(os.path.dirname(path) or ".", exist_ok=True)
-    with open(path, "w") as fh:
-        fh.write(new)
+    from .safewrite import check_target, write_if_changed
+    from .state import toplevel
+
+    target = check_target(path, toplevel(os.path.dirname(path) or "."))
+    if not write_if_changed(target, new):
+        return f"managed section in {path} already current"
     return f"{action} managed section in {path}"

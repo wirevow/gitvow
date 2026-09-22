@@ -22,8 +22,19 @@ DEFAULTS: dict[str, Any] = {
 
 
 def settings(pol: dict[str, Any] | None) -> dict[str, Any]:
+    """Policy settings over the defaults. `exclude` is a union: the built-in credential-store paths (paths.py)
+    and the defaults are always excluded, and a policy can only add to them."""
+    from .paths import pathspec_excludes
+
     out = dict(DEFAULTS)
-    out.update((pol or {}).get("snapshots") or {})
+    user = dict((pol or {}).get("snapshots") or {})
+    extra = user.pop("exclude", None) or []
+    out.update(user)
+    seen: list[str] = []
+    for pat in [*DEFAULTS["exclude"], *pathspec_excludes(), *extra]:
+        if pat not in seen:
+            seen.append(pat)
+    out["exclude"] = seen
     return out
 
 

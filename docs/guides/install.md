@@ -62,6 +62,27 @@ FAIL 1 agent commit since the install (2026-09-10 13:46) carries no session: 401
        are read at start-up. Restart it, then `gitvow coverage` to confirm.
 ```
 
+## See the record work, in the status bar
+
+`gitvow status --line` prints one line from the current repository's session state: decisions answered, findings
+recorded without asking anyone, findings still open, questions a person actually got, calls refused. Claude Code
+renders it live:
+
+```json
+{"statusLine": {"type": "command", "command": "cd \"$(git rev-parse --show-toplevel 2>/dev/null || pwd)\" && gitvow status --line"}}
+```
+
+in `~/.claude/settings.json`. The counts are what the record holds, not an estimate of anything; a repository
+with no session says so instead of showing a clean-looking row of zeros.
+
+## Install is safe to rerun, and refuses a redirected target
+
+Rerunning `gitvow install` rewrites nothing whose bytes are already current, so mtimes stay put (the install
+stamp `status` reads is a hook's mtime). Every write into a repository is preflighted: a target that resolves
+outside the repository, into its git directory, onto something that is not a regular file, or onto a hard link
+is refused by name and nothing is written. A checked-in symlink at `.claude/settings.json` cannot redirect the
+install. See [What gitvow reads, writes, executes and sends](../trust.md).
+
 ## If hooks silently do nothing
 Most agents treat a hook command they cannot run as a non-blocking error and carry on, which switches the gate off with no visible failure. That is the worst outcome, so there is a command for exactly this:
 

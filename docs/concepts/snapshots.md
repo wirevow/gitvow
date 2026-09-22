@@ -10,7 +10,7 @@ refs/gitvow/snapshots/<session-id>/<n>
 ```
 
 - The snapshot's parent is the current HEAD, so `git diff HEAD <snapshot>` shows exactly what the agent had changed at that moment.
-- Ignored files are excluded, and so is a default exclusion list (`.env*`, `*.pem`, `*.key`, `*secret*`, `*credential*`, and gitvow's own `.gitvow/` and `.claude/` directories), so a snapshot never contains more than a careful `git add -A` would. Excluded paths that are already committed stay as they are in HEAD.
+- Ignored files are excluded, and so is the built-in credential-store path list (`.env*`, `.npmrc`, `.netrc`, `.kube/config`, SSH private keys, `*.pem`, `*.key` and the rest; see [trust](../trust.md#credential-store-paths)) plus gitvow's own `.gitvow/` and `.claude/` directories, so a snapshot never contains more than a careful `git add -A` would. `snapshots.exclude` in the policy adds to that list and cannot remove from it. Excluded paths that are already committed stay as they are in HEAD.
 - The ref is not under `refs/heads` or `refs/notes`, so it never appears in `git log`, is never pushed by the pre-push hook, and is invisible to branches. `git gc` keeps it because a ref points at it.
 - The session note on a later commit names the last snapshot taken before that commit, which ties the two records together.
 

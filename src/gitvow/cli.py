@@ -115,8 +115,14 @@ def cmd_install(a: argparse.Namespace) -> int:
     lines: list[str] = []
     if detected:
         lines.append(f"agents found here: {', '.join(agents)}  (use --agent to pick one)")
+    from .safewrite import UnsafeTargetError
+
     for agent in agents:
-        lines += install_user(home, agent=agent) if a.user else install_repo(repo, agent=agent)
+        try:
+            lines += install_user(home, agent=agent) if a.user else install_repo(repo, agent=agent)
+        except UnsafeTargetError as e:
+            print(f"refused: {e}", file=sys.stderr)
+            return 1
     seen: set[str] = set()
     for ln in lines:
         if ln not in seen:
@@ -212,8 +218,11 @@ def cmd_coverage(a: argparse.Namespace) -> int:
 
 def cmd_status(a: argparse.Namespace) -> int:
     """Is the record actually being written here? Reports what is missing and the line that fixes it."""
-    from .status import build, render
+    from .status import badge, build, render
 
+    if a.line:
+        print(badge(os.getcwd()))
+        return 0
     checks = build(os.getcwd(), os.path.expanduser("~"))
     if a.json:
         print(json.dumps([{"state": s, "what": w, "fix": f} for s, w, f in checks], indent=1))
@@ -890,6 +899,9 @@ def main(argv: list[str] | None = None) -> int:
     s.set_defaults(f=cmd_coverage)
     s = sub.add_parser("status", help="check the install is live: hooks reachable, policy loads, git hooks in place")
     s.add_argument("--json", action="store_true")
+    s.add_argument(
+        "--line", action="store_true", help="one line for a status bar: what this repository's session recorded"
+    )
     s.set_defaults(f=cmd_status)
     s = sub.add_parser("sync", help="export the record and deliver it to the configured sinks; never the session")
     s.add_argument("--sink", help="deliver to this sink only")

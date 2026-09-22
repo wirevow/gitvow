@@ -22,7 +22,7 @@ from .install import (
 )
 from .policy import PolicyError, load_policy
 from .redact import RedactionError, load_rules
-from .state import git, git_dir, toplevel
+from .state import git, git_dir, load_state, toplevel
 
 Check = tuple[str, str, str]  # (state: ok|fail|note, what, fix or detail)
 
@@ -222,3 +222,52 @@ def render(checks: list[Check]) -> str:
     else:
         lines += ["", f"The record is live here.{tail}"]
     return "\n".join(lines) + "\n"
+
+
+def badge(cwd: str) -> str:
+    """One line for an agent's status bar: what the record holds for the session active in this repository.
+
+    Read from the repository's session state and hook log only, so it costs one file read and one scan and
+    makes no network call. Counts are labelled for what they are: `decided` is findings a person answered,
+    `recorded` is findings the gate put on the card or observed without asking anyone, `open` is findings
+    still waiting for an answer, `asked` is the questions a person actually got, `denied` is refused calls.
+    A repository with no session says so instead of printing zeros that look like a clean record.
+    """
+    from . import __version__
+
+    top = toplevel(cwd)
+    if not top:
+        return f"[gitvow {__version__}] not a repository"
+    st = load_state(top)
+    sid = st.get("session_id")
+    if not sid:
+        return f"[gitvow {__version__}] no session recorded here"
+    findings = list(st.get("findings") or []) + list((st.get("last_commit") or {}).get("findings") or [])
+    decided = sum(1 for f in findings if f.get("decision"))
+    open_ = sum(1 for f in findings if not f.get("decision") and not f.get("observe") and not f.get("immediate"))
+    asked = denied = recorded = 0
+    gd = git_dir(top)
+    log = os.path.join(gd, "gitvow-hooks.log") if gd else ""
+    if log and os.path.exists(log):
+        import json
+
+        with open(log) as fh:
+            for ln in fh:
+                try:
+                    ev = json.loads(ln)
+                except ValueError:
+                    continue
+                if ev.get("session_id") not in (None, sid):
+                    continue
+                k = ev.get("kind")
+                if k in ("confirm_required", "card"):
+                    asked += 1
+                elif k in ("finding", "observed"):
+                    recorded += 1
+                elif k == "blocked":
+                    denied += 1
+    parts = [f"{decided} decided", f"{recorded} recorded", f"{open_} open", f"{asked} asked", f"{denied} denied"]
+    touched = len(st.get("repos_touched") or [])
+    if touched:
+        parts.append(f"{touched} other repo{'s' if touched != 1 else ''}")
+    return f"[gitvow {__version__}] " + " · ".join(parts)
