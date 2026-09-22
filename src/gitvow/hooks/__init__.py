@@ -239,6 +239,10 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")
         st["steps"] = st.get("steps", 0) + 1
         st["pending_commit"] = time.time()  # the git hook adds trailers only while this is fresh
+        # How long "fresh" is. Five minutes was the original guard against a stale flag catching a person's
+        # later commit; a harness that queues tool calls can run the agent's commit well after the gate saw it,
+        # and one of our own release commits lost its trailer to a seven-minute queue. The window is policy.
+        st["pending_ttl"] = int((pol.get("decisions") or {}).get("commit_window_seconds", 1800))
         save_state(cwd, st)
     if rules is None:
         log_event(cwd, "allowed", {"tool": tool})
@@ -400,6 +404,7 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     if tool != "Bash":
         return 0, ""
     st = load_state(cwd)
+    pending_at = st.get("pending_commit")
     if "pending_commit" in st or "card_ack" in st:
         st.pop("pending_commit", None)
         st.pop("card_ack", None)  # the commit happened; the next set of findings earns its own card
@@ -413,7 +418,20 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     summ = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)
     _, head_msg, _ = git(["log", "-1", "--format=%B", head], cwd)
     if "Gitvow-Session:" not in head_msg:
-        return 0, ""  # the commit did not go through (or was not the agent's): no note
+        # The commit did not go through, was not the agent's, or landed after the window closed. The last case
+        # is a silent hole in the record unless said out loud, so measure it and say it.
+        rc, cts, _ = git(["log", "-1", "--format=%ct", head], cwd)
+        if pending_at and rc == 0 and cts.isdigit() and int(cts) >= int(pending_at):
+            gap = int(cts) - int(pending_at)
+            window = int(st.get("pending_ttl") or 300)
+            if gap >= window:
+                log_event(cwd, "commit_without_trailer", {"commit": head[:12], "gap_seconds": gap, "window": window})
+                return 0, (
+                    f"gitvow: commit {head[:12]} landed {gap}s after the gate saw the commit command, past the "
+                    f"{window}s window, so it carries no session trailer and no note. Raise "
+                    f"decisions.commit_window_seconds if your agent queues tool calls this long."
+                )
+        return 0, ""
     _, files, _ = git(["show", "--stat", "--format=", head], cwd)
     attribution = _attribution(cwd, head, st.get("agent_blobs", {}), summ["files_written"])
     session_id = h.get("session_id") or st.get("session_id")

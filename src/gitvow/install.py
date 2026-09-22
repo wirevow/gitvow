@@ -17,7 +17,10 @@ GD="$(git rev-parse --git-dir)"; STATE="$GD/gitvow-session.json"
 if [ -f "$STATE" ]; then
   # Trailers go only on commits the agent itself runs: the PreToolUse gate sets pending_commit when the
   # agent invokes git commit and PostToolUse clears it. A human commit in a terminal gets no trailer.
-  SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;print(s.get('session_id') or '' if time.time()-p<300 else '')" 2>/dev/null)
+  # The window is written into the state by the gate from decisions.commit_window_seconds (default 1800): a
+  # harness that queues tool calls can run the commit minutes after the gate saw it. Older states carry no
+  # window and keep the original five minutes.
+  SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;w=s.get('pending_ttl') or 300;print(s.get('session_id') or '' if time.time()-p<w else '')" 2>/dev/null)
   STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
   if [ -n "$SID" ] && ! grep -q "^Gitvow-Session:" "$1"; then printf "\\nGitvow-Session: %s\\nGitvow-Step: %s\\n" "$SID" "$STEP" >> "$1"; fi
   # Decisions recorded with `gitvow decide` become Gitvow-Accepted/Declined/Referred trailers; findings nobody
@@ -72,7 +75,7 @@ st = json.load(open(sys.argv[1]))
 open_ = [f for f in st.get("findings") or [] if not f.get("decision") and not f.get("observe") and not f.get("immediate")]
 if not open_:
     sys.exit(0)
-fresh = time.time() - (st.get("pending_commit") or 0) < 300  # the agent's own commit: the gate already asked
+fresh = time.time() - (st.get("pending_commit") or 0) < (st.get("pending_ttl") or 300)  # the agent's own commit
 if fresh:
     sys.exit(0)
 mode = "open"

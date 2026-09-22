@@ -154,7 +154,9 @@
     "rule_decay_days": 90,
     "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (the agent's commit is stopped once with the card, then goes through with Gitvow-Open for every finding nobody answered; a person's commit goes through the same way) or strict (agent and person alike: refused until every finding has a gitvow decide answer). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access. session_scope: an immediate confirm is recorded as a finding and a person's yes (gitvow decide <n> accept --scope session, or the agent's own approve button) holds for the rest of the session; the next commit carries it as a scoped decision, which is never precedent. false: ask every time, record nothing.",
     "session_scope": true,
-    "indirect_commands": "observe"
+    "indirect_commands": "observe",
+    "commit_window_seconds": 1800,
+    "_doc_commit_window": "How long after the gate sees the agent's `git commit` the git hooks still treat the commit as the agent's and write its trailers. Guards against a stale flag catching a person's later commit; too short and a harness that queues tool calls loses trailers. When a commit lands past the window, PostToolUse says so and logs commit_without_trailer."
   },
   "llm_classifier": {
     "enabled": false,

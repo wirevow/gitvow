@@ -51,6 +51,10 @@ Rules are tried in order, so write the specific tier first and the catch-all aft
 
 `eval`, `source`, a variable in program position (`$KUBECTL delete pod x`) and a shell running a script file (`bash deploy.sh`) name an indirection, not a program, and no rule on text can read what runs. Until 0.27 they fell through to allow. They are now a tier of their own: `observe` by default (a finding on the commit, nobody asked), or `commit`, `immediate` or `allow`. Reads are still not rules; this is about the gate saying honestly what it could not see, and letting the record show how often that happens before anyone decides whether it deserves a question.
 
+### `decisions.commit_window_seconds`
+
+When the gate sees the agent run `git commit`, it marks the repository's session state, and the git hooks write the session trailers on the commit that follows while that mark is fresh. The mark exists so that a person's own commit, minutes later at a terminal, is not mistaken for the agent's. How long "fresh" is was five minutes; it is now this setting, default 1800, because a harness that runs tool calls in parallel can queue the commit behind a long test run, and a commit that lands past the window carries no trailer and no note. When that happens anyway, `PostToolUse` says so to the agent, names the commit and the gap, and logs `commit_without_trailer`, so the hole is visible rather than silent.
+
 ### `when`
 `"when": "immediate"` refuses the call and asks now; since 0.18 the finding is recorded with a number and a person's answer holds for the session (see `decisions.session_scope`). `"when": "commit"` records a finding and lets the call run; the finding is put to a person when the agent commits, see [Decisions](../concepts/decisions.md). `"when": "observe"` records the finding and lets the call run, and nobody is ever asked: it rides on the commit as `Gitvow-Observed`, is counted by the digest, and is never precedent. Deny rules have no `when`; a denial is always immediate. The default policy keeps edits to gitvow's own policy and hooks immediate, so a loosened policy can never take effect before a person has seen it.
 
