@@ -11,7 +11,7 @@ Everything gitvow records is meant to be consulted by the next session, not only
 | `gitvow recall <words>` | Has this been worked on before? Which sessions mention these terms? | session notes across all sessions, the ledger |
 | `gitvow handoff [--session <id>]` | What should the next agent know to continue? | ledger, notes, snapshots, uncommitted state |
 
-All four are read-only, local, and need nothing but git and the files gitvow already writes.
+All four are read-only, local, and need nothing but git and the files gitvow already writes. An agent that runs no hooks and loads no skill can ask the same questions over MCP through the [record server](record-server.md).
 
 ## Examples
 

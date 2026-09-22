@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.28 — The record server (shipped)
+Any agent asks the record over MCP, read-only: brief, claims, standing, why, recall, handoff, pack, a dry run of the policy, status. Coverage stated on every answer; quoted content marked as data.
+
 ## 0.27 — Reach, not text (shipped)
 A command rule may name what the command reaches, read from the environment before it runs: kube context, push remote and branch, terraform workspace. The default asks for production and observes elsewhere. Commands the gate cannot read (`eval`, a variable, a script through a shell) are recorded rather than allowed.
 

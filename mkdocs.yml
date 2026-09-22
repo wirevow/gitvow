@@ -39,6 +39,7 @@ nav:
       - Restore what the agent had: guides/snapshots.md
       - Codex, Cursor and other agents: guides/other-agents.md
       - Let the agent ask the record: guides/skills.md
+      - Let any agent ask the record (MCP): guides/record-server.md
       - A period in one page: guides/digest.md
       - What each session cost: guides/cost.md
       - Answer the card: guides/decisions.md

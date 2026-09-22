@@ -231,6 +231,21 @@ def cmd_status(a: argparse.Namespace) -> int:
     return 1 if any(s == "fail" for s, _, _ in checks) else 0
 
 
+def cmd_serve(a: argparse.Namespace) -> int:
+    """The record server. Read-only; MCP over stdio; nothing written, nothing sent."""
+    from .serve import config_snippets, serve
+    from .state import toplevel
+
+    repo = toplevel(os.path.abspath(a.repo))
+    if not repo:
+        print(f"{a.repo} is not inside a git repository", file=sys.stderr)
+        return 2
+    if a.print_config:
+        print(config_snippets(repo))
+        return 0
+    return serve(repo)
+
+
 def cmd_decisions(a: argparse.Namespace) -> int:
     """The card: open findings in this repository."""
     cwd = os.getcwd()
@@ -903,6 +918,17 @@ def main(argv: list[str] | None = None) -> int:
         "--line", action="store_true", help="one line for a status bar: what this repository's session recorded"
     )
     s.set_defaults(f=cmd_status)
+    s = sub.add_parser(
+        "serve",
+        help="the record server: answer any agent's questions about this repository's record over MCP (stdio); read-only",
+    )
+    s.add_argument("--repo", default=".", help="the repository to serve (default: the current one)")
+    s.add_argument(
+        "--print-config",
+        action="store_true",
+        help="print how to point Claude Code, Cursor and Codex at this server, and exit",
+    )
+    s.set_defaults(f=cmd_serve)
     s = sub.add_parser("sync", help="export the record and deliver it to the configured sinks; never the session")
     s.add_argument("--sink", help="deliver to this sink only")
     s.add_argument("--since", default="90d", help="window of history to carry (default 90d)")

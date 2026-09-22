@@ -20,6 +20,10 @@ hosted API. Three things reach a network, each explicit and each yours:
 
 The LLM classifier in the policy is off unless you turn it on, and when on it is your endpoint and your key.
 
+`gitvow serve`, the record server, listens on nothing: it speaks MCP over its own stdin and stdout to the agent
+that started it, answers read-only questions about one repository, and writes no file, no log line and no note.
+`record_check` evaluates the policy and stops; it never runs the command it was asked about.
+
 ## What it reads
 
 - **The hook payload** the agent sends: session id, working directory, tool name and tool input. The tool
