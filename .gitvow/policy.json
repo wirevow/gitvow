@@ -6,19 +6,39 @@
       "reason": "recursive delete of root/home"
     },
     {
-      "pattern": "\\bgit\\s+push\\b.*(--force|-f\\b|\\+refs)",
+      "program": "git",
+      "verbs": [
+        "push\\b.*?(?:--force|\\s-f\\b|\\+refs)"
+      ],
       "reason": "force push"
     },
     {
-      "pattern": "\\bgit\\s+(reset\\s+--hard|clean\\s+-fd|branch\\s+-D)\\b",
+      "program": "git",
+      "verbs": [
+        "reset\\s+--hard",
+        "clean\\s+-fd",
+        "branch\\s+-D"
+      ],
       "reason": "destructive git history/worktree operation"
     },
     {
-      "pattern": "\\bkubectl\\s+(delete|drain|cordon)\\b",
+      "program": "kubectl",
+      "verbs": [
+        "delete",
+        "drain",
+        "cordon"
+      ],
       "reason": "destructive kubectl"
     },
     {
-      "pattern": "\\b(terraform|pulumi)\\s+(destroy|apply)\\b",
+      "program": [
+        "terraform",
+        "pulumi"
+      ],
+      "verbs": [
+        "destroy",
+        "apply"
+      ],
       "reason": "infrastructure mutation"
     },
     {
@@ -26,7 +46,7 @@
       "reason": "destructive SQL"
     },
     {
-      "pattern": "\\baws\\s+\\S+\\s+(delete|terminate|deregister)\\S*",
+      "pattern": "\\baws(?:\\s+(?:-{1,2}[\\w.-]+=\\S*|-{1,2}[\\w.-]+\\s+[^-\\s|;&<>()]\\S*))*\\s+[a-z0-9-]+(?:\\s+(?:-{1,2}[\\w.-]+=\\S*|-{1,2}[\\w.-]+\\s+[^-\\s|;&<>()]\\S*))*\\s+(?:[a-z-]*(?:delete|terminate|deregister)[a-z-]*|rm|rb)\\b",
       "reason": "destructive AWS CLI"
     },
     {
@@ -36,20 +56,87 @@
   ],
   "bash_confirm": [
     {
-      "pattern": "\\bgit\\s+push\\b",
-      "reason": "pushing to a remote"
+      "program": "git",
+      "verbs": [
+        "push"
+      ],
+      "target": "branch=(main|master|production|release[^ ]*)$",
+      "reason": "pushing to a protected branch"
     },
     {
-      "pattern": "\\bkubectl\\s+(apply|rollout|set|scale|exec)\\b",
-      "reason": "cluster mutation"
+      "program": "git",
+      "verbs": [
+        "push"
+      ],
+      "reason": "pushing to a remote",
+      "when": "observe"
     },
     {
-      "pattern": "\\bhelm\\s+(install|upgrade|uninstall)\\b",
-      "reason": "helm release change"
+      "program": "kubectl",
+      "verbs": [
+        "apply",
+        "create",
+        "replace",
+        "patch",
+        "rollout",
+        "set",
+        "scale",
+        "exec"
+      ],
+      "target": "(?i)prod|live",
+      "reason": "cluster mutation in production"
     },
     {
-      "pattern": "\\bgh\\s+(pr\\s+merge|release\\s+create|repo\\s+delete)\\b",
+      "program": "kubectl",
+      "verbs": [
+        "apply",
+        "create",
+        "replace",
+        "patch",
+        "rollout",
+        "set",
+        "scale",
+        "exec"
+      ],
+      "reason": "cluster mutation",
+      "when": "observe"
+    },
+    {
+      "program": "helm",
+      "verbs": [
+        "install",
+        "upgrade",
+        "uninstall",
+        "rollback"
+      ],
+      "target": "(?i)prod|live",
+      "reason": "helm release change in production"
+    },
+    {
+      "program": "helm",
+      "verbs": [
+        "install",
+        "upgrade",
+        "uninstall",
+        "rollback"
+      ],
+      "reason": "helm release change",
+      "when": "observe"
+    },
+    {
+      "program": "gh",
+      "verbs": [
+        "pr\\s+merge",
+        "release\\s+create",
+        "repo\\s+delete",
+        "secret\\s+set"
+      ],
       "reason": "GitHub mutation"
+    },
+    {
+      "pattern": "\\b(mysql|mariadb|psql|cockroach|sqlite3|mongosh|clickhouse-client)\\b.*\\b(?i:update\\s+\\w+|delete\\s+from|insert\\s+into|replace\\s+into|alter\\s+table|truncate\\s+table|create\\s+(table|index|database|schema))\\b",
+      "reason": "direct write to a database",
+      "when": "commit"
     }
   ],
   "path_confirm": [
@@ -78,14 +165,25 @@
   "decisions": {
     "mode": "open",
     "authorities": [],
-    "production_branches": ["main", "master", "production"],
+    "production_branches": [
+      "main",
+      "master",
+      "production"
+    ],
     "rule_threshold": 3,
     "rule_decay_days": 90,
-    "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (a person's commit records Gitvow-Open for undecided findings) or strict (pre-commit refuses until gitvow decide). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access."
+    "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (the agent's commit is stopped once with the card, then goes through with Gitvow-Open for every finding nobody answered; a person's commit goes through the same way) or strict (agent and person alike: refused until every finding has a gitvow decide answer). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access. session_scope: an immediate confirm is recorded as a finding and a person's yes (gitvow decide <n> accept --scope session, or the agent's own approve button) holds for the rest of the session; the next commit carries it as a scoped decision, which is never precedent. false: ask every time, record nothing.",
+    "session_scope": true,
+    "indirect_commands": "observe",
+    "commit_window_seconds": 1800,
+    "_doc_commit_window": "How long after the gate sees the agent's `git commit` the git hooks still treat the commit as the agent's and write its trailers. Guards against a stale flag catching a person's later commit; too short and a harness that queues tool calls loses trailers. When a commit lands past the window, PostToolUse says so and logs commit_without_trailer."
   },
   "llm_classifier": {
     "enabled": false,
     "command": "",
     "_doc": "Optional: a command that reads the hook JSON on stdin and prints ALLOW|CONFIRM|DENY <reason>. Used only for calls not matched above."
-  }
+  },
+  "_doc_commands": "A command rule is either {pattern} or {program, verbs}. The second form matches the program in command position (not inside another program's quoted argument) and allows options between the program and the verb (kubectl --context prod delete); write new command rules in that form. It may add 'target', a regex on what the command reaches, read from the environment before it runs: for kubectl and helm the context from --context/--kube-context or the kubeconfig's current-context, plus namespace; for git push the remote URL and branch; for terraform the workspace under -chdir. A target that cannot be read matches every target rule, so an action of unknown reach is asked about. Rules are tried in order, so put the target-specific tier first and the catch-all observe tier after it. Reads are never rules: kubectl get, aws s3 ls, SELECT. The database-write rule matches a client program on the line and a writing statement anywhere after it; grep for UPDATE in a source tree is not a write. decisions.indirect_commands (allow|observe|commit|immediate, default observe) is the tier for a command whose program the gate cannot read from the text: eval, source, a variable in program position, or a shell running a script file.",
+  "_doc_when": "when: immediate stops the call and asks now; commit records a finding and asks on the card at commit; observe records the finding on the commit as Gitvow-Observed and asks nobody, ever. Observe costs zero interruptions, so it is the tier to put a pattern in when you want the record to show how often it happens before anyone decides whether it deserves a question.",
+  "_from_default": "651d6f21bb854df4596f0195a9e1c47b9de8c93671651cb941846a5847ade6ff"
 }
