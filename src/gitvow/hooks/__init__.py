@@ -186,17 +186,22 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         f = dict(d.findings[0], immediate=True)
         text = redact(f["finding"], rules) if rules is not None else f["finding"]
         prior = dec.session_answer(cwd, text)
-        if session_scope and prior and prior.get("answer") == "accepted" and prior.get("scope") == "session":
-            log_event(cwd, "allowed_by_session_answer", {**payload, "by": prior.get("by")})
-            return 0, ""
-        if prior and prior.get("answer") == "declined":
+        answered = bool(
+            session_scope and prior and prior.get("answer") == "accepted" and prior.get("scope") == "session"
+        )
+        if answered:
+            log_event(cwd, "allowed_by_session_answer", {**payload, "by": prior.get("by")})  # type: ignore[union-attr]
+            # Do not return yet: the same command may also commit (`git commit && git push`), and until 0.28.4 the
+            # early return here skipped the commit bookkeeping below, so the commit lost its session trailer.
+        elif prior and prior.get("answer") == "declined":
             log_event(cwd, "confirm_required", {**payload, "declined_by": prior.get("by")})
             return 2, f"BLOCKED: {text} was declined by {prior.get('by')} this session ({d.reason})."
-        st = load_state(cwd)
-        dec.add(cwd, [f], st.get("steps", 0) + 1, tool, rules)
-        n = next((x["n"] for x in dec.open_findings(cwd) if x["finding"] == text), None)
-        log_event(cwd, "confirm_required", {**payload, "finding": n})
-        return 2, confirm_message(d, n, session_scope)
+        if not answered:
+            st = load_state(cwd)
+            dec.add(cwd, [f], st.get("steps", 0) + 1, tool, rules)
+            n = next((x["n"] for x in dec.open_findings(cwd) if x["finding"] == text), None)
+            log_event(cwd, "confirm_required", {**payload, "finding": n})
+            return 2, confirm_message(d, n, session_scope)
     if d.deferred or d.observed:
         st = load_state(cwd)
         new = dec.add(cwd, list(d.findings), st.get("steps", 0) + 1, tool, rules)
