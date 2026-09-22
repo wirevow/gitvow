@@ -6,7 +6,7 @@ if [ -f "$STATE" ]; then
   python3 - "$STATE" "$TOP" <<'PY'
 import json, os, sys, time
 st = json.load(open(sys.argv[1]))
-open_ = [f for f in st.get("findings") or [] if not f.get("decision")]
+open_ = [f for f in st.get("findings") or [] if not f.get("decision") and not f.get("observe") and not f.get("immediate")]
 if not open_:
     sys.exit(0)
 fresh = time.time() - (st.get("pending_commit") or 0) < 300  # the agent's own commit: the gate already asked
