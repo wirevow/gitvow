@@ -34,6 +34,10 @@ The LLM classifier in the policy is off unless you turn it on, and when on it is
   usage. Tool output is never copied anywhere. The transcript itself is never copied anywhere.
 - **`~/.gitvow/cache/brief/`**, the store's brief for this repository, fetched by a previous `sync`. Nothing
   is fetched during a tool call.
+- **The reach of a matched command**, when a rule names a `target`: the kubeconfig's `current-context` line
+  (`--kubeconfig`, `$KUBECONFIG`, or `~/.kube/config`; the file is scanned for that one line and nothing else is
+  kept), `git remote get-url` and the current branch, and `.terraform/environment` under `-chdir`. Read only
+  after a `{program, verbs}` rule has matched, never for an ordinary command.
 
 ### Credential-store paths
 
@@ -131,3 +135,8 @@ Decisions this tool has reversed or corrected, so that the current behaviour is 
 - **0.26.1**: `{program, verbs}` rules match the program in command position only, after an issue whose body
   described a runbook was stopped as a cluster mutation. A quoted argument, a commit message and a heredoc body
   are text, not commands; `sh -c`, `sudo`, `env`, `timeout` and `xargs` still reach the program behind them.
+- **0.27.0**: rules may name what a command reaches (`target`), read from the environment; the default policy
+  asks for production contexts and observes the rest. Commands whose program the gate cannot read (`eval`, a
+  variable, a script run through a shell) stopped falling through to allow and became an observe tier. Both
+  follow from the question "isn't regex too risky": as the only barrier it is; as the first tier of a recorder
+  that reads the environment and records what it cannot read, it is a floor with a named ceiling.

@@ -63,7 +63,23 @@
         "scale",
         "exec"
       ],
-      "reason": "cluster mutation"
+      "target": "(?i)prod|live",
+      "reason": "cluster mutation in production"
+    },
+    {
+      "program": "kubectl",
+      "verbs": [
+        "apply",
+        "create",
+        "replace",
+        "patch",
+        "rollout",
+        "set",
+        "scale",
+        "exec"
+      ],
+      "reason": "cluster mutation",
+      "when": "observe"
     },
     {
       "program": "helm",
@@ -73,7 +89,19 @@
         "uninstall",
         "rollback"
       ],
-      "reason": "helm release change"
+      "target": "(?i)prod|live",
+      "reason": "helm release change in production"
+    },
+    {
+      "program": "helm",
+      "verbs": [
+        "install",
+        "upgrade",
+        "uninstall",
+        "rollback"
+      ],
+      "reason": "helm release change",
+      "when": "observe"
     },
     {
       "program": "gh",
@@ -125,13 +153,14 @@
     "rule_threshold": 3,
     "rule_decay_days": 90,
     "_doc": "rule_threshold: consistent answers by authorities before a finding becomes an earned rule; rule_decay_days: days without a new confirmation before it lapses. mode: open (the agent's commit is stopped once with the card, then goes through with Gitvow-Open for every finding nobody answered; a person's commit goes through the same way) or strict (agent and person alike: refused until every finding has a gitvow decide answer). authorities: emails, email local parts or names whose decisions count; empty means anyone with commit access. session_scope: an immediate confirm is recorded as a finding and a person's yes (gitvow decide <n> accept --scope session, or the agent's own approve button) holds for the rest of the session; the next commit carries it as a scoped decision, which is never precedent. false: ask every time, record nothing.",
-    "session_scope": true
+    "session_scope": true,
+    "indirect_commands": "observe"
   },
   "llm_classifier": {
     "enabled": false,
     "command": "",
     "_doc": "Optional: a command that reads the hook JSON on stdin and prints ALLOW|CONFIRM|DENY <reason>. Used only for calls not matched above."
   },
-  "_doc_commands": "A command rule is either {pattern} or {program, verbs}. The second form allows options between the program and the verb (kubectl --context prod delete), which a hand-written \\bkubectl\\s+delete silently does not; write new command rules in that form. Reads are never rules: kubectl get, aws s3 ls, SELECT. The database-write rule matches a client program on the line and a writing statement anywhere after it; grep for UPDATE in a source tree is not a write.",
+  "_doc_commands": "A command rule is either {pattern} or {program, verbs}. The second form matches the program in command position (not inside another program's quoted argument) and allows options between the program and the verb (kubectl --context prod delete); write new command rules in that form. It may add 'target', a regex on what the command reaches, read from the environment before it runs: for kubectl and helm the context from --context/--kube-context or the kubeconfig's current-context, plus namespace; for git push the remote URL and branch; for terraform the workspace under -chdir. A target that cannot be read matches every target rule, so an action of unknown reach is asked about. Rules are tried in order, so put the target-specific tier first and the catch-all observe tier after it. Reads are never rules: kubectl get, aws s3 ls, SELECT. The database-write rule matches a client program on the line and a writing statement anywhere after it; grep for UPDATE in a source tree is not a write. decisions.indirect_commands (allow|observe|commit|immediate, default observe) is the tier for a command whose program the gate cannot read from the text: eval, source, a variable in program position, or a shell running a script file.",
   "_doc_when": "when: immediate stops the call and asks now; commit records a finding and asks on the card at commit; observe records the finding on the commit as Gitvow-Observed and asks nobody, ever. Observe costs zero interruptions, so it is the tier to put a pattern in when you want the record to show how often it happens before anyone decides whether it deserves a question."
 }

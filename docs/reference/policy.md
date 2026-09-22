@@ -35,6 +35,22 @@ A command rule may name a `program` (or a list of them) and the `verbs` that mak
 
 Since 0.26.1 a `program` rule matches only where the program is **the word that runs**: the line is split into its simple commands at `;`, `&&`, `||`, `|` and newlines, heredoc bodies are dropped, `VAR=x` assignments and `sudo`, `env`, `time`, `timeout N`, `nohup`, `xargs` are stepped over, and a `sh -c "…"` argument is read as a command line of its own. A program named inside another program's quoted argument (`gh issue create --body "run kubectl exec …"`), in a commit message, or in a heredoc is text, not a command, and does not fire the rule. Before 0.26.1 it did, and an issue whose body described a runbook was stopped as a cluster mutation. `pattern` rules are unchanged: a plain regex over the whole line, which is what you want for the database-write shape and what you must remember when you write one. A line that cannot be tokenised (an unbalanced quote) falls back to the whole-line regex, failing toward asking.
 
+### `target`: what the command reaches
+
+Text cannot tell `kubectl apply` against a kind cluster from the same string against production. The environment can. A `program` rule may add `target`, a regex on the command's reach, which gitvow reads before the call runs and only once the rule has matched:
+
+| program | target string | read from |
+|---|---|---|
+| `kubectl`, `helm` | `context=<ctx> namespace=<ns>` | `--context` / `--kube-context`, else the kubeconfig's `current-context` (`--kubeconfig`, `$KUBECONFIG`, `~/.kube/config`); `-n`/`--namespace` |
+| `git push` | `remote=<url> branch=<name>` | the named remote or `origin`, resolved with `git remote get-url`; the refspec's destination or the current branch |
+| `terraform`, `tofu` | `workspace=<name> dir=<dir>` | `-chdir` and `.terraform/environment` under it, else `default` |
+
+Rules are tried in order, so write the specific tier first and the catch-all after it. The default policy does exactly that for cluster mutations and helm releases: `target: "(?i)prod|live"` asks immediately, the same verbs without a target are `observe`. **A target that cannot be read matches every `target` rule**: an action whose reach is unknown is asked about, never waved through. The target joins the finding's subject (`run kubectl (cluster mutation in production) @ context=prod-in`), so standing and earned rules accrue per place reached. `target` is only for rules written as `program` and `verbs`; a `pattern` rule has nothing to attach it to.
+
+### `decisions.indirect_commands`
+
+`eval`, `source`, a variable in program position (`$KUBECTL delete pod x`) and a shell running a script file (`bash deploy.sh`) name an indirection, not a program, and no rule on text can read what runs. Until 0.27 they fell through to allow. They are now a tier of their own: `observe` by default (a finding on the commit, nobody asked), or `commit`, `immediate` or `allow`. Reads are still not rules; this is about the gate saying honestly what it could not see, and letting the record show how often that happens before anyone decides whether it deserves a question.
+
 ### `when`
 `"when": "immediate"` refuses the call and asks now; since 0.18 the finding is recorded with a number and a person's answer holds for the session (see `decisions.session_scope`). `"when": "commit"` records a finding and lets the call run; the finding is put to a person when the agent commits, see [Decisions](../concepts/decisions.md). `"when": "observe"` records the finding and lets the call run, and nobody is ever asked: it rides on the commit as `Gitvow-Observed`, is counted by the digest, and is never precedent. Deny rules have no `when`; a denial is always immediate. The default policy keeps edits to gitvow's own policy and hooks immediate, so a loosened policy can never take effect before a person has seen it.
 

@@ -64,4 +64,4 @@ def test_program_rule_names_the_program(pol):
     assert match_program_rule(rule, f"sudo {K} apply -f x") == K
     assert match_program_rule(rule, f'gh issue create --body "{K} apply"') is None
     d = evaluate(pol, "Bash", {"command": f"{K} --context prod apply -f x"})
-    assert d.findings[0]["finding"] == f"run {K} (cluster mutation)"
+    assert d.findings[0]["finding"] == f"run {K} (cluster mutation in production) @ context=prod"

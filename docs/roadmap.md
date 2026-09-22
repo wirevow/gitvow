@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.27 — Reach, not text (shipped)
+A command rule may name what the command reaches, read from the environment before it runs: kube context, push remote and branch, terraform workspace. The default asks for production and observes elsewhere. Commands the gate cannot read (`eval`, a variable, a script through a shell) are recorded rather than allowed.
+
 ## 0.26 — What gitvow touches, stated and enforced (shipped)
 A trust page a reviewer can check against the code; credential-store paths excluded by path from snapshots and attribution; every repository write preflighted and skipped when unchanged; a one-line status badge for the agent's status bar.
 

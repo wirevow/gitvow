@@ -21,6 +21,7 @@ class PolicyError(Exception):
 
 WHEN = ("immediate", "commit", "observe")
 DECISION_MODES = ("open", "strict")
+INDIRECT_TIERS = ("allow", "observe", "commit", "immediate")
 
 # Options that may sit between a program and its verb: `--context prod`, `-n ns`, `--kubeconfig=x`, `-v`. Three
 # shapes: `--k=v`, `--k v` where v does not start with a dash or a shell metacharacter, and a bare flag. Rules written
@@ -105,13 +106,25 @@ def match_program_rule(rule: dict[str, Any], text: str) -> str | None:
     a command line of its own. Quoted arguments of some other program, and heredoc bodies, are not commands and
     are not matched. A line that cannot be tokenised falls back to the whole-text regex, failing toward asking.
     """
+    for prog, _args in program_matches(rule, text):
+        return prog
+    return None
+
+
+def program_matches(rule: dict[str, Any], text: str) -> list[tuple[str, list[str]]]:
+    """Every simple command on the line that a `{program, verbs}` rule matches, as (program, arguments)."""
     progs = rule["program"] if isinstance(rule["program"], list) else [rule["program"]]
     verbs = "|".join(rule["verbs"])
     head = re.compile(rf"^{OPTS}\s+(?:{verbs})\b")
     segs = _segments(text)
     if segs is None:
         m = re.search(rule_pattern(rule), text)
-        return re.split(r"\s", text[m.start() :].lstrip(), maxsplit=1)[0] if m else None
+        if not m:
+            return []
+        tail = text[m.start() :].lstrip()
+        words = tail.split()
+        return [(os.path.basename(words[0]), words[1:])] if words else []
+    out: list[tuple[str, list[str]]] = []
     stack = list(segs)
     while stack:
         prog, args = _program_and_args(stack.pop())
@@ -121,22 +134,63 @@ def match_program_rule(rule: dict[str, Any], text: str) -> str | None:
             inner = _segments(args[args.index("-c") + 1]) if args.index("-c") + 1 < len(args) else None
             if inner is None:
                 if re.search(rule_pattern(rule), " ".join(args)):
-                    return progs[0]
+                    out.append((progs[0], []))
             else:
                 stack.extend(inner)
             continue
         if prog in progs and head.match(" " + " ".join(args)):
-            return prog
-    return None
+            out.append((prog, args))
+    return out
 
 
-def match_rule(rule: dict[str, Any], text: str) -> tuple[str | None, re.Match[str] | None]:
-    """(program, match) for whichever form the rule takes. `pattern` rules are plain regex over the whole line."""
+def match_rule(
+    rule: dict[str, Any], text: str, cwd: str | None = None
+) -> tuple[str | None, re.Match[str] | None, str | None]:
+    """(program, match, target) for whichever form the rule takes.
+
+    `pattern` rules are a plain regex over the whole line. `{program, verbs}` rules match in command position, and
+    when the rule also names a `target` regex, the command's target (targets.py: the kube context, the push
+    remote and branch, the terraform workspace) is read and must match; a target that cannot be read matches, so
+    an action of unknown reach is asked about rather than waved through.
+    """
     if "pattern" in rule:
         m = re.search(rule["pattern"], text)
-        return (None, m) if m else (None, None)
-    prog = match_program_rule(rule, text)
-    return (prog, None) if prog else (None, None)
+        return (None, m, None) if m else (None, None, None)
+    from . import targets
+
+    for prog, args in program_matches(rule, text):
+        target = targets.resolve(prog, args, cwd) if rule.get("target") else None
+        if targets.target_matches(rule, target):
+            return prog, None, target
+    return None, None, None
+
+
+# Command shapes whose program the gate cannot read: the text names an indirection, not a program.
+_INDIRECT_VAR = re.compile(r"^\$\{?[A-Za-z_][A-Za-z0-9_]*\}?$")
+
+
+def indirect_commands(text: str) -> list[str]:
+    """Descriptions of every simple command on the line whose program cannot be read from the text: `eval`,
+    `source` / `.`, a variable in program position, or a shell running a script file rather than `-c`."""
+    segs = _segments(text)
+    if not segs:
+        return []
+    out: list[str] = []
+    for seg in segs:
+        prog, args = _program_and_args(seg)
+        if not prog:
+            continue
+        if prog == "eval":
+            out.append("eval")
+        elif prog in ("source", "."):
+            out.append(f"source {args[0]}" if args else "source")
+        elif _INDIRECT_VAR.match(prog):
+            out.append(f"{prog} (a variable in program position)")
+        elif prog in _SHELLS and "-c" not in args:
+            script = next((a for a in args if not a.startswith("-")), None)
+            if script:
+                out.append(f"{prog} {script}")
+    return out
 
 
 @dataclass(frozen=True)
@@ -226,6 +280,13 @@ def _validate(pol: dict[str, Any], path: str) -> None:
                 raise PolicyError(f"{path}: bad regex in {key}: {pat} ({e})") from e
             if "when" in rule and rule["when"] not in WHEN:
                 raise PolicyError(f"{path}: {key} 'when' must be one of {WHEN}")
+            if "target" in rule:
+                if key == "path_confirm" or "pattern" in rule:
+                    raise PolicyError(f"{path}: {key} 'target' is only for rules written as program and verbs")
+                try:
+                    re.compile(rule["target"])
+                except (re.error, TypeError) as e:
+                    raise PolicyError(f"{path}: bad regex in {key} target: {rule['target']!r} ({e})") from e
     dec = pol.get("decisions", {})
     if not isinstance(dec, dict):
         raise PolicyError(f"{path}: decisions must be an object")
@@ -240,6 +301,8 @@ def _validate(pol: dict[str, Any], path: str) -> None:
             raise PolicyError(f"{path}: decisions.{key} must be a positive integer")
     if not isinstance(dec.get("session_scope", True), bool):
         raise PolicyError(f"{path}: decisions.session_scope must be true or false")
+    if dec.get("indirect_commands", "observe") not in INDIRECT_TIERS:
+        raise PolicyError(f"{path}: decisions.indirect_commands must be one of {INDIRECT_TIERS}")
     for key in ("mcp_allow", "mcp_deny"):
         for pat in pol.get(key, []):
             try:
@@ -306,21 +369,37 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
     findings: list[dict[str, Any]] = []
     if tool == "Bash":
         for r in pol.get("bash_deny", []):
-            prog, m = match_rule(r, text)
+            prog, m, _t = match_rule(r, text, cwd)
             if prog or m:
                 return Decision("deny", r.get("reason", "denied"), text)
         for r in pol.get("bash_confirm", []):
-            prog, m = match_rule(r, text)
+            prog, m, target = match_rule(r, text, cwd)
             if prog or m:
                 when = r.get("when", "immediate")
                 reason = r.get("reason", "needs confirmation")
-                subject = f"{prog} ({reason})"[:120] if prog else _command_subject(text, m, reason)  # type: ignore[arg-type]
-                f = _finding("command", subject, "", reason, [text.strip()[:200]])
+                if prog:
+                    # The target is part of the subject, so standing accrues per place reached: three answers
+                    # for context=staging say nothing about context=prod.
+                    subject = f"{prog} ({reason})" + (f" @ {target}" if target else "")
+                    subject = subject[:160]
+                else:
+                    subject = _command_subject(text, m, reason)  # type: ignore[arg-type]
+                evidence = [text.strip()[:200]] + ([f"target: {target}"] if target else [])
+                f = _finding("command", subject, "", reason, evidence)
                 if when == "immediate":
                     # The finding travels with the confirm so the hook can record it and a person can answer
                     # it once for the session; the outcome is still an immediate stop.
                     return Decision("confirm", reason, text, "immediate", (f,))
                 f["observe"] = when == "observe"
+                findings.append(f)
+        tier = (pol.get("decisions") or {}).get("indirect_commands", "observe")
+        if tier != "allow":
+            for desc in indirect_commands(text):
+                reason = "runs a command the gate cannot read"
+                f = _finding("command", f"{desc} ({reason})"[:160], "", reason, [text.strip()[:200]])
+                if tier == "immediate":
+                    return Decision("confirm", reason, text, "immediate", (f,))
+                f["observe"] = tier == "observe"
                 findings.append(f)
     if tool in ("Edit", "Write", "MultiEdit", "NotebookEdit") and path:
         for r in pol.get("path_confirm", []):
