@@ -80,8 +80,7 @@
         "patch",
         "rollout",
         "set",
-        "scale",
-        "exec"
+        "scale"
       ],
       "target": "(?i)prod|live",
       "reason": "cluster mutation in production"
@@ -95,10 +94,31 @@
         "patch",
         "rollout",
         "set",
-        "scale",
-        "exec"
+        "scale"
       ],
       "reason": "cluster mutation",
+      "when": "observe"
+    },
+    {
+      "program": "kubectl",
+      "verbs": [
+        "exec",
+        "port-forward",
+        "cp",
+        "debug"
+      ],
+      "target": "(?i)prod|live",
+      "reason": "exec into a production workload"
+    },
+    {
+      "program": "kubectl",
+      "verbs": [
+        "exec",
+        "port-forward",
+        "cp",
+        "debug"
+      ],
+      "reason": "exec into a cluster workload",
       "when": "observe"
     },
     {

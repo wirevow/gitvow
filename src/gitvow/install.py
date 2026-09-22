@@ -510,17 +510,70 @@ def _write_git_hook(dirpath: str, root: str | None = None) -> str:
     return os.path.join(dirpath, "prepare-commit-msg")
 
 
+def _default_policy_text() -> str:
+    from .policy import DEFAULT_POLICY_PATH
+
+    with open(DEFAULT_POLICY_PATH) as fh:
+        return fh.read()
+
+
+def _body_digest(data: dict[str, Any]) -> str:
+    """Digest of a policy's content with the marker removed, in the form the copy is written in."""
+    import hashlib
+
+    body = {k: v for k, v in data.items() if k != "_from_default"}
+    return hashlib.sha256((json.dumps(body, indent=2) + "\n").encode()).hexdigest()
+
+
+def stamp_default(text: str) -> str:
+    """The default policy as a copy that knows it is one: `_from_default` is the digest of its own body, so a
+    later install can tell an untouched copy (body digest still equals the marker) from one a person edited."""
+    data = json.loads(text)
+    data["_from_default"] = _body_digest(data)
+    return json.dumps(data, indent=2) + "\n"
+
+
+def place_policy(pol_path: str, root: str | None = None) -> str | None:
+    """Copy the default policy to `pol_path` when absent, or refresh it when it is an untouched copy of an older
+    default. A policy a person edited, or one copied before the marker existed, is never touched.
+
+    Until 0.28.3 the default was copied once and never again, so a repository kept the rules of the version it
+    was installed with: the `git -C … push` fix, the targets and the indirect tier never reached the founder's
+    own repositories, and the stale pattern rule stopped an MCP verification that merely mentioned a push.
+    """
+    text = _default_policy_text()
+    stamped = stamp_default(text)
+    if not os.path.exists(pol_path):
+        write_if_changed(check_target(pol_path, root), stamped)
+        return f"default policy → {pol_path}"
+    try:
+        with open(pol_path) as fh:
+            cur = json.load(fh)
+    except (OSError, json.JSONDecodeError):
+        return None
+    mark = cur.get("_from_default")
+    if mark is None:
+        return (
+            f"policy left as is: {pol_path} predates the marker or was written by hand (compare with `gitvow policy`)"
+        )
+    if mark != _body_digest(cur):
+        return f"policy left as is: {pol_path} was edited after it was copied"
+    with open(pol_path) as fh:
+        if stamped == fh.read():
+            return None
+    write_if_changed(check_target(pol_path, root), stamped)
+    return f"policy refreshed to the current default → {pol_path} (an untouched copy of an older one)"
+
+
 def install_user(home: str, cmd_prefix: str | None = None, agent: str = "claude") -> list[str]:
     base = os.path.join(home, ".gitvow")
     os.makedirs(base, exist_ok=True)
     cmd_prefix = cmd_prefix or executable_command()
     done = [f"hook command → {cmd_prefix}"]
     pol = os.path.join(base, "policy.json")
-    if not os.path.exists(pol):
-        from .policy import DEFAULT_POLICY_PATH
-
-        shutil.copy(DEFAULT_POLICY_PATH, pol)
-        done.append(f"default policy → {pol}")
+    placed = place_policy(pol)
+    if placed:
+        done.append(placed)
     _write_git_hook(os.path.join(base, "git-hooks"))
     ext = None if agent in AGENT_FILES else _external(agent)
     settings_rel = AGENT_FILES[agent][0] if agent in AGENT_FILES else _external_files(ext[1])[0]  # type: ignore[index]
@@ -586,11 +639,8 @@ def _exclude_local_sinks(repo: str) -> None:
 def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -> list[str]:
     base = os.path.join(repo, ".gitvow")
     os.makedirs(base, exist_ok=True)
-    from .policy import DEFAULT_POLICY_PATH
-
     pol = os.path.join(base, "policy.json")
-    if not os.path.exists(pol):
-        shutil.copy(DEFAULT_POLICY_PATH, pol)
+    placed = place_policy(pol, root=repo)
     _write_git_hook(os.path.join(base, "git-hooks"), root=repo)
     ext = None if agent in AGENT_FILES else _external(agent)
     repo_rel = AGENT_FILES[agent][1] if agent in AGENT_FILES else _external_files(ext[1])[1]  # type: ignore[index]
@@ -604,7 +654,7 @@ def install_repo(repo: str, cmd_prefix: str = "gitvow", agent: str = "claude") -
     _set_notes_config(repo, [])
     _exclude_local_sinks(repo)
     return [
-        f"policy → {pol}",
+        placed or f"policy → {pol}",
         f"hooks merged into {repo_rel}",
         "core.hooksPath → .gitvow/git-hooks",
         f"notes.displayRef / notes.rewriteRef → {NOTES_GLOB}",

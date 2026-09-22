@@ -37,6 +37,14 @@ Commit `.gitvow/` and `.claude/settings.json` to share. Each teammate runs once:
 Policy lookup: `<repo>/.gitvow/policy.json`, then `~/.gitvow/policy.json`, then the package default. Hooks in both user and repository settings run; gitvow's entries are idempotent, so installing twice never duplicates them and never disturbs hooks you added yourself.
 
 ## Upgrading
+
+Rerunning `gitvow install` after an upgrade refreshes the hook bodies and, since 0.28.3, the policy file **if it is
+an untouched copy of an older default**: the copy carries `_from_default`, the digest of its own body, and a body
+that still matches the marker is replaced by the current default. A policy you edited is left alone and named in the
+output; a copy made before 0.28.3 has no marker and is also left alone, with `gitvow policy` to compare it against the
+current default. To take the new default in that case, delete the file and rerun `gitvow install` once.
+
+### Upgrading (older notes)
 `pip install --upgrade gitvow` replaces the package but not the git hook files written by `install`, nor the hook commands in settings. After upgrading, re-run the same install command you used (`gitvow install --user` or `gitvow install <repo>`). It is idempotent and refreshes both.
 
 `gitvow status` detects an install left behind by an older release: git hooks whose contents differ from what this version writes, and agent settings missing events this version installs. Both matter. An install from before 0.12 has no `pre-commit` or `post-commit` hook, so the decision card never fires on a commit made by a person, and nothing else would tell you. Repositories that committed `.gitvow/` refresh it in a pull request like any other change.
