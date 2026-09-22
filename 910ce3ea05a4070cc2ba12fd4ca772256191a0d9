@@ -2,9 +2,9 @@ gitvow-session
 {
  "schema": 7,
  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
- "step": 1,
- "committed_at": "2026-09-22T20:18:36",
- "assistant_turns_so_far": 24892,
+ "step": 2,
+ "committed_at": "2026-09-22T20:21:31",
+ "assistant_turns_so_far": 24897,
  "tool_calls_so_far": 500,
  "tools_used": [
   "Agent",
@@ -19,7 +19,7 @@ gitvow-session
   "ToolSearch",
   "Write"
  ],
- "last_stated_plan": "Updating the card wording and the tier test to the new semantics, then rerunning everything.",
+ "last_stated_plan": "Verifying end to end in the real layout: a session rooted in my working directory committing into the strategy repository with `git -C`.",
  "files_in_commit": [
   ".gitvow/git-hooks/pre-commit         | 2 +-",
   ".gitvow/git-hooks/prepare-commit-msg | 6 ++++--"
@@ -45,10 +45,10 @@ gitvow-session
   ]
  },
  "usage": {
-  "input_tokens": 108106,
-  "output_tokens": 7622570,
-  "cache_read_tokens": 3006095796,
-  "cache_write_tokens": 85752087,
+  "input_tokens": 108170,
+  "output_tokens": 7624917,
+  "cache_read_tokens": 3007035886,
+  "cache_write_tokens": 85753855,
   "reasoning_tokens": 0,
   "models": {
    "claude-opus-4-6": 9228,
@@ -58,7 +58,7 @@ gitvow-session
    "claude-fable-5": 715,
    "claude-opus-4-8": 75,
    "claude-opus-5": 1104,
-   "claude-fable-5-1": 1528
+   "claude-fable-5-1": 1530
   },
   "by_model": {
    "claude-opus-4-6": {
@@ -111,15 +111,15 @@ gitvow-session
     "reasoning": 0
    },
    "claude-fable-5-1": {
-    "input": 36788,
-    "output": 2765546,
-    "cache_read": 711259567,
-    "cache_write": 16964764,
+    "input": 36852,
+    "output": 2767893,
+    "cache_read": 712199657,
+    "cache_write": 16966532,
     "reasoning": 0
    }
   },
-  "total_tokens": 3099578559,
-  "estimated_cost_usd": 6570.6219,
+  "total_tokens": 3100522828,
+  "estimated_cost_usd": 6572.2421,
   "pricing": "gitvow defaults 2026-09",
   "unpriced_models": [
    "<synthetic>"
