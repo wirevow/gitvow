@@ -1,0 +1,205 @@
+gitvow-session
+{
+ "schema": 7,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 9,
+ "committed_at": "2026-09-22T23:33:46",
+ "assistant_turns_so_far": 25173,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Everything for step 1 has landed:\n\n- **0.28.1 installed** on your machine; the record server reconnects on it (`\u2714 Connected`).\n- **Hook bodies refreshed** in gitvow, store and wirevow (the pending-commit window now comes from the session state), committed and pushed.\n- Docs, Mintlify, strategy log and toolkit are current.\n\nOne honest footnote: of those three hook-refresh commits, only wirevow's carries a session trailer. I committed all three in one shell loop with a variable path, which is exactly the routing limit I wrote down earlier today (the gate reads command text; `$r` resolves to noth",
+ "files_in_commit": [
+  "CHANGELOG.md                   |  4 +++",
+  "docs/security.md               |  8 +++---",
+  "pyproject.toml                 |  2 +-",
+  "src/gitvow/default_policy.json | 28 ++++++++++++++++++---",
+  "src/gitvow/targets.py          | 13 ++++++++--",
+  "tests/test_git_rules.py        | 56 ++++++++++++++++++++++++++++++++++++++++++",
+  "tests/test_tiers.py            | 12 ++++++---"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "docs/security.md",
+  "pyproject.toml",
+  "src/gitvow/default_policy.json",
+  "src/gitvow/targets.py",
+  "tests/test_git_rules.py",
+  "tests/test_tiers.py"
+ ],
+ "attribution": {
+  "files_in_commit": 7,
+  "touched_by_agent": 7,
+  "lines_added_in_commit": 109,
+  "lines_changed_by_human_after_agent": 0,
+  "agent_share": 0.93,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "45fca9b58628eb6c8308279488b01b381a3e3d2b",
+    "committed_blob": "45fca9b58628eb6c8308279488b01b381a3e3d2b"
+   },
+   {
+    "path": "docs/security.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 5,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "2f1ab33232e1fc23b8d40329829962ea6e1569fc",
+    "committed_blob": "2f1ab33232e1fc23b8d40329829962ea6e1569fc"
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "d8aad0c89eda2d0bccc480ccddb5949d1ca8a3eb",
+    "committed_blob": "d8aad0c89eda2d0bccc480ccddb5949d1ca8a3eb"
+   },
+   {
+    "path": "src/gitvow/default_policy.json",
+    "agent_wrote": true,
+    "lines_added_in_commit": 24,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "7e73bce068c4088788f7157226026a04ed9715c0",
+    "committed_blob": "7e73bce068c4088788f7157226026a04ed9715c0"
+   },
+   {
+    "path": "src/gitvow/targets.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 11,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "5da2f794cabf938c0a8a45de3ef29c279ffdb661",
+    "committed_blob": "5da2f794cabf938c0a8a45de3ef29c279ffdb661"
+   },
+   {
+    "path": "tests/test_git_rules.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 56,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "62a4dca339c9a110344fefe2c94bac758a84f687",
+    "committed_blob": "62a4dca339c9a110344fefe2c94bac758a84f687"
+   },
+   {
+    "path": "tests/test_tiers.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 8
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 110668,
+  "output_tokens": 7770817,
+  "cache_read_tokens": 3061976394,
+  "cache_write_tokens": 85992179,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1622
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 39350,
+    "output": 2913793,
+    "cache_read": 767140165,
+    "cache_write": 17204856,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3155850058,
+  "estimated_cost_usd": 6670.1014,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/71",
+ "decisions": [],
+ "edits_outside_repository": {},
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
