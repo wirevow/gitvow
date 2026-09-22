@@ -105,10 +105,14 @@ def test_immediate_confirm_is_answered_once_per_session(repo, home, payload, tra
     session_start(payload("SessionStart"), str(home))
     push = payload("PreToolUse", "Bash", {"command": "git push origin feat"}, transcript)
     code, msg = pre_tool_use(push, str(home))
-    assert code == 2 and msg.startswith("CONFIRMATION REQUIRED (pushing to a remote)")
+    assert code == 2 and msg.startswith("CONFIRMATION REQUIRED (pushing to a protected branch)")
     assert "gitvow decide 1 accept --scope session" in msg and "gitvow decide 1 decline" in msg
     fs = dec.open_findings(str(repo))
-    assert fs[0]["finding"] == "run git (pushing to a remote)" and fs[0]["immediate"] and fs[0]["decision"] is None
+    assert (
+        fs[0]["finding"] == "run git (pushing to a protected branch)"
+        and fs[0]["immediate"]
+        and fs[0]["decision"] is None
+    )
     # asked and never answered: not on the card, not owed
     assert dec.undecided(str(repo)) == []
     assert "No open findings" in dec.card(str(repo), for_agent=False)
@@ -130,7 +134,7 @@ def test_immediate_confirm_is_answered_once_per_session(repo, home, payload, tra
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     git(repo, "commit", "-qam", "after the push was allowed")
     body = git(repo, "log", "-1", "--format=%B")
-    assert "Gitvow-Accepted: run git (pushing to a remote) by t scope=session: release branch" in body
+    assert "Gitvow-Accepted: run git (pushing to a protected branch) by t scope=session: release branch" in body
     post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     from gitvow.rules import derive
 
@@ -154,7 +158,7 @@ def test_declined_immediate_confirm_stays_blocked_for_the_session(repo, home, pa
     (repo / "a.txt").write_text("d\n")
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     git(repo, "commit", "-qam", "carries the decline")
-    assert "Gitvow-Declined: run git (pushing to a remote) by t: not from this branch" in git(
+    assert "Gitvow-Declined: run git (pushing to a protected branch) by t: not from this branch" in git(
         repo, "log", "-1", "--format=%B"
     )
 

@@ -6,11 +6,19 @@
       "reason": "recursive delete of root/home"
     },
     {
-      "pattern": "\\bgit\\s+push\\b.*(--force|-f\\b|\\+refs)",
+      "program": "git",
+      "verbs": [
+        "push\\b.*?(?:--force|\\s-f\\b|\\+refs)"
+      ],
       "reason": "force push"
     },
     {
-      "pattern": "\\bgit\\s+(reset\\s+--hard|clean\\s+-fd|branch\\s+-D)\\b",
+      "program": "git",
+      "verbs": [
+        "reset\\s+--hard",
+        "clean\\s+-fd",
+        "branch\\s+-D"
+      ],
       "reason": "destructive git history/worktree operation"
     },
     {
@@ -48,8 +56,20 @@
   ],
   "bash_confirm": [
     {
-      "pattern": "\\bgit\\s+push\\b",
-      "reason": "pushing to a remote"
+      "program": "git",
+      "verbs": [
+        "push"
+      ],
+      "target": "branch=(main|master|production|release[^ ]*)$",
+      "reason": "pushing to a protected branch"
+    },
+    {
+      "program": "git",
+      "verbs": [
+        "push"
+      ],
+      "reason": "pushing to a remote",
+      "when": "observe"
     },
     {
       "program": "kubectl",

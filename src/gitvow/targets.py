@@ -106,8 +106,17 @@ def resolve(prog: str, args: list[str], cwd: str | None, env: dict[str, str] | N
             return kubectl(args, env)
         if prog == "helm":
             return helm(args, env)
-        if prog == "git" and args and args[0] == "push":
-            return git_push(args[1:], cwd)
+        if prog == "git":
+            # step over git's own options (`-C dir`, `-c k=v`, `--git-dir=…`) to the subcommand
+            i = 0
+            while i < len(args) and args[i].startswith("-"):
+                i += 2 if args[i] in ("-C", "-c", "--git-dir", "--work-tree", "--namespace") else 1
+            if i < len(args) and args[i] == "push":
+                repo_dir = None
+                for j in range(0, i):
+                    if args[j] == "-C" and j + 1 < len(args):
+                        repo_dir = args[j + 1]
+                return git_push(args[i + 1 :], repo_dir if repo_dir and os.path.isdir(repo_dir) else cwd)
         if prog in ("terraform", "tofu"):
             return terraform(args, cwd)
     except Exception:  # a target resolver must never take the gate down; None asks

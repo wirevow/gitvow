@@ -123,9 +123,11 @@ $ gitvow check -- git -C sub commit -m x
 ALLOW
 ```
 
-That last line is the limit of the rule: `git -C dir commit` still gets past it, and past the card's own
-`git commit` match. The rule constrains the agent. It does nothing about a person at a terminal, and it is
-not meant to.
+That last line was the limit of the rule when this was written: `git -C dir commit` got past it, and past the
+card's own `git commit` match. The commit match learned `-C` and `-c` in 0.16; the default git rules learned it
+in 0.28.2, after a day of the founder's own pushes through `git -C <repository> push` walked past the
+`\bgit\s+push\b` pattern. Write git rules as `{"program": "git", "verbs": [...]}` and the option is admitted. The
+rule constrains the agent. It does nothing about a person at a terminal, and it is not meant to.
 
 ## Threats, worst first
 

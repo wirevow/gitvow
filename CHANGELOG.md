@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.28.2 — 2026-09-22
+- **The git rules are program rules now, so `git -C <dir> push` is a push.** The default policy's three git rules were `pattern` rules that needed `git` and its verb adjacent; every push made through `git -C <repository> push` walked past them, which a day of dogfooding produced dozens of times before the hook log showed it. Same bug class the kubectl rules had until 0.17.1, now closed the same way: `{"program": "git", "verbs": [...]}`, which admits `-C dir`, `-c k=v` and any other option between the two. Force pushes and history rewrites deny as before, through any such option.
+- **Pushes ask for protected branches and are observed elsewhere.** With `target` from 0.27, the push rule asks immediately when the destination branch is `main`, `master`, `production` or `release*` (or cannot be read), and observes every other push: the record shows them, nobody is interrupted for a feature branch.
+
 ## 0.28.1 — 2026-09-22
 - **The pending-commit window is policy, and a commit that lands past it is said out loud.** The git hooks treated the agent's commit as the agent's for five minutes after the gate saw the `git commit` command; a harness that runs tool calls in parallel can queue that command behind a long test run, and our own 0.28.0 release commit landed seven minutes later with no trailer and no note, silently. The window is now `decisions.commit_window_seconds` (default 1800), written into the session state by the gate so the hooks read it without loading policy; a state written by an older gitvow keeps the original five minutes. When a commit still lands past the window, `PostToolUse` measures the gap, logs `commit_without_trailer`, and tells the agent which commit carries no record and why. Re-run `gitvow install` in each repository to refresh the hook bodies.
 
