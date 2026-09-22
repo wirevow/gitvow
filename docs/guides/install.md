@@ -15,7 +15,7 @@ With no `--agent`, install looks for each agent by its configuration directory, 
 - Hook entries merged into each agent's settings file, using the **absolute path** of the `gitvow` executable, so hooks work even when the agent's shell has no virtualenv or pipx directory on its PATH. This matters most for desktop agents such as Cursor, which do not inherit the PATH of your terminal at all.
 - Whatever the agent still needs by hand, printed at the end. Codex CLI has two such steps; see [Use gitvow with other agents](other-agents.md).
 - A `pre-push` hook in the same directory that pushes `refs/notes/gitvow/*` to the remote you push to
-- Global git config `notes.displayRef` and `notes.rewriteRef` set to `refs/notes/gitvow/*`, so `git log --show-notes` shows session notes and they follow amend, rebase and squash
+- Global git config `notes.displayRef` and `notes.rewriteRef` set to `refs/notes/gitvow/*`, so `git log --show-notes` shows session notes and they follow amend and rebase (not squash; see the FAQ)
 
 Covers every repository you open. Nothing is committed anywhere. If you already had a global hooks path, gitvow reports it; its hook chains to each repository's own `.git/hooks/prepare-commit-msg`, not to a previous global path.
 

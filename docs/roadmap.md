@@ -18,7 +18,7 @@ A session opened in one checkout that edits or commits into another is gated by,
 - One notes ref per session, `refs/notes/gitvow/<session-id>`, so parallel agents never contend and pushes never conflict.
 - Custom redaction rules from `.gitvow/redact-rules.json` in the repository and in the home directory; invalid rules fail closed.
 - Line-level attribution: lines a human changed after the agent, per file, and the agent's share of the commit.
-- Notes follow amend, rebase and squash through `notes.rewriteRef`.
+- Notes follow amend and rebase through `notes.rewriteRef`. (Not squash: corrected 2026-09-23 after testing; the Action re-attaching notes to a squash commit is planned.)
 - Exit still open: a five-person, two-week trial produces zero secrets in collected archives on manual review.
 
 ## 0.3 — Reviewer surface (shipped)

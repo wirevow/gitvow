@@ -16,7 +16,7 @@
 
 **Why not store the transcript?** Because it contains tool output, and tool output contains whatever the agent read. See [What stays out of git](concepts/storage.md).
 
-**Does it work with rebase and squash?** Yes. Trailers are in the message and survive on their own. Install sets `notes.rewriteRef` so notes follow amend, rebase and squash to the rewritten commit.
+**Does it work with rebase and squash?** Rebase and amend, yes: trailers are in the message and survive on their own, and install sets `notes.rewriteRef` so notes follow the rewritten commit. **Squash, only partly.** A squash creates a new commit that git does not treat as a rewrite of the old ones, so the notes do not follow it (tested; earlier versions of this page said otherwise). The trailers survive only if the squash message keeps the original messages, which forges do by default and people edit. `gitvow report --decisions-summary` writes the decisions into the pull-request description for exactly this case; re-attaching the notes to the squash commit from the GitHub Action is the next thing to build.
 
 **Two agents in one repository at once?** Each session writes its own notes ref, `refs/notes/gitvow/<session-id>`, so they never contend, and pushing notes from many machines never conflicts.
 
