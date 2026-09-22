@@ -212,10 +212,7 @@ def test_edits_in_another_checkout_are_counted_and_named(repo, home, payload, tr
     assert st["edits_elsewhere"] == {"other-repo": {"count": 2, "paths": ["svc/main.go"]}}
     assert "here.txt" in st["agent_blobs"] and "svc/main.go" not in st["agent_blobs"]
     card = dec.card(str(repo), for_agent=False)
-    assert (
-        "Edits outside this repository: 2 in other-repo" in card
-        and "recorded in this repository's note, not in theirs" in card
-    )
+    assert "Edits outside this repository: 2 in other-repo" in card and "gated by that repository's own policy" in card
     _hooks(repo)
     git(repo, "add", "here.txt")
     pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))

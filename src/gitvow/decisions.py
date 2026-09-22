@@ -379,8 +379,8 @@ def _elsewhere_line(elsewhere: dict[str, Any]) -> str:
     total = sum(int(v.get("count", 0)) for v in elsewhere.values())
     names = ", ".join(sorted(elsewhere)[:4])
     return (
-        f"Edits outside this repository: {total} in {names}. They were gated by this repository's policy and are "
-        f"recorded in this repository's note, not in theirs.\n"
+        f"Edits outside this repository: {total} in {names}. Each was gated by that repository's own policy and "
+        f"recorded in its state and notes; this repository's note names them too.\n"
     )
 
 

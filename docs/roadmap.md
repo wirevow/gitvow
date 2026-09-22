@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.25 — The record lives in the repository the change is about (shipped)
+A session opened in one checkout that edits or commits into another is gated by, and recorded in, that other repository: its policy, its state, its trailers, its notes. Found by our own history carrying no decisions: every session ran from a directory that was not the repository being changed.
+
 ## 0.2 — Trial-hardened (shipped)
 - One notes ref per session, `refs/notes/gitvow/<session-id>`, so parallel agents never contend and pushes never conflict.
 - Custom redaction rules from `.gitvow/redact-rules.json` in the repository and in the home directory; invalid rules fail closed.

@@ -110,10 +110,58 @@ def _rules_or_none(cwd: str, home: str | None) -> tuple[list[tuple[str, str]] | 
         return None, f"gitvow: {e}. {REDACTION_UNAVAILABLE}."
 
 
+_GIT_C_RE = re.compile(r"\bgit\b[^|;&\n]*?\s-C\s+(\"[^\"]+\"|'[^']+'|\S+)")
+_CD_RE = re.compile(r"^\s*cd\s+(\"[^\"]+\"|'[^']+'|\S+)\s*(?:&&|;)")
+
+
+def target_cwd(tool: str, inp: dict[str, Any], cwd: str) -> str:
+    """The repository a tool call is about, which is not always the one the session started in.
+
+    The record lives in the repository the change is about. A session opened in one checkout that edits a file
+    in another, or runs `git -C ../other commit` or `cd other && git commit`, is gated by that other repository's
+    policy and recorded in its state, notes and trailers; the replay of three engineers' sessions found 28% of
+    edits landing outside the session's own checkout, and until 0.25 every one of those was recorded against the
+    wrong repository or not at all. Anything that is not inside another repository falls back to the session's cwd.
+    """
+    cand: str | None = None
+    if tool in EDIT_TOOLS:
+        fp = str(inp.get("file_path") or inp.get("notebook_path") or "")
+        if fp:
+            cand = os.path.dirname(fp if os.path.isabs(fp) else os.path.join(cwd, fp))
+    elif tool == "Bash":
+        cmd = inp.get("command") or ""
+        m = _GIT_C_RE.search(cmd) or _CD_RE.match(cmd)
+        if m:
+            p = os.path.expanduser(m.group(1).strip("'\""))
+            cand = p if os.path.isabs(p) else os.path.join(cwd, p)
+    while cand and not os.path.isdir(cand):
+        parent = os.path.dirname(cand)
+        cand = parent if parent != cand else None
+    if not cand:
+        return cwd
+    top, here = toplevel(cand), toplevel(cwd)
+    if not top or (here and os.path.realpath(top) == os.path.realpath(here)):
+        return cwd
+    return top
+
+
+def _note_touched(session_cwd: str, target: str) -> None:
+    """The session's own state remembers every other repository it reached, so the ledger can list them."""
+    if os.path.realpath(session_cwd) == os.path.realpath(target):
+        return
+    st = load_state(session_cwd)
+    touched = st.setdefault("repos_touched", [])
+    if target not in touched:
+        touched.append(target)
+        save_state(session_cwd, st)
+
+
 def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
-    cwd = h.get("cwd") or os.getcwd()
+    session_cwd = h.get("cwd") or os.getcwd()
     tool = h.get("tool_name", "") or ""
     inp = h.get("tool_input") or {}
+    cwd = target_cwd(tool, inp, session_cwd)
+    _note_touched(session_cwd, cwd)
     try:
         pol = load_policy(cwd, home)
     except PolicyError as e:
@@ -233,6 +281,18 @@ def _record_prompt_approval(cwd: str, inp: dict[str, Any], home: str | None) -> 
     log_event(cwd, "prompt_approval_recorded", {"finding": n, "reason": d.reason[:120]})
 
 
+def _count_elsewhere(session_cwd: str, other_top: str, abs_path: str) -> None:
+    """Count an edit that landed in another repository against this session, by that repository's name."""
+    st = load_state(session_cwd)
+    key = os.path.basename(other_top.rstrip("/")) or other_top
+    ent = st.setdefault("edits_elsewhere", {}).setdefault(key, {"count": 0, "paths": []})
+    ent["count"] += 1
+    p = os.path.relpath(os.path.realpath(abs_path), os.path.realpath(other_top))
+    if p not in ent["paths"] and len(ent["paths"]) < 20:
+        ent["paths"].append(p)
+    save_state(session_cwd, st)
+
+
 def _record_agent_blob(cwd: str, file_path: str) -> None:
     """After an agent edit, remember the blob id of what the agent wrote (repo-relative path -> blob).
 
@@ -250,14 +310,7 @@ def _record_agent_blob(cwd: str, file_path: str) -> None:
     if rel.startswith(".."):
         other = toplevel(os.path.dirname(abs_path))
         if other and os.path.realpath(other) != os.path.realpath(top):
-            st = load_state(cwd)
-            key = os.path.basename(other.rstrip("/")) or other
-            ent = st.setdefault("edits_elsewhere", {}).setdefault(key, {"count": 0, "paths": []})
-            ent["count"] += 1
-            p = os.path.relpath(os.path.realpath(abs_path), os.path.realpath(other))
-            if p not in ent["paths"] and len(ent["paths"]) < 20:
-                ent["paths"].append(p)
-            save_state(cwd, st)
+            _count_elsewhere(cwd, other, abs_path)
         return
     rc, blob, _ = git(["hash-object", "-w", "--", abs_path], top)
     if rc != 0:
@@ -314,13 +367,18 @@ def _attribution(cwd: str, head: str, agent_blobs: dict[str, str], transcript_wr
 
 
 def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
-    cwd = h.get("cwd") or os.getcwd()
-    tool = h.get("tool_name")
+    tool = h.get("tool_name") or ""
     inp = h.get("tool_input") or {}
+    session_cwd = h.get("cwd") or os.getcwd()
+    cwd = target_cwd(tool, inp, session_cwd)
     if tool in EDIT_TOOLS:
         fp = str(inp.get("file_path") or inp.get("notebook_path") or "")
         if fp:
             _record_agent_blob(cwd, fp)
+            if os.path.realpath(cwd) != os.path.realpath(session_cwd):
+                # gated and recorded in the other repository (0.25), and still counted here so this
+                # repository's card and note say the session reached elsewhere
+                _count_elsewhere(session_cwd, cwd, fp if os.path.isabs(fp) else os.path.join(session_cwd, fp))
         try:
             pol = load_policy(cwd, home)
         except PolicyError:
@@ -414,6 +472,7 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         "assistant_turns": summ["turns"],
         "tool_calls": summ["tool_calls"],
         "commits_during_session": commits,
+        "repos_touched": st.get("repos_touched") or [],
         "last_stated_plan": summ["last_assistant_text"],
         "usage": estimate(summ["usage"], _policy_or_empty(cwd, home)),
         "subagents": summ["subagents"],

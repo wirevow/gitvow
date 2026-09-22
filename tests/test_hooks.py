@@ -262,3 +262,67 @@ def test_plumbing_that_merely_starts_with_commit_is_not_a_commit():
 
     for cmd in ("git commit-tree $t", "git commit-graph write", "git log --format=%H", "gitk commitish"):
         assert not COMMIT_RE.search(cmd), cmd
+
+
+def _other_repo(tmp_path, home, name="other"):
+    o = tmp_path / name
+    o.mkdir()
+    git(o, "init", "-q")
+    git(o, "config", "user.email", "t@test")
+    git(o, "config", "user.name", "t")
+    (o / "b.txt").write_text("b\n")
+    git(o, "add", "b.txt")
+    git(o, "commit", "-qm", "init")
+    _commit_hooked(o, home)
+    return o
+
+
+def test_edit_into_another_repository_is_gated_and_recorded_there(repo, home, payload, tmp_path):
+    other = _other_repo(tmp_path, home)
+    (other / "values" / "production-in").mkdir(parents=True)
+    target = other / "values" / "production-in" / "app.yaml"
+    target.write_text("replicas: 1\n")
+    session_start(payload("SessionStart"), str(home))
+    code, _ = pre_tool_use(payload("PreToolUse", "Edit", {"file_path": str(target)}), str(home))
+    assert code == 0  # a commit-tier finding: recorded, the edit runs
+    there = json.loads((other / ".git" / "gitvow-session.json").read_text())
+    assert [f["reason"] for f in there["findings"]] == ["edits production GitOps values"]
+    here = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert not here.get("findings") and here["repos_touched"] == [str(other)]
+    post_tool_use(payload("PostToolUse", "Edit", {"file_path": str(target)}), str(home))
+    assert (
+        "values/production-in/app.yaml"
+        in json.loads((other / ".git" / "gitvow-session.json").read_text())["agent_blobs"]
+    )
+
+
+def test_git_dash_c_commit_in_another_repository_gets_trailers_and_note(repo, home, payload, tmp_path, transcript):
+    other = _other_repo(tmp_path, home)
+    session_start(payload("SessionStart"), str(home))
+    cmd = {"command": f"git -C {other} commit -am x"}
+    assert pre_tool_use(payload("PreToolUse", "Bash", cmd, transcript), str(home))[0] == 0
+    assert "pending_commit" in json.loads((other / ".git" / "gitvow-session.json").read_text())
+    assert "pending_commit" not in json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    (other / "b.txt").write_text("changed\n")
+    git(other, "commit", "-qam", "feature")
+    assert "Gitvow-Session: sess-1" in git(other, "log", "-1", "--format=%B")
+    code, msg = post_tool_use(payload("PostToolUse", "Bash", cmd, transcript), str(home))
+    assert code == 0 and "session note attached" in msg
+    assert git(other, "notes", "--ref=gitvow/sess-1", "show", "HEAD").startswith("gitvow-session")
+    assert git(repo, "for-each-ref", "refs/notes/") == ""
+
+
+def test_cd_then_commit_targets_that_repository(repo, home, payload, tmp_path):
+    other = _other_repo(tmp_path, home)
+    session_start(payload("SessionStart"), str(home))
+    pre_tool_use(payload("PreToolUse", "Bash", {"command": f"cd {other} && git commit -m x"}), str(home))
+    assert "pending_commit" in json.loads((other / ".git" / "gitvow-session.json").read_text())
+
+
+def test_paths_outside_any_repository_fall_back_to_the_session(repo, home, payload, tmp_path):
+    from gitvow.hooks import target_cwd
+
+    assert target_cwd("Edit", {"file_path": str(tmp_path / "nowhere" / "x.txt")}, str(repo)) == str(repo)
+    assert target_cwd("Edit", {"file_path": str(repo / "sub" / "new.txt")}, str(repo)) == str(repo)
+    assert target_cwd("Bash", {"command": "git commit -m x"}, str(repo)) == str(repo)
+    assert target_cwd("Bash", {"command": f"git -C {repo} commit -m x"}, str(repo)) == str(repo)
