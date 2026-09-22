@@ -41,6 +41,104 @@ def rule_pattern(rule: dict[str, Any]) -> str:
     return rf"\b(?:{'|'.join(re.escape(p) for p in progs)}){OPTS}\s+(?:{verbs})\b"
 
 
+# Words that precede the program without being it, and shells whose `-c` argument is a command line of its own.
+_PREFIXES = frozenset({"sudo", "env", "time", "nohup", "exec", "command", "nice", "doas", "xargs"})
+_PREFIX_WITH_ARG = frozenset({"timeout"})  # `timeout 30 kubectl …`
+_SHELLS = frozenset({"sh", "bash", "zsh", "dash", "ksh"})
+_HEREDOC = re.compile(r"<<-?\s*['\"]?(\w+)['\"]?[^\n]*\n.*?\n\1[ \t]*(?=\n|$)", re.S)
+_OPERATORS = frozenset({";", "&&", "||", "|", "&", "(", ")", "\n"})
+
+
+def _segments(text: str) -> list[list[str]] | None:
+    """Each simple command in a shell line as its argv, quotes resolved, heredoc bodies dropped.
+
+    None when the line cannot be tokenised (an unbalanced quote): the caller then falls back to matching the
+    whole text, which fails toward asking.
+    """
+    body = _HEREDOC.sub("", text)
+    lex = shlex.shlex(body, posix=True, punctuation_chars=";&|()")
+    lex.whitespace_split = True
+    lex.commenters = ""
+    try:
+        tokens = list(lex)
+    except ValueError:
+        return None
+    out: list[list[str]] = []
+    cur: list[str] = []
+    for tok in tokens:
+        if tok in _OPERATORS or set(tok) <= set(";&|()"):
+            if cur:
+                out.append(cur)
+            cur = []
+        else:
+            cur.append(tok)
+    if cur:
+        out.append(cur)
+    return out
+
+
+def _program_and_args(argv: list[str]) -> tuple[str, list[str]]:
+    """Strip `VAR=x` assignments and prefixes such as sudo, env, time, timeout N; return (program, arguments)."""
+    i = 0
+    while i < len(argv):
+        w = argv[i]
+        if re.match(r"^[A-Za-z_][A-Za-z0-9_]*=", w) or w in _PREFIXES:
+            i += 1
+        elif w in _PREFIX_WITH_ARG:
+            i += 2
+        elif w.startswith("-") and i > 0 and argv[i - 1] in _PREFIXES | _PREFIX_WITH_ARG:
+            i += 1  # an option to the prefix itself, e.g. `sudo -u root`, `env -i`
+        else:
+            break
+    if i >= len(argv):
+        return "", []
+    return os.path.basename(argv[i]), argv[i + 1 :]
+
+
+def match_program_rule(rule: dict[str, Any], text: str) -> str | None:
+    """The program a `{program, verbs}` rule matches in **command position**, or None.
+
+    Until 0.26.1 these rules were a regex over the whole command line, so `gh issue create --body "see kubectl
+    exec"` was a cluster mutation and a commit message that mentioned `terraform apply` was an infrastructure
+    change. Now the line is split into simple commands and the program must be the word that runs: after any
+    `VAR=x`, `sudo`, `env`, `time`, `timeout N`, `nohup` or `xargs`, and inside a `sh -c "…"` argument, which is
+    a command line of its own. Quoted arguments of some other program, and heredoc bodies, are not commands and
+    are not matched. A line that cannot be tokenised falls back to the whole-text regex, failing toward asking.
+    """
+    progs = rule["program"] if isinstance(rule["program"], list) else [rule["program"]]
+    verbs = "|".join(rule["verbs"])
+    head = re.compile(rf"^{OPTS}\s+(?:{verbs})\b")
+    segs = _segments(text)
+    if segs is None:
+        m = re.search(rule_pattern(rule), text)
+        return re.split(r"\s", text[m.start() :].lstrip(), maxsplit=1)[0] if m else None
+    stack = list(segs)
+    while stack:
+        prog, args = _program_and_args(stack.pop())
+        if not prog:
+            continue
+        if prog in _SHELLS and "-c" in args:
+            inner = _segments(args[args.index("-c") + 1]) if args.index("-c") + 1 < len(args) else None
+            if inner is None:
+                if re.search(rule_pattern(rule), " ".join(args)):
+                    return progs[0]
+            else:
+                stack.extend(inner)
+            continue
+        if prog in progs and head.match(" " + " ".join(args)):
+            return prog
+    return None
+
+
+def match_rule(rule: dict[str, Any], text: str) -> tuple[str | None, re.Match[str] | None]:
+    """(program, match) for whichever form the rule takes. `pattern` rules are plain regex over the whole line."""
+    if "pattern" in rule:
+        m = re.search(rule["pattern"], text)
+        return (None, m) if m else (None, None)
+    prog = match_program_rule(rule, text)
+    return (prog, None) if prog else (None, None)
+
+
 @dataclass(frozen=True)
 class Decision:
     outcome: str  # "allow" | "deny" | "confirm"
@@ -208,14 +306,16 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
     findings: list[dict[str, Any]] = []
     if tool == "Bash":
         for r in pol.get("bash_deny", []):
-            if re.search(rule_pattern(r), text):
+            prog, m = match_rule(r, text)
+            if prog or m:
                 return Decision("deny", r.get("reason", "denied"), text)
         for r in pol.get("bash_confirm", []):
-            m = re.search(rule_pattern(r), text)
-            if m:
+            prog, m = match_rule(r, text)
+            if prog or m:
                 when = r.get("when", "immediate")
                 reason = r.get("reason", "needs confirmation")
-                f = _finding("command", _command_subject(text, m, reason), "", reason, [text.strip()[:200]])
+                subject = f"{prog} ({reason})"[:120] if prog else _command_subject(text, m, reason)  # type: ignore[arg-type]
+                f = _finding("command", subject, "", reason, [text.strip()[:200]])
                 if when == "immediate":
                     # The finding travels with the confirm so the hook can record it and a person can answer
                     # it once for the session; the outcome is still an immediate stop.

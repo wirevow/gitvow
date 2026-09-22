@@ -128,3 +128,6 @@ Decisions this tool has reversed or corrected, so that the current behaviour is 
   directory, after our own repositories were found to carry no decisions for that reason.
 - **0.26.0**: repository writes are preflighted and skipped when unchanged; credential-store paths are excluded
   by path; a policy can extend the snapshot exclusion list and no longer replace it.
+- **0.26.1**: `{program, verbs}` rules match the program in command position only, after an issue whose body
+  described a runbook was stopped as a cluster mutation. A quoted argument, a commit message and a heredoc body
+  are text, not commands; `sh -c`, `sudo`, `env`, `timeout` and `xargs` still reach the program behind them.
