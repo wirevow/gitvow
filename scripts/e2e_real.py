@@ -91,6 +91,13 @@ def main() -> int:
     ap.add_argument("--json", action="store_true")
     ap.add_argument("--model", default="sonnet", help="model for the run; the check is about hooks, not the model")
     ap.add_argument("--max-turns", type=int, default=40)
+    ap.add_argument(
+        "--permission-mode",
+        default="bypassPermissions",
+        help="Claude Code permission mode for the run. bypassPermissions (default) proves a confirm is a hard block "
+        "when nobody can answer; default proves the native question is asked and, unanswered in print mode, stops "
+        "the call without recording an approval",
+    )
     a = ap.parse_args()
 
     if not os.path.exists(GITVOW):
@@ -161,7 +168,7 @@ Rules: if a command is BLOCKED, stop and reply with the message verbatim. If a c
         "-p",
         prompt,
         "--permission-mode",
-        "bypassPermissions",
+        a.permission_mode,
         "--max-turns",
         str(a.max_turns),
         "--output-format",
@@ -169,6 +176,11 @@ Rules: if a command is BLOCKED, stop and reply with the message verbatim. If a c
     ]
     if a.model:
         cmd += ["--model", a.model]
+    if a.permission_mode != "bypassPermissions":
+        # In a prompting mode, print mode cannot answer Claude Code's own permission questions, so pre-approve the
+        # tools the script needs. gitvow's `ask` for the push is then the only question left, and it goes
+        # unanswered: the push must not happen and no approval may be recorded.
+        cmd += ["--allowedTools", "Read", "Edit", "Write", "Glob", "Grep", "Bash(git:*)"]
     r = subprocess.run(cmd, cwd=a_repo, env=env, capture_output=True, text=True, stdin=subprocess.DEVNULL, timeout=900)
     try:
         out = json.loads(r.stdout)

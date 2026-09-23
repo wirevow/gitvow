@@ -28,7 +28,7 @@ A reason is optional and one phrase is enough. A required reason produces "ok"; 
 
 ## The agent asks before a push or a cluster change
 
-Some things are asked at once rather than at commit: pushing to a remote, `kubectl apply`, a helm upgrade. The agent stops and asks you. Say yes and it records `gitvow decide <n> accept --scope session`, runs the command, and does not ask about that again until the session ends; the next commit carries the answer as a session-scoped decision. Say no and the command stays blocked for the session. If your agent has its own approve button, clicking it is the answer and gitvow records it as one.
+Some things are asked at once rather than at commit: pushing to a protected branch, `kubectl apply` against production, a helm upgrade there. In Claude Code (since 0.29.2), Cursor and Copilot the question is the agent's own permission dialog, with gitvow's reason in it: **Allow** runs the command and gitvow records your click as `accepted, scope=session`, under your git identity, on the next commit; **Deny** records nothing and stops the command. The same question is not asked again until the session ends. Two exceptions keep the terminal: a denial is never a question, and Claude Code running in `bypassPermissions`, `dontAsk` or `auto` gets a hard block instead of a dialog, because there an Allow could happen with nobody looking and the record would then name a person who never decided. In that case, and in agents without a dialog, the agent relays the message and you answer with `gitvow decide <n> accept --scope session`, then the agent runs the command again.
 
 ## Scope
 

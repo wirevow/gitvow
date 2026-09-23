@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.29.2 — 2026-09-23
+- **In Claude Code, a confirm is now Claude Code's own question to you.** Until now gitvow answered Claude Code with a hard block and a message the agent had to relay ("ask the user, then run `gitvow decide`"), so every immediate confirm was a trip to a terminal. The hook payload names the permission mode, and in the modes that show prompts (`default`, `acceptEdits`, `plan`) gitvow now answers `permissionDecision: ask` with a one-line reason; Claude Code shows its own dialog, and your Allow is recorded by `PostToolUse` as a session-scoped decision under your git identity, exactly as it has been for Cursor and Copilot since 0.18. Deny records nothing and stops the command. In `bypassPermissions`, `dontAsk` and `auto`, where an `ask` could be granted with nobody looking, the verdict stays a hard block, because a decision the record attributes to a person must have been made by one. Denials and the strict-mode card are never a question; the open-mode card is (Allow commits with the findings recorded as `Gitvow-Open`, as open mode always promised).
+- `scripts/e2e_real.py --permission-mode` runs the real-harness check under a chosen mode; the nightly stays on `bypassPermissions` and a `default` run shows the question being asked and, unanswered in print mode, stopping the call with no approval recorded.
+
 ## 0.29.1 — 2026-09-23
 - **`status` checks the environment the git hooks run in.** Every trailer is written by `python3` from inside a shell hook with errors discarded, so a machine without `python3` on the PATH git uses commits silently with no record. `status` now fails when `python3` is not on PATH, notes when it is on the shell's PATH but not on a minimal one (an agent started from Finder or by launchd has the short PATH), notes a `commit_window_seconds` under a minute, and notes when hooks are installed at both user and repository scope (every event arrives twice; handled once since 0.28.5).
 

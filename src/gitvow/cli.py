@@ -33,6 +33,7 @@ def cmd_hook(a: argparse.Namespace) -> int:
     from .adapters import AdapterError, external_normalize, external_path, external_respond
 
     agent = a.agent or "claude"
+    mode = payload.get("permission_mode") if isinstance(payload, dict) else None
     exe = external_path(agent)
     try:
         calls = external_normalize(exe, a.event, payload) if exe else normalize(agent, a.event, payload)
@@ -72,7 +73,9 @@ def cmd_hook(a: argparse.Namespace) -> int:
         return 0
     try:
         exit_code, out, err = (
-            external_respond(exe, worst, "\n".join(messages)) if exe else respond(agent, worst, "\n".join(messages))
+            external_respond(exe, worst, "\n".join(messages))
+            if exe
+            else respond(agent, worst, "\n".join(messages), mode=mode)
         )
     except AdapterError as e:
         print(f"BLOCKED: agent adapter failed ({e}).", file=sys.stderr)

@@ -55,7 +55,7 @@ writable_roots = ["/absolute/path/to/repo/.git"]
 Check both at once: `gitvow selftest --agent codex` proves the adapter, then in Codex ask for a trivial commit and confirm `git log -1` carries `Gitvow-Session`.
 
 ## What is the same
-- The gate: the same policy, the same deny, confirm and allow decisions, the same providers and classifier. A confirmation in Cursor is delivered as its native `ask`, so the user sees the question in Cursor's own prompt.
+- The gate: the same policy, the same deny, confirm and allow decisions, the same providers and classifier. A confirmation in Cursor is delivered as its native `ask`, so the user sees the question in Cursor's own prompt; Claude Code gets the same (`permissionDecision: ask`) in the permission modes that show prompts, and a hard block in the ones that do not.
 - Trailers on the agent's own commits, session notes with attribution, snapshots after every edit, the ledger at the end of a session.
 - `gitvow show`, `gitvow report`, `gitvow snapshots` and the pull request action work unchanged, because they read git, not the agent.
 

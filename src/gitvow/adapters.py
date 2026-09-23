@@ -10,7 +10,7 @@ import shutil
 import subprocess
 from typing import Any
 
-from .decisions import CARD_HEADER
+from .decisions import CARD_HEADER, OPEN_CARD_HEADER
 
 AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory")
 
@@ -266,8 +266,47 @@ def _refuse(msg: str) -> bool:
     return msg.startswith("BLOCKED") or msg.startswith(CARD_HEADER)
 
 
-def respond(agent: str, code: int, msg: str) -> tuple[int, str, str]:
-    """(exit code, stdout, stderr) in the agent's form. gitvow's code 2 means blocked; the message says DENY or CONFIRM."""
+# Claude Code permission modes in which a native question reaches a person. In every other mode (bypass, auto,
+# dontAsk, or an agent too old to report one) an `ask` may be granted with nobody looking, and the record would then
+# say a person approved; there the verdict stays a hard block delivered to the agent, as before 0.29.2.
+PROMPTING_MODES = frozenset({"default", "acceptEdits", "plan"})
+_CONFIRM_REASON = re.compile(r"CONFIRMATION REQUIRED \((.*?)\)\.")
+
+
+def native_question(msg: str) -> str:
+    """The short reason shown in the agent's own permission dialog, in place of the terminal instructions."""
+    m = _CONFIRM_REASON.search(msg)
+    if m:
+        return (
+            f"gitvow: {m.group(1)}. Allow records your approval for this session, on the next commit, under your "
+            "git identity. Deny records nothing and stops the command."
+        )
+    if msg.startswith(OPEN_CARD_HEADER):
+        first = msg.splitlines()[0]
+        return (
+            f"gitvow: {first}. Allow commits anyway and records each finding as Gitvow-Open; Deny stops the commit so "
+            "they can be answered first with `gitvow decide`."
+        )
+    return "gitvow: " + msg.splitlines()[0][:200]
+
+
+def respond(agent: str, code: int, msg: str, mode: str | None = None) -> tuple[int, str, str]:
+    """(exit code, stdout, stderr) in the agent's form. gitvow's code 2 means blocked; the message says DENY or CONFIRM.
+
+    `mode` is Claude Code's permission mode from the hook payload. When it is one that shows prompts, a confirm
+    becomes Claude Code's own question to the person (`permissionDecision: ask`), and their click is recorded by
+    PostToolUse as a session-scoped decision, exactly as for Cursor and Copilot. Denials and the strict card are
+    never a question.
+    """
+    if agent == "claude" and code == 2 and mode in PROMPTING_MODES and not _refuse(msg):
+        out = {
+            "hookSpecificOutput": {
+                "hookEventName": "PreToolUse",
+                "permissionDecision": "ask",
+                "permissionDecisionReason": native_question(msg),
+            }
+        }
+        return 0, json.dumps(out), ""
     if agent == "cursor":
         if code == 2:
             perm = "deny" if _refuse(msg) else "ask"
