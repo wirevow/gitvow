@@ -30,9 +30,11 @@ Add one workflow to the repository:
 ```yaml
 # .github/workflows/gitvow.yml
 name: gitvow
-on: pull_request
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]   # closed: carry the session notes onto the merge commit
 permissions:
-  contents: read
+  contents: write        # to push refs/notes/gitvow/* after a squash merge; read is enough without carry-notes
   pull-requests: write
 jobs:
   report:
@@ -69,7 +71,7 @@ Gitvow-Referred: edit infra/iam/roles.tf by nikhil to=platform: they own this mo
 <!-- /gitvow-decisions -->
 ```
 
-The block is updated on every push and can be edited around. A squash commit inherits the trailers; the session notes do not follow, so the comment stays as the evidence. Where the repository merges or rebases, the block is redundant and harmless, and `pr-description: never` turns it off. Where evidence should reach history, prefer merge commits or rebase merging. To produce the block by hand: `gitvow report --base origin/main --decisions-summary`.
+The block is updated on every push and can be edited around. A squash commit inherits the trailers from the description. The session notes do not follow a squash on their own: git carries notes through amend and rebase, not through a new commit it cannot map to the old ones. Since 0.29 the action carries them: when the pull request is merged, it runs `gitvow carry <base>..<head> <merge commit>`, which writes one note per session onto the merge commit (the newest note as the body, every replaced commit under `carried_from` with its decisions and files, the decisions merged) and pushes `refs/notes/gitvow/*`. For that to run, the workflow must fire on the `closed` event and have `contents: write` (see the workflow above); `carry-notes: "false"` turns it off. Readers (`report`, `why`, `recall`, the record server) find a carried note on a commit even when the squash message lost the `Gitvow-Session` trailer. Where the repository merges or rebases, both the block and the carry are redundant and harmless. To produce the block by hand: `gitvow report --base origin/main --decisions-summary`; to carry by hand after a squash: `gitvow carry origin/main@{1}..<branch> origin/main && git push origin 'refs/notes/gitvow/*:refs/notes/gitvow/*'`.
 
 ## Getting notes to the remote
 

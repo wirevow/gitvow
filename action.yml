@@ -14,6 +14,9 @@ inputs:
   fail-under:
     description: Fail when gitvow coverage for the pull request's range is below this percentage. Empty disables the check.
     default: ""
+  carry-notes:
+    description: When the pull request is merged (the workflow must run on the closed event), carry its commits' session notes onto the merge commit and push the notes refs, so a squash merge keeps its record. Needs contents write permission.
+    default: "true"
   pr-description:
     description: Write the decisions trailer block into the pull request description so a squash commit inherits it. always (default; harmless where merges keep the original commits), never, or auto (only when the workflow token can read the merge settings and the repository is squash-only; most tokens cannot).
     default: "always"
@@ -91,6 +94,17 @@ runs:
         open(sys.argv[1], "w").write(new)
         PY
           gh api -X PATCH "repos/${{ github.repository }}/pulls/$pr" -F body=@pr-body.md --silent
+        fi
+        if [ "${{ github.event.action }}" = "closed" ] && [ "${{ github.event.pull_request.merged }}" = "true" ] && [ "${{ inputs.carry-notes }}" = "true" ]; then
+          # The merge commit replaced the pull request's commits. Notes do not follow a squash on their own, so
+          # carry them onto the new commit and push the refs. Needs `contents: write` and the `closed` event.
+          merge="${{ github.event.pull_request.merge_commit_sha }}"
+          if [ -n "$merge" ]; then
+            git fetch --quiet origin "$merge" || true
+            if gitvow carry "$base..$head" "$merge"; then
+              git push --quiet origin 'refs/notes/gitvow/*:refs/notes/gitvow/*' && echo "gitvow: session notes carried onto $merge and pushed" || echo "gitvow: notes carried locally but the push failed; the workflow needs contents: write"
+            fi
+          fi
         fi
         exit $rc
       env:

@@ -2,28 +2,21 @@
 
 from __future__ import annotations
 
-import json
 import os
 import re
 from typing import Any
 
 from .decisions import parse_trailers
-from .hooks import LEGACY_NOTES_REF, notes_ref
 from .state import git
 
 TRAILER_RE = re.compile(r"^Gitvow-Session:\s*(\S+)", re.M)
 STEP_RE = re.compile(r"^Gitvow-Step:\s*(\d+)", re.M)
 
 
-def _note_for(cwd: str, sha: str, session_id: str) -> dict[str, Any] | None:
-    for ref in (notes_ref(session_id), LEGACY_NOTES_REF):
-        rc, body, _ = git(["notes", f"--ref={ref}", "show", sha], cwd)
-        if rc == 0 and body.startswith("gitvow-session"):
-            try:
-                return json.loads(body.split("\n", 1)[1])
-            except (json.JSONDecodeError, IndexError):
-                return None
-    return None
+def _note_for(cwd: str, sha: str, session_id: str | None) -> dict[str, Any] | None:
+    from .notes import find_note
+
+    return find_note(cwd, sha, session_id)[0]
 
 
 def _changed_files(cwd: str, sha: str) -> list[str]:
@@ -93,14 +86,29 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
         m = TRAILER_RE.search(body)
         entry: dict[str, Any] = {"sha": sha, "short": sha[:7], "subject": subject, "files": _changed_files(cwd, sha)}
         if not m:
-            entry["kind"] = "human"
-            entry["decisions"] = _decisions(body, None, target, production)
-            commits.append(entry)
-            continue
-        sid = m.group(1)
-        sm = STEP_RE.search(body)
-        entry.update({"kind": "agent", "session_id": sid, "step": int(sm.group(1)) if sm else None})
-        note = _note_for(cwd, sha, sid)
+            # No trailer. A squash commit whose message lost the originals may still carry a note put there by
+            # `gitvow carry`; find it by scanning the session refs before calling the commit a person's.
+            carried = _note_for(cwd, sha, None)
+            if carried is None:
+                entry["kind"] = "human"
+                entry["decisions"] = _decisions(body, None, target, production)
+                commits.append(entry)
+                continue
+            entry.update(
+                {
+                    "kind": "agent",
+                    "session_id": carried.get("session_id"),
+                    "step": None,
+                    "carried": True,
+                    "carried_from": [c.get("sha", "")[:7] for c in carried.get("carried_from") or []],
+                }
+            )
+            note: dict[str, Any] | None = carried
+        else:
+            sid = m.group(1)
+            sm = STEP_RE.search(body)
+            entry.update({"kind": "agent", "session_id": sid, "step": int(sm.group(1)) if sm else None})
+            note = _note_for(cwd, sha, sid)
         entry["note_found"] = note is not None
         entry["decisions"] = _decisions(body, note, target, production)
         if note:

@@ -506,7 +506,7 @@ def _write_git_hook(dirpath: str, root: str | None = None) -> str:
     os.makedirs(dirpath, exist_ok=True)
     for name, body in GIT_HOOK_BODIES.items():
         p = check_target(os.path.join(dirpath, name), root)
-        write_if_changed(p, body, mode=0o755)  # nosec B103 - git runs hooks as the invoking user
+        write_if_changed(p, body, mode=0o755)  # git runs hooks as the invoking user; they must be executable
     return os.path.join(dirpath, "prepare-commit-msg")
 
 

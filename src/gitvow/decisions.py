@@ -166,18 +166,12 @@ SESSION_RE = re.compile(r"^Gitvow-Session:\s*(\S+)", re.M)
 
 def _note_decisions(cwd: str, sha: str, body: str) -> dict[str, dict[str, Any]]:
     """finding -> note entry for a commit, when its session note is available locally."""
-    import json
+
+    from .notes import find_note
 
     m = SESSION_RE.search(body)
-    if not m:
-        return {}
-    sid = re.sub(r"[^A-Za-z0-9._-]", "_", m.group(1))
-    rc, note, _ = git(["notes", f"--ref=gitvow/{sid}", "show", sha], cwd)
-    if rc != 0 or not note.startswith("gitvow-session"):
-        return {}
-    try:
-        data = json.loads(note.split("\n", 1)[1])
-    except (json.JSONDecodeError, IndexError):
+    data, _ref = find_note(cwd, sha, m.group(1) if m else None)
+    if not data:
         return {}
     return {d.get("finding"): d for d in data.get("decisions") or [] if isinstance(d, dict)}
 

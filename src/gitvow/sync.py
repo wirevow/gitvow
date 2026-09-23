@@ -124,7 +124,7 @@ def _http(
     for k, v in (headers or {}).items():
         req.add_header(k, v)
     try:
-        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as r:  # noqa: S310 - scheme checked above
+        with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as r:  # noqa: S310 # nosec B310 - scheme checked above
             code, data = r.status, r.read()
     except urllib.error.HTTPError as e:
         code, data = e.code, e.read()
@@ -224,13 +224,22 @@ def deliver(sink: dict[str, Any], bundle_dir: str) -> dict[str, Any]:
                 )
                 + "\n"
             )
+        committed: bool | None = None
         if os.path.isdir(os.path.join(root, ".git")):
             subprocess.run(["git", "add", "-A"], cwd=root, capture_output=True)
-            subprocess.run(
+            # The store repository may have no committer identity of its own (a fresh clone on a CI runner, a
+            # machine with no global git config); git on Linux refuses to commit without one, and a bundle written
+            # but not committed is an ingest log with a hole. Fall back to a store identity for this commit only.
+            ident = subprocess.run(["git", "config", "user.email"], cwd=root, capture_output=True, text=True)
+            extra = (
+                [] if ident.stdout.strip() else ["-c", "user.name=gitvow store", "-c", "user.email=store@gitvow.local"]
+            )
+            r = subprocess.run(
                 [
                     "git",
                     "-c",
                     "core.hooksPath=/dev/null",
+                    *extra,
                     "commit",
                     "-q",
                     "-m",
@@ -238,8 +247,13 @@ def deliver(sink: dict[str, Any], bundle_dir: str) -> dict[str, Any]:
                 ],
                 cwd=root,
                 capture_output=True,
+                text=True,
             )
-        return {"status": "delivered", "source": source, "digest": digest, "sink": sink["name"], "path": dest}
+            committed = r.returncode == 0
+        out = {"status": "delivered", "source": source, "digest": digest, "sink": sink["name"], "path": dest}
+        if committed is not None:
+            out["committed"] = committed
+        return out
     dest = os.path.join(root, _source_dir(source), digest)
     if os.path.isdir(dest):
         return {"status": "already held", "source": source, "digest": digest, "sink": sink["name"]}
@@ -446,7 +460,7 @@ def render_sinks(rows: list[dict[str, Any]]) -> str:
                             "name": "acme-store",
                             "type": "http",
                             "url": "https://store.acme.internal",
-                            "token_env": "WIREVOW_STORE_TOKEN",
+                            "token_env": "WIREVOW_STORE_TOKEN",  # nosec B105 - the name of a variable, not a secret
                         },
                     ]
                 },

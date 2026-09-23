@@ -43,6 +43,12 @@ It needs `claude` on PATH and a credential: `CLAUDE_CODE_OAUTH_TOKEN` (from `cla
 keychain item Claude Code itself writes, which is read and never printed. Run it before a release and after any
 change to `hooks/`, `install.py` or `policy.py`; a nightly run on a machine that is logged in is the intended home.
 
+For a nightly run on macOS with `launchd`, keep the wrapper and its clone **outside `~/Documents`**: a launch agent
+cannot read `~/Documents` without Full Disk Access, and the first attempt failed with "Operation not permitted"
+before it ran anything. The wrapper we use clones `main` under `~/.gitvow/e2e/checkout`, refreshes it each night,
+installs it into its own virtualenv and runs the check against that, which is also the right thing to test: `main`
+as pushed, not a working copy. Results land in `~/.gitvow/e2e/<date>.json`, `latest.json` and `history.log`.
+
 ## Pull requests
 - One change per PR. Describe the behaviour change and the user-visible effect.
 - Add a line to `CHANGELOG.md` under Unreleased.

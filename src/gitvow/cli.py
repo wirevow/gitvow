@@ -231,6 +231,19 @@ def cmd_status(a: argparse.Namespace) -> int:
     return 1 if any(s == "fail" for s, _, _ in checks) else 0
 
 
+def cmd_carry(a: argparse.Namespace) -> int:
+    """Carry session notes from the commits in a range onto the commit that replaced them (a squash merge)."""
+    from .carry import carry, render
+
+    try:
+        r = carry(os.getcwd(), a.range, a.target)
+    except ValueError as e:
+        print(f"carry error: {e}", file=sys.stderr)
+        return 1
+    print(json.dumps(r, indent=1) if a.json else render(r), end="" if not a.json else "\n")
+    return 0
+
+
 def cmd_serve(a: argparse.Namespace) -> int:
     """The record server. Read-only; MCP over stdio; nothing written, nothing sent."""
     from .serve import config_snippets, serve
@@ -918,6 +931,14 @@ def main(argv: list[str] | None = None) -> int:
         "--line", action="store_true", help="one line for a status bar: what this repository's session recorded"
     )
     s.set_defaults(f=cmd_status)
+    s = sub.add_parser(
+        "carry",
+        help="carry the session notes of the commits in <base>..<head> onto <target>, the commit that replaced them (a squash merge)",
+    )
+    s.add_argument("range", help="the replaced commits, as <base>..<head>")
+    s.add_argument("target", help="the commit that replaced them")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_carry)
     s = sub.add_parser(
         "serve",
         help="the record server: answer any agent's questions about this repository's record over MCP (stdio); read-only",

@@ -8,7 +8,6 @@ import os
 import re
 from typing import Any
 
-from .hooks import LEGACY_NOTES_REF, notes_ref
 from .report import STEP_RE, TRAILER_RE
 from .snapshots import list_snapshots
 from .state import git, load_state, toplevel
@@ -16,15 +15,10 @@ from .state import git, load_state, toplevel
 MAX_PLAN = 200
 
 
-def _note(cwd: str, sha: str, sid: str) -> dict[str, Any] | None:
-    for ref in (notes_ref(sid), LEGACY_NOTES_REF):
-        rc, body, _ = git(["notes", f"--ref={ref}", "show", sha], cwd)
-        if rc == 0 and body.startswith("gitvow-session"):
-            try:
-                return json.loads(body.split("\n", 1)[1])
-            except (json.JSONDecodeError, IndexError):
-                return None
-    return None
+def _note(cwd: str, sha: str, sid: str | None) -> dict[str, Any] | None:
+    from .notes import find_note
+
+    return find_note(cwd, sha, sid)[0]
 
 
 def _commits(cwd: str, path: str | None = None, limit: int = 200) -> list[dict[str, Any]]:
@@ -61,6 +55,13 @@ def _commits(cwd: str, path: str | None = None, limit: int = 200) -> list[dict[s
                     "note": _note(cwd, sha, m.group(1)),
                 }
             )
+        else:
+            # no trailer: a squash commit may still carry a note put there by `gitvow carry`
+            carried = _note(cwd, sha, None)
+            if carried is not None:
+                row.update(
+                    {"kind": "agent", "session": carried.get("session_id") or "carried", "step": None, "note": carried}
+                )
         rows.append(row)
     return rows
 

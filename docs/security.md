@@ -17,7 +17,7 @@ There are three claims worth making, and they are the only ones made anywhere in
 | Claim | What it means |
 |---|---|
 | **Measurable coverage** | How much of your agent-signed history carries a session record, computed from `git log` alone on a machine that trusts no client. `gitvow coverage`. |
-| **Durability equal to the code** | The trailer is inside the commit; the note follows amend and rebase through `notes.rewriteRef`. **Not squash:** a squash is a new commit, the note does not follow it, and the trailers survive only if the squash message keeps the originals; see the FAQ. Losing the record otherwise means losing the commit. |
+| **Durability equal to the code** | The trailer is inside the commit; the note follows amend and rebase through `notes.rewriteRef`. A squash is a new commit and the note does not follow it on its own; since 0.29 the GitHub Action carries the notes onto the merge commit (`gitvow carry`) and readers find a note without the trailer, so the record survives a squash where the Action runs on the `closed` event. Losing the record otherwise means losing the commit. |
 | **Verifiable non-forgery, once signing exists** | Not today. Today an acceptance is a line of text and anybody can type one. See [Forgery](#2-a-forged-acceptance-undetectable-today). |
 
 ## The three enforcement points
