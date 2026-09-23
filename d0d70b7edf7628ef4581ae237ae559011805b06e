@@ -1,0 +1,228 @@
+gitvow-session
+{
+ "schema": 7,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 17,
+ "committed_at": "2026-09-23T12:04:57",
+ "assistant_turns_so_far": 25507,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Third attempt running with reads pre-approved as well; Claude Code's own permission gate kept stopping the script before gitvow's question. I'll report the outcome when it lands.",
+ "files_in_commit": [
+  "CHANGELOG.md                  |  4 +++",
+  "docs/guides/decisions.md      |  2 +-",
+  "docs/guides/other-agents.md   |  2 +-",
+  "pyproject.toml                |  2 +-",
+  "scripts/e2e_real.py           | 14 +++++++++-",
+  "src/gitvow/adapters.py        | 45 ++++++++++++++++++++++++++++--",
+  "src/gitvow/cli.py             |  5 +++-",
+  "tests/test_native_question.py | 65 +++++++++++++++++++++++++++++++++++++++++++"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "docs/guides/decisions.md",
+  "docs/guides/other-agents.md",
+  "pyproject.toml",
+  "scripts/e2e_real.py",
+  "src/gitvow/adapters.py",
+  "src/gitvow/cli.py",
+  "tests/test_native_question.py"
+ ],
+ "attribution": {
+  "files_in_commit": 8,
+  "touched_by_agent": 8,
+  "lines_added_in_commit": 131,
+  "lines_changed_by_human_after_agent": 0,
+  "agent_share": 1.0,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "73f1f97523cb2e91032767aea78b2df94c654b3f",
+    "committed_blob": "73f1f97523cb2e91032767aea78b2df94c654b3f"
+   },
+   {
+    "path": "docs/guides/decisions.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "5fc24cd25618d1c6f04c22e09f0f272e36ecb32f",
+    "committed_blob": "5fc24cd25618d1c6f04c22e09f0f272e36ecb32f"
+   },
+   {
+    "path": "docs/guides/other-agents.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "3189394f689fa17d4b32ccc1022fd1786f1a6a71",
+    "committed_blob": "3189394f689fa17d4b32ccc1022fd1786f1a6a71"
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "4fb6cf3e8126ad171b458bd7cf3eb75141c47d3a",
+    "committed_blob": "4fb6cf3e8126ad171b458bd7cf3eb75141c47d3a"
+   },
+   {
+    "path": "scripts/e2e_real.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 13,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "dc646b723ad1fe3d5cb2820ab45901be4cc74cc4",
+    "committed_blob": "dc646b723ad1fe3d5cb2820ab45901be4cc74cc4"
+   },
+   {
+    "path": "src/gitvow/adapters.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 42,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "ddab20d1ab796c322c106345d362102f94219575",
+    "committed_blob": "ddab20d1ab796c322c106345d362102f94219575"
+   },
+   {
+    "path": "src/gitvow/cli.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "e284a2f173fe34795ee469e6adfda024337c16b2",
+    "committed_blob": "e284a2f173fe34795ee469e6adfda024337c16b2"
+   },
+   {
+    "path": "tests/test_native_question.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 65,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "9dd6e7db0bd1fdcd8f336bf156fe32ff2331a3c1",
+    "committed_blob": "9dd6e7db0bd1fdcd8f336bf156fe32ff2331a3c1"
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 113304,
+  "output_tokens": 7918063,
+  "cache_read_tokens": 3150284795,
+  "cache_write_tokens": 88706723,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1732
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 41986,
+    "output": 3061039,
+    "cache_read": 855448566,
+    "cache_write": 19919400,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3247022885,
+  "estimated_cost_usd": 6864.5447,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/159",
+ "decisions": [],
+ "edits_outside_repository": {
+  "wirevow": {
+   "count": 2,
+   "paths": [
+    "strategy/product-strategy.md",
+    "strategy/assessment-2026-09-23.md"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
