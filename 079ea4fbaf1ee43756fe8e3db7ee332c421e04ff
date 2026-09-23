@@ -1,0 +1,338 @@
+gitvow-session
+{
+ "schema": 7,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 15,
+ "committed_at": "2026-09-23T09:29:11",
+ "assistant_turns_so_far": 25429,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Stopping the stuck launchd-wait job, auto-fixing the unused imports, reading `why` so carried notes count there too, and re-loading the launch agent from its new location.",
+ "files_in_commit": [
+  "CHANGELOG.md                 |   4 ++",
+  "action.yml                   |  14 +++++",
+  "docs/contributing.md         |   6 +++",
+  "docs/faq.md                  |   2 +-",
+  "docs/guides/pull-requests.md |   8 +--",
+  "docs/reference/cli.md        |   1 +",
+  "docs/security.md             |   2 +-",
+  "pyproject.toml               |   2 +-",
+  "scripts/e2e_nightly.sh       |  18 +++++++",
+  "src/gitvow/carry.py          | 120 +++++++++++++++++++++++++++++++++++++++++++",
+  "src/gitvow/cli.py            |  21 ++++++++",
+  "src/gitvow/decisions.py      |  14 ++---",
+  "src/gitvow/install.py        |   2 +-",
+  "src/gitvow/notes.py          |  60 ++++++++++++++++++++++",
+  "src/gitvow/recall.py         |  21 ++++----",
+  "src/gitvow/report.py         |  46 ++++++++++-------",
+  "src/gitvow/sync.py           |  22 ++++++--",
+  "tests/test_carry.py          |  81 +++++++++++++++++++++++++++++"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "action.yml",
+  "docs/contributing.md",
+  "docs/faq.md",
+  "docs/guides/pull-requests.md",
+  "docs/reference/cli.md",
+  "docs/security.md",
+  "pyproject.toml",
+  "scripts/e2e_nightly.sh",
+  "src/gitvow/carry.py",
+  "src/gitvow/cli.py",
+  "src/gitvow/decisions.py",
+  "src/gitvow/install.py",
+  "src/gitvow/notes.py",
+  "src/gitvow/recall.py",
+  "src/gitvow/report.py",
+  "src/gitvow/sync.py",
+  "tests/test_carry.py"
+ ],
+ "attribution": {
+  "files_in_commit": 18,
+  "touched_by_agent": 18,
+  "lines_added_in_commit": 394,
+  "lines_changed_by_human_after_agent": 11,
+  "agent_share": 0.98,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "e1945d75f39042df0c4894cff8ac5f4c57eb9d27",
+    "committed_blob": "e1945d75f39042df0c4894cff8ac5f4c57eb9d27"
+   },
+   {
+    "path": "action.yml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 14,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "d49d70c7a0036fe1d58c4894626d384dae978042",
+    "committed_blob": "d49d70c7a0036fe1d58c4894626d384dae978042"
+   },
+   {
+    "path": "docs/contributing.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 6,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "3d2a54790b080c9f10fd8d9869a8a63c8c978947",
+    "committed_blob": "3d2a54790b080c9f10fd8d9869a8a63c8c978947"
+   },
+   {
+    "path": "docs/faq.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "0444a9084a99db44fb20bf2a0998c7028764420c",
+    "committed_blob": "0444a9084a99db44fb20bf2a0998c7028764420c"
+   },
+   {
+    "path": "docs/guides/pull-requests.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 5,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "9d0ba02b644902dfae943ee1d666f3223b94f80b",
+    "committed_blob": "9d0ba02b644902dfae943ee1d666f3223b94f80b"
+   },
+   {
+    "path": "docs/reference/cli.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "23542a92357caac60c0cd16180fbf68ab93abdf5",
+    "committed_blob": "23542a92357caac60c0cd16180fbf68ab93abdf5"
+   },
+   {
+    "path": "docs/security.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "baed4cfaf94c26d99db055fb7c7e6939ae1964d8",
+    "committed_blob": "baed4cfaf94c26d99db055fb7c7e6939ae1964d8"
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "d4af716f7f2a96e7690903bcba2ea60235f39fb1",
+    "committed_blob": "d4af716f7f2a96e7690903bcba2ea60235f39fb1"
+   },
+   {
+    "path": "scripts/e2e_nightly.sh",
+    "agent_wrote": true,
+    "lines_added_in_commit": 18,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "c6ad46bfb570293450132a011dd14dfecca58682",
+    "committed_blob": "c6ad46bfb570293450132a011dd14dfecca58682"
+   },
+   {
+    "path": "src/gitvow/carry.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 120,
+    "human_lines_added": 3,
+    "human_lines_removed": 1,
+    "agent_blob": "4c3d36c5486b058dcef69919788858145441a9d8",
+    "committed_blob": "0f3a9f3365ff758c935dc412db47d256435b89ad"
+   },
+   {
+    "path": "src/gitvow/cli.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 21,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "e21bb59ceae6cc5b1eebaef5622caee820bac92a",
+    "committed_blob": "e21bb59ceae6cc5b1eebaef5622caee820bac92a"
+   },
+   {
+    "path": "src/gitvow/decisions.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 1,
+    "agent_blob": "3c67bd69e277509b3198e36e58bcb8892636ba1f",
+    "committed_blob": "277f53e7c79fbac5a6604cf42f0bed47b75c6f4e"
+   },
+   {
+    "path": "src/gitvow/install.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "51a0bac025b86c6ff0992db4953e570d19955f5f",
+    "committed_blob": "51a0bac025b86c6ff0992db4953e570d19955f5f"
+   },
+   {
+    "path": "src/gitvow/notes.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 60,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "21feaa546c8e53fd627fbf7f1df2779466a56857",
+    "committed_blob": "21feaa546c8e53fd627fbf7f1df2779466a56857"
+   },
+   {
+    "path": "src/gitvow/recall.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 11,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "c50a75cb8ba813f4836b850f7ededcb86c813b11",
+    "committed_blob": "c50a75cb8ba813f4836b850f7ededcb86c813b11"
+   },
+   {
+    "path": "src/gitvow/report.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 27,
+    "human_lines_added": 0,
+    "human_lines_removed": 2,
+    "agent_blob": "8b302ade08eeb96eafb75facf0f91822f8753d3e",
+    "committed_blob": "f9772a8b3662270524a7d4f867cc36de5c426af9"
+   },
+   {
+    "path": "src/gitvow/sync.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 18,
+    "human_lines_added": 3,
+    "human_lines_removed": 1,
+    "agent_blob": "2b650f1026fca8bb253fdfd285c3afcc6d9f6bd7",
+    "committed_blob": "d4db6958f450006983a6c1f383848e54c7084814"
+   },
+   {
+    "path": "tests/test_carry.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 81,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "a4ae3e29d2e2ef4f4c287b4f0c7c962b97a5b445",
+    "committed_blob": "a4ae3e29d2e2ef4f4c287b4f0c7c962b97a5b445"
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 112640,
+  "output_tokens": 7888644,
+  "cache_read_tokens": 3124272269,
+  "cache_write_tokens": 87764113,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1703
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 41322,
+    "output": 3031620,
+    "cache_read": 829436040,
+    "cache_write": 18976790,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3220037666,
+  "estimated_cost_usd": 6805.6356,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/139",
+ "decisions": [],
+ "edits_outside_repository": {
+  "wirevow": {
+   "count": 2,
+   "paths": [
+    "strategy/product-strategy.md",
+    "strategy/assessment-2026-09-23.md"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
