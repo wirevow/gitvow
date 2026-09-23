@@ -435,8 +435,14 @@ def evaluate(pol: dict[str, Any], tool: str, tool_input: dict[str, Any], cwd: st
 
 
 def _rel(path: str, cwd: str | None) -> str:
+    """The path relative to the repository, or unchanged when it lies outside it.
+
+    Both sides are resolved through symlinks first: on macOS `/var/…` is `/private/var/…`, and a checkout reached
+    through a symlinked home directory has two spellings too. Without this a finding read `edit /var/…/app.yaml`
+    while the same edit from another shell read `edit values/production-in/app.yaml`, and standing never converged.
+    """
     if path and os.path.isabs(path) and cwd:
-        rel = os.path.relpath(path, cwd)
+        rel = os.path.relpath(os.path.realpath(path), os.path.realpath(cwd))
         return rel if not rel.startswith("..") else path
     return path
 

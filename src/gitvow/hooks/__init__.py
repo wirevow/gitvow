@@ -157,11 +157,36 @@ def _note_touched(session_cwd: str, target: str) -> None:
         save_state(session_cwd, st)
 
 
+def _duplicate(h: dict[str, Any], cwd: str, event: str) -> bool:
+    """True when this exact hook event was already handled: the agent runs the same hook from two settings files.
+
+    A user-scope install and a committed repository-scope install both carry gitvow's hooks, and an agent merges
+    its settings, so every event arrives twice. The first arrival decides; a second with the same `tool_use_id`
+    is answered with silence, because a duplicate that re-added a finding, took a second snapshot or counted a
+    second step would put a doubled record in git. Events without a `tool_use_id` cannot be told apart and are
+    handled as before.
+    """
+    tid = h.get("tool_use_id")
+    if not tid:
+        return False
+    st = load_state(cwd)
+    key = f"{event}:{h.get('session_id')}:{tid}"
+    seen = st.setdefault("seen_events", [])
+    if key in seen:
+        return True
+    seen.append(key)
+    del seen[:-200]
+    save_state(cwd, st)
+    return False
+
+
 def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     session_cwd = h.get("cwd") or os.getcwd()
     tool = h.get("tool_name", "") or ""
     inp = h.get("tool_input") or {}
     cwd = target_cwd(tool, inp, session_cwd)
+    if _duplicate(h, cwd, "pre"):
+        return 0, ""
     _note_touched(session_cwd, cwd)
     try:
         pol = load_policy(cwd, home)
@@ -385,6 +410,8 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     inp = h.get("tool_input") or {}
     session_cwd = h.get("cwd") or os.getcwd()
     cwd = target_cwd(tool, inp, session_cwd)
+    if _duplicate(h, cwd, "post"):
+        return 0, ""
     if tool in EDIT_TOOLS:
         fp = str(inp.get("file_path") or inp.get("notebook_path") or "")
         if fp:

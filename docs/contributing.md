@@ -21,6 +21,28 @@ pip freeze --exclude-editable | grep -v '^gitvow' > /tmp/req.txt && pip-audit --
 mkdocs serve   # docs at http://127.0.0.1:8000
 ```
 
+## The real-harness check
+
+The unit suite drives hook functions with synthetic payloads in temporary repositories. It cannot see what a real
+agent does: dispatch tool calls in parallel, run a commit minutes after the gate saw it, reach into another
+checkout, merge two settings files and run every hook twice. Seven of the first eight defects found in real use
+lived there. `scripts/e2e_real.py` drives Claude Code itself:
+
+```console
+$ .venv/bin/python scripts/e2e_real.py            # a minute or two; a few cents on your own Claude account
+real-harness check: OK in 71.3s, 9 turns, $0.32
+```
+
+It builds two sandbox repositories with bare remotes, installs this checkout's gitvow in both, writes the hooks
+into an isolated `CLAUDE_CONFIG_DIR`, and asks the agent to edit and commit in both (one through `git -C`) and push
+to a protected branch. Then it reads the record and asserts: trailers on both commits, notes, the production-values
+finding recorded in the repository it belongs to, the card shown once, the push asked about and not made. `--keep`
+leaves the sandbox for inspection; `--json` prints the summary as data.
+
+It needs `claude` on PATH and a credential: `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`), or on macOS the
+keychain item Claude Code itself writes, which is read and never printed. Run it before a release and after any
+change to `hooks/`, `install.py` or `policy.py`; a nightly run on a machine that is logged in is the intended home.
+
 ## Pull requests
 - One change per PR. Describe the behaviour change and the user-visible effect.
 - Add a line to `CHANGELOG.md` under Unreleased.
