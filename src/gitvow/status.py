@@ -41,6 +41,7 @@ def _agent_checks(home: str, cwd: str) -> list[Check]:
     checks: list[Check] = []
     top = toplevel(cwd)
     found_any = False
+    scopes: dict[str, set[str]] = {}
     for agent, (user_rel, repo_rel) in AGENT_FILES.items():
         for scope, path in (("user", os.path.join(home, user_rel)), ("repo", os.path.join(top or cwd, repo_rel))):
             if scope == "repo" and not top:
@@ -49,6 +50,7 @@ def _agent_checks(home: str, cwd: str) -> list[Check]:
             if not cmds:
                 continue
             found_any = True
+            scopes.setdefault(agent, set()).add(scope)
             where = path.replace(home, "~", 1)
             runnable, resolved, from_path = _executable(cmds[0])
             if not runnable:
@@ -81,6 +83,15 @@ def _agent_checks(home: str, cwd: str) -> list[Check]:
                     )
                 )
             checks += _agent_notes(agent, home, top)
+    for agent, seen in scopes.items():
+        if seen == {"user", "repo"}:
+            checks.append(
+                (
+                    "note",
+                    f"{agent}: hooks installed at user scope and in this repository; the agent merges both, so every event arrives twice",
+                    "handled once since 0.28.5 (deduplicated by tool_use_id); an older gitvow recorded everything twice",
+                )
+            )
     if not found_any:
         checks.append(
             ("fail", "no agent has gitvow hooks installed", "run `gitvow install --user` (add --agent for others)")
@@ -177,12 +188,62 @@ def _git_checks(cwd: str, home: str) -> list[Check]:
     else:
         checks.append(("ok", f"notes.displayRef / rewriteRef → {NOTES_GLOB}", ""))
     checks += _since_install_checks(top, hooks_dir)
+    checks += _hook_environment_checks(top, home)
     gd = git_dir(top)
     if gd and os.path.exists(os.path.join(gd, "gitvow-hooks.log")):
         checks.append(("ok", "this repository has a hook log, so the hooks have run here", ""))
     else:
         checks.append(("note", "no hook log in this repository yet, so no session has been recorded here", ""))
     return checks
+
+
+MINIMAL_PATH = "/usr/bin:/bin:/usr/local/bin:/opt/homebrew/bin"
+
+
+def _hook_environment_checks(top: str, home: str) -> list[Check]:
+    """Can the git hooks actually do their work here?
+
+    Every trailer is written by `python3` from inside a shell hook, with errors discarded so a broken hook never
+    blocks a commit. That is the right failure mode for the commit and the wrong one for the record: without
+    `python3` on the PATH git runs hooks with, commits silently carry nothing. An agent started from Finder or a
+    launch agent has a shorter PATH than a terminal, so both are checked. The pending-commit window is read too,
+    because a window under a minute makes the trailer a race against the harness.
+    """
+    out: list[Check] = []
+    here = shutil.which("python3")
+    minimal = shutil.which("python3", path=MINIMAL_PATH)
+    if not here:
+        out.append(
+            (
+                "fail",
+                "python3 is not on PATH: the git hooks write trailers and notes with it and fail silently without it",
+                "install python3, or put it on the PATH of the shell git runs in",
+            )
+        )
+    elif not minimal:
+        out.append(
+            (
+                "note",
+                f"python3 is on this shell's PATH ({here}) but not on a minimal one ({MINIMAL_PATH})",
+                "an agent started from Finder or by launchd may run git hooks without it; a symlink in /usr/local/bin fixes that",
+            )
+        )
+    else:
+        out.append(("ok", f"python3 reachable from git hooks: {minimal}", ""))
+    try:
+        pol = load_policy(top, home)
+        window = int((pol.get("decisions") or {}).get("commit_window_seconds", 1800))
+        if window < 60:
+            out.append(
+                (
+                    "note",
+                    f"decisions.commit_window_seconds is {window}: a commit queued behind a slow command loses its trailer",
+                    "raise it; the default is 1800",
+                )
+            )
+    except (PolicyError, ValueError, TypeError):
+        pass
+    return out
 
 
 def build(cwd: str, home: str) -> list[Check]:
