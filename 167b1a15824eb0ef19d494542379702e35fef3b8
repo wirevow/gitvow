@@ -1,0 +1,542 @@
+gitvow-session
+{
+ "schema": 7,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 18,
+ "committed_at": "2026-09-28T18:35:00",
+ "assistant_turns_so_far": 25691,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Real-harness check green: all 19 assertions hold, including the intent trailer from the first message on both sandbox commits. Committing the release now, alone.",
+ "files_in_commit": [
+  "CHANGELOG.md                   |   7 ++",
+  "README.md                      |   7 +-",
+  "docs/concepts/sessions.md      |   3 +-",
+  "docs/guides/decisions.md       |   2 +",
+  "docs/guides/intent.md          |  60 ++++++++++",
+  "docs/guides/other-agents.md    |   3 +-",
+  "docs/guides/record-server.md   |   3 +-",
+  "docs/index.md                  |   2 +-",
+  "docs/reference/adapters.md     |   1 +",
+  "docs/reference/cli.md          |   2 +",
+  "docs/reference/hooks.md        |   7 +-",
+  "docs/reference/note.md         |   6 +-",
+  "docs/reference/policy.md       |   4 +-",
+  "docs/roadmap.md                |   3 +",
+  "docs/security.md               |   7 ++",
+  "docs/trust.md                  |   7 +-",
+  "mkdocs.yml                     |   1 +",
+  "pyproject.toml                 |   2 +-",
+  "scripts/e2e_real.py            |   9 ++",
+  "src/gitvow/adapters.py         |   3 +",
+  "src/gitvow/cli.py              |  48 +++++++-",
+  "src/gitvow/decisions.py        |   6 +",
+  "src/gitvow/default_policy.json |   5 +",
+  "src/gitvow/digest.py           |  37 +++++-",
+  "src/gitvow/hooks/__init__.py   |  50 +++++++-",
+  "src/gitvow/install.py          |  15 +++",
+  "src/gitvow/intent.py           | 222 ++++++++++++++++++++++++++++++++++++",
+  "src/gitvow/policy.py           |   6 +",
+  "src/gitvow/recall.py           |  18 ++-",
+  "src/gitvow/report.py           |   3 +",
+  "src/gitvow/serve.py            |  50 +++++++-",
+  "tests/test_cost.py             |   2 +-",
+  "tests/test_decisions.py        |   2 +-",
+  "tests/test_hooks.py            |   5 +-",
+  "tests/test_install_cli.py      |   2 +-",
+  "tests/test_intent.py           | 253 +++++++++++++++++++++++++++++++++++++++++",
+  "tests/test_pack.py             |   2 +-",
+  "tests/test_snapshots.py        |   2 +-",
+  "tests/test_tiers.py            |   2 +-"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "README.md",
+  "docs/concepts/sessions.md",
+  "docs/guides/decisions.md",
+  "docs/guides/intent.md",
+  "docs/guides/other-agents.md",
+  "docs/guides/record-server.md",
+  "docs/index.md",
+  "docs/reference/adapters.md",
+  "docs/reference/cli.md",
+  "docs/reference/hooks.md",
+  "docs/reference/note.md",
+  "docs/reference/policy.md",
+  "docs/roadmap.md",
+  "docs/security.md",
+  "docs/trust.md",
+  "mkdocs.yml",
+  "pyproject.toml",
+  "scripts/e2e_real.py",
+  "src/gitvow/adapters.py",
+  "src/gitvow/cli.py",
+  "src/gitvow/decisions.py",
+  "src/gitvow/default_policy.json",
+  "src/gitvow/digest.py",
+  "src/gitvow/hooks/__init__.py",
+  "src/gitvow/install.py",
+  "src/gitvow/intent.py",
+  "src/gitvow/policy.py",
+  "src/gitvow/recall.py",
+  "src/gitvow/report.py",
+  "src/gitvow/serve.py",
+  "tests/test_cost.py",
+  "tests/test_install_cli.py",
+  "tests/test_intent.py",
+  "tests/test_pack.py",
+  "tests/test_tiers.py"
+ ],
+ "attribution": {
+  "files_in_commit": 39,
+  "touched_by_agent": 36,
+  "lines_added_in_commit": 840,
+  "lines_changed_by_human_after_agent": 48,
+  "agent_share": 0.95,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 7,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "9bc66450867c3bab056965ccf62d8e336d24c464",
+    "committed_blob": "9bc66450867c3bab056965ccf62d8e336d24c464"
+   },
+   {
+    "path": "README.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "3533fa3b43745a09ffbc11541858f546cd9c7e09",
+    "committed_blob": "3533fa3b43745a09ffbc11541858f546cd9c7e09"
+   },
+   {
+    "path": "docs/concepts/sessions.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "59b4ca2846ffca635626d646c26c943fb57e9330",
+    "committed_blob": "59b4ca2846ffca635626d646c26c943fb57e9330"
+   },
+   {
+    "path": "docs/guides/decisions.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "b330db30cf56b8deb9cce98918a724f27a052b66",
+    "committed_blob": "b330db30cf56b8deb9cce98918a724f27a052b66"
+   },
+   {
+    "path": "docs/guides/intent.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 60,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "00b516ef4ac279c1de66ec426039b76306c0cb9c",
+    "committed_blob": "00b516ef4ac279c1de66ec426039b76306c0cb9c"
+   },
+   {
+    "path": "docs/guides/other-agents.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "453d4398ff01d4fde34a46aec8dfefe70ca74a99",
+    "committed_blob": "453d4398ff01d4fde34a46aec8dfefe70ca74a99"
+   },
+   {
+    "path": "docs/guides/record-server.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "98b093d7c9b0896f7a6c8bc9d5d256829d2296b1",
+    "committed_blob": "98b093d7c9b0896f7a6c8bc9d5d256829d2296b1"
+   },
+   {
+    "path": "docs/index.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "6b2df5d0f009b838242e491ef2a726bf286347ab",
+    "committed_blob": "6b2df5d0f009b838242e491ef2a726bf286347ab"
+   },
+   {
+    "path": "docs/reference/adapters.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "ef91bca140adb704dc5c3a63dd65441d70e780a2",
+    "committed_blob": "ef91bca140adb704dc5c3a63dd65441d70e780a2"
+   },
+   {
+    "path": "docs/reference/cli.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "239400beb937141a7b138afb3b65ad94ce57d5bf",
+    "committed_blob": "239400beb937141a7b138afb3b65ad94ce57d5bf"
+   },
+   {
+    "path": "docs/reference/hooks.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 5,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "e78869960feb8b00e9b368a8b0df734a9f9316e6",
+    "committed_blob": "e78869960feb8b00e9b368a8b0df734a9f9316e6"
+   },
+   {
+    "path": "docs/reference/note.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "27fcd945ff2cb90a0f0093844ac153e1d1be9a37",
+    "committed_blob": "27fcd945ff2cb90a0f0093844ac153e1d1be9a37"
+   },
+   {
+    "path": "docs/reference/policy.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 3,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "bf6f0915708d36d363252e18b51725e6d00c06b7",
+    "committed_blob": "bf6f0915708d36d363252e18b51725e6d00c06b7"
+   },
+   {
+    "path": "docs/roadmap.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 3,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "4b73935d543e8eac4d51e3ee4c24eb80d1bb9a06",
+    "committed_blob": "4b73935d543e8eac4d51e3ee4c24eb80d1bb9a06"
+   },
+   {
+    "path": "docs/security.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 7,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "f4a62d7b6fc16915e30a24806cb51fd24d28d1a0",
+    "committed_blob": "f4a62d7b6fc16915e30a24806cb51fd24d28d1a0"
+   },
+   {
+    "path": "docs/trust.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 6,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "21f88712e43e31e702464bf43b7eeb5ed355d381",
+    "committed_blob": "21f88712e43e31e702464bf43b7eeb5ed355d381"
+   },
+   {
+    "path": "mkdocs.yml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 1,
+    "human_lines_removed": 0,
+    "agent_blob": "00bebaf20a6e34049498a1776a1112329be7794c",
+    "committed_blob": "261e3977d9d7f4da42d38b41f85d3225c9e02e89"
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 1,
+    "human_lines_removed": 1,
+    "agent_blob": "4fb6cf3e8126ad171b458bd7cf3eb75141c47d3a",
+    "committed_blob": "180fa49e332d7ecb4af87f2cf0e17a9cbc788cdb"
+   },
+   {
+    "path": "scripts/e2e_real.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 9,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "c47b618ea550b42375a9c9e37ed27045e60794b4",
+    "committed_blob": "c47b618ea550b42375a9c9e37ed27045e60794b4"
+   },
+   {
+    "path": "src/gitvow/adapters.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 3,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "43514457c4b4a7c5b028162ff4fb09987c8340a0",
+    "committed_blob": "43514457c4b4a7c5b028162ff4fb09987c8340a0"
+   },
+   {
+    "path": "src/gitvow/cli.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 47,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "68006d85f0035bf4e64c9b0b4e64c072522f2407",
+    "committed_blob": "68006d85f0035bf4e64c9b0b4e64c072522f2407"
+   },
+   {
+    "path": "src/gitvow/decisions.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 6,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "6ea1580b2a21b3b72d20765e9dfaae0e505e64c1",
+    "committed_blob": "6ea1580b2a21b3b72d20765e9dfaae0e505e64c1"
+   },
+   {
+    "path": "src/gitvow/default_policy.json",
+    "agent_wrote": true,
+    "lines_added_in_commit": 5,
+    "human_lines_added": 5,
+    "human_lines_removed": 0,
+    "agent_blob": "86c376e7f535a4609b9ebfb0c181efbc47b99481",
+    "committed_blob": "dc61adc3e10e3b9bb7295d80c56ecf9bfbcfd1b3"
+   },
+   {
+    "path": "src/gitvow/digest.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 36,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "70b05fd4e2781e2fc3d4ddb25c04d9d5e1aeb050",
+    "committed_blob": "70b05fd4e2781e2fc3d4ddb25c04d9d5e1aeb050"
+   },
+   {
+    "path": "src/gitvow/hooks/__init__.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 47,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "1e78060d0c3373cc24efa9819ef3805947e9ed24",
+    "committed_blob": "1e78060d0c3373cc24efa9819ef3805947e9ed24"
+   },
+   {
+    "path": "src/gitvow/install.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 15,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "4c77fb636d19ff57f018d2ea494f611b1750e21d",
+    "committed_blob": "4c77fb636d19ff57f018d2ea494f611b1750e21d"
+   },
+   {
+    "path": "src/gitvow/intent.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 222,
+    "human_lines_added": 3,
+    "human_lines_removed": 1,
+    "agent_blob": "efa2987d5c1982954d2f8ec2c9736c87b39c514b",
+    "committed_blob": "19ffd78ce7a1bec2bee6014f63dd9a95a9fea7f6"
+   },
+   {
+    "path": "src/gitvow/policy.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 6,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "5aace7493b9b8e42d9146b36627c13a736599db0",
+    "committed_blob": "5aace7493b9b8e42d9146b36627c13a736599db0"
+   },
+   {
+    "path": "src/gitvow/recall.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 17,
+    "human_lines_added": 2,
+    "human_lines_removed": 1,
+    "agent_blob": "5e003e39e5ede0cdc87f33f294f07d0c17b0ea26",
+    "committed_blob": "5652927ddb6d7ddc21b1256f6c0b91d760f12790"
+   },
+   {
+    "path": "src/gitvow/report.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 3,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "37ff9701304f8c5efeed4acf7a28b0469167f630",
+    "committed_blob": "37ff9701304f8c5efeed4acf7a28b0469167f630"
+   },
+   {
+    "path": "src/gitvow/serve.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 49,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "1cacca35f3c9dced7ae6488863c9842f92e43028",
+    "committed_blob": "1cacca35f3c9dced7ae6488863c9842f92e43028"
+   },
+   {
+    "path": "tests/test_cost.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_decisions.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_hooks.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 3
+   },
+   {
+    "path": "tests/test_install_cli.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "6279939056c8ec76b50038ea528283ecceeff4b1",
+    "committed_blob": "6279939056c8ec76b50038ea528283ecceeff4b1"
+   },
+   {
+    "path": "tests/test_intent.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 253,
+    "human_lines_added": 25,
+    "human_lines_removed": 8,
+    "agent_blob": "7e91373bdd12d7e7440787c6417a9d7751109f1b",
+    "committed_blob": "c4d392de516c1abe7230a21cac76a70f1d29a82f"
+   },
+   {
+    "path": "tests/test_pack.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_snapshots.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_tiers.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 114596,
+  "output_tokens": 7990101,
+  "cache_read_tokens": 3162644682,
+  "cache_write_tokens": 91737537,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1777
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 43278,
+    "output": 3133077,
+    "cache_read": 867808453,
+    "cache_write": 22950214,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3262486916,
+  "estimated_cost_usd": 6945.3346,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/223",
+ "decisions": [],
+ "edits_outside_repository": {
+  "wirevow": {
+   "count": 2,
+   "paths": [
+    "strategy/product-strategy.md",
+    "strategy/assessment-2026-09-23.md"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
