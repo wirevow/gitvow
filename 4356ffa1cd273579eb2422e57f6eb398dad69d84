@@ -1,0 +1,187 @@
+gitvow-session
+{
+ "schema": 8,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 19,
+ "committed_at": "2026-09-28T18:47:01",
+ "assistant_turns_so_far": 25727,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "PyPI has 0.30.0. Installing it machine-wide, rerunning the user install so the new git-hook body and the message hook land, and checking status.",
+ "files_in_commit": [
+  ".claude/settings.json                | 10 ++++++++++",
+  ".gitvow/git-hooks/prepare-commit-msg | 14 ++++++++++++++",
+  ".gitvow/policy.json                  |  7 ++++++-"
+ ],
+ "files_written_by_agent_this_session": [],
+ "attribution": {
+  "files_in_commit": 3,
+  "touched_by_agent": 0,
+  "lines_added_in_commit": 30,
+  "lines_changed_by_human_after_agent": 0,
+  "agent_share": null,
+  "files": [
+   {
+    "path": ".claude/settings.json",
+    "agent_wrote": false,
+    "lines_added_in_commit": 10
+   },
+   {
+    "path": ".gitvow/git-hooks/prepare-commit-msg",
+    "agent_wrote": false,
+    "lines_added_in_commit": 14
+   },
+   {
+    "path": ".gitvow/policy.json",
+    "agent_wrote": false,
+    "lines_added_in_commit": 6
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 114822,
+  "output_tokens": 8005822,
+  "cache_read_tokens": 3164738770,
+  "cache_write_tokens": 91780228,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1785
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 43504,
+    "output": 3148798,
+    "cache_read": 869902541,
+    "cache_write": 22992905,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3264639642,
+  "estimated_cost_usd": 6950.4586,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/224",
+ "decisions": [
+  {
+   "finding": "run git (pushing to a remote)",
+   "kind": "command",
+   "subject": "git (pushing to a remote)",
+   "path": "",
+   "reason": "pushing to a remote",
+   "evidence": [
+    "git -C /Users/nikhilbora/Documents/personal/gitvow push origin v0.30.0 v0.30 2>&1 | tail -3; sleep 20; gh run list -R wirevow/gitvow --limit 3 2>/dev/null"
+   ],
+   "raised": 1,
+   "answer": "observed",
+   "by": null,
+   "authority": "none",
+   "scope": null,
+   "to": null,
+   "note": null,
+   "decided_at": null,
+   "human_turns_after_card": null,
+   "proposed": null,
+   "intent_covered": false
+  }
+ ],
+ "intent": {
+  "text": "do intent first and then store",
+  "by": "13655781+nikhil-bora",
+  "source": "stated",
+  "set_at": "2026-09-28T18:44:04",
+  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+  "step": 18
+ },
+ "edits_outside_repository": {
+  "wirevow": {
+   "count": 2,
+   "paths": [
+    "strategy/product-strategy.md",
+    "strategy/assessment-2026-09-23.md"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
