@@ -10,6 +10,20 @@ if [ -f "$STATE" ]; then
   SID=$(python3 -c "import json,time;s=json.load(open('$STATE'));p=s.get('pending_commit') or 0;w=s.get('pending_ttl') or 300;print(s.get('session_id') or '' if time.time()-p<w else '')" 2>/dev/null)
   STEP=$(python3 -c "import json;print(json.load(open('$STATE')).get('steps') or 0)" 2>/dev/null)
   if [ -n "$SID" ] && ! grep -q "^Gitvow-Session:" "$1"; then printf "\nGitvow-Session: %s\nGitvow-Step: %s\n" "$SID" "$STEP" >> "$1"; fi
+  # The session's stated intent (gitvow intent, or the first message of the session) rides on every commit the
+  # agent makes, so a reviewer reads what the change was for next to what it did. Agent commits only: SID is set
+  # only inside the window after the gate saw the agent's git commit.
+  if [ -n "$SID" ] && ! grep -q "^Gitvow-Intent:" "$1"; then
+    python3 - "$STATE" "$1" <<'PY' 2>/dev/null
+import json, sys
+i = json.load(open(sys.argv[1])).get("intent") or {}
+t = " ".join(str(i.get("text") or "").split())
+if t:
+    line = "Gitvow-Intent: " + t + " by " + str(i.get("by") or "unknown") + (" source=prompt" if i.get("source") == "prompt" else "")
+    with open(sys.argv[2], "a") as fh:
+        fh.write(line + "\n")
+PY
+  fi
   # Decisions recorded with `gitvow decide` become Gitvow-Accepted/Declined/Referred trailers; findings nobody
   # decided become Gitvow-Open, on agent and human commits alike. A referral is its own trailer because "the
   # question reached the wrong person" is not an answer and must never be read as one.
