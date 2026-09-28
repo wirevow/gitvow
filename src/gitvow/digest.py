@@ -10,7 +10,7 @@ import time
 from typing import Any
 
 from . import decisions as dec
-from .recall import _commits, _plan
+from .recall import _commits, _intent, _plan
 from .state import toplevel
 
 
@@ -36,6 +36,7 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
     agent_added = 0.0
     files: collections.Counter[str] = collections.Counter()
     file_sessions: dict[str, set[str]] = collections.defaultdict(set)
+    covered_answers: collections.Counter[str] = collections.Counter()  # answers to findings within a stated intent
     for r in agent:
         s = sessions.setdefault(
             r["session"],
@@ -49,12 +50,17 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                 "cost": None,
                 "tokens": 0,
                 "unpriced": False,
+                "intent": "",
             },
         )
         s["commits"] += 1
         s["date"] = min(s["date"], r["date"])
         note = r["note"] or {}
         s["plan"] = s["plan"] or _plan(note)
+        s["intent"] = s["intent"] or _intent(note)
+        for d in note.get("decisions") or []:
+            if d.get("intent_covered") and d.get("answer") in ("accepted", "declined"):
+                covered_answers[d["answer"]] += 1
         u = note.get("usage") or {}
         if u.get("total_tokens") and (s["cost"] is None or u["total_tokens"] >= s["tokens"]):
             s["tokens"] = u["total_tokens"]  # notes carry running totals; the latest note is the session's figure
@@ -102,6 +108,10 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                 elif kind == "card":
                     bucket["cards"] += 1
                     bucket["pre_answered"] += int(e.get("proposed") or 0)
+                    if e.get("intent"):
+                        bucket["cards_with_intent"] += 1
+                        bucket["findings_with_intent"] += int(e.get("findings") or 0)
+                        bucket["intent_covered"] += int(e.get("intent_covered") or 0)
                 elif kind == "finding":
                     bucket["findings"] += int(e.get("new") or 0)
                 elif kind == "restore":
@@ -184,6 +194,18 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
             "snapshots_restored": now["restores"],
             "pre_answered": now["pre_answered"],
             "answers_matching_proposal": decided["matched_proposal"],
+        },
+        # The experiment behind intent capture: does one line at task start make card questions unnecessary?
+        # "within" is a word overlap between the intent and the finding's subject, counted at card time; the
+        # accepted/declined split says how such findings were answered when they were. Nothing here is per person.
+        "intent": {
+            "sessions_with_intent": sum(1 for s in sess_list if s.get("intent")),
+            "sessions": len(sess_list),
+            "cards_with_intent": now["cards_with_intent"],
+            "findings_on_those_cards": now["findings_with_intent"],
+            "within_intent": now["intent_covered"],
+            "within_intent_accepted": covered_answers["accepted"],
+            "within_intent_declined": covered_answers["declined"],
         },
     }
 
@@ -281,6 +303,17 @@ def render(d: dict[str, Any]) -> str:
             f"{pb['pre_answered']} question{'s' if pb['pre_answered'] != 1 else ''} pre-answered by the record · "
             f"{pb['answers_matching_proposal']} answer{'s' if pb['answers_matching_proposal'] != 1 else ''} matched the proposal"
         )
+    it = d.get("intent") or {}
+    if it.get("sessions"):
+        line = f"Intent: {it['sessions_with_intent']} of {it['sessions']} session{'s' if it['sessions'] != 1 else ''} stated one"
+        if it.get("cards_with_intent"):
+            line += (
+                f" · {it['within_intent']} of {it['findings_on_those_cards']} card finding{'s' if it['findings_on_those_cards'] != 1 else ''} "
+                f"fell within it"
+            )
+            if it.get("within_intent_accepted") or it.get("within_intent_declined"):
+                line += f" ({it['within_intent_accepted']} accepted, {it['within_intent_declined']} declined)"
+        out.append(line)
     if ds.get("debt_items"):
         out += ["", "### Decision debt"]
         for o in ds["debt_items"]:
@@ -298,6 +331,8 @@ def render(d: dict[str, Any]) -> str:
         for s in d["sessions"]:
             sh = "n/a " if s["share"] is None else f"{s['share']:.2f}"
             plan = f'  "{s["plan"]}"' if s["plan"] else "  (no plan recorded)"
+            if s.get("intent"):
+                plan = f'  intent "{s["intent"]}"' + plan
             after = (
                 f"  · {s['human_after']} human edit{'s' if s['human_after'] != 1 else ''} after"
                 if s["human_after"]

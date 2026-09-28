@@ -9,7 +9,7 @@ def test_user_install_is_idempotent_and_reversible(home):
     install_user(str(home))
     install_user(str(home))
     s = json.loads((home / ".claude" / "settings.json").read_text())
-    assert set(s["hooks"]) == {"SessionStart", "PreToolUse", "PostToolUse", "Stop"}
+    assert set(s["hooks"]) == {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"}
     assert all(len(v) == 1 for v in s["hooks"].values())  # no duplicate entries after a second install
     assert git(home, "config", "--global", "--get", "core.hooksPath").endswith(".gitvow/git-hooks")
     assert git(home, "config", "--global", "--get-all", "notes.rewriteRef") == "refs/notes/gitvow/*"  # added once

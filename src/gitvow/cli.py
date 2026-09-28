@@ -20,7 +20,7 @@ from .policy import PolicyError, evaluate, load_policy
 from .providers import QUESTIONS, ask
 from .redact import RedactionError, load_rules, redact
 from .report import build, render_markdown
-from .state import git
+from .state import git, toplevel
 
 
 def cmd_hook(a: argparse.Namespace) -> int:
@@ -628,6 +628,43 @@ def cmd_revisit(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_intent(a: argparse.Namespace) -> int:
+    """State what this session's task is for, in the person's words; or print or clear the intent recorded."""
+    from . import intent as im
+
+    cwd = os.getcwd()
+    if not toplevel(cwd):
+        print("not inside a git repository", file=sys.stderr)
+        return 2
+    if a.clear:
+        print("cleared" if im.clear(cwd) else "no intent was recorded", file=sys.stderr)
+        return 0
+    if not a.text:
+        i = im.current(cwd)
+        if a.json:
+            print(json.dumps(i, indent=1))
+            return 0
+        if not i:
+            print('no intent recorded for this session; state one with: gitvow intent "<what this task is for>"')
+            return 1
+        print(im.trailer_line(i))
+        return 0
+    try:
+        rules = load_rules(cwd, os.path.expanduser("~"))
+    except RedactionError as e:
+        print(f"redaction rules invalid: {e}", file=sys.stderr)
+        return 2
+    who, _, _ = dec.identity(cwd, a.by)
+    try:
+        i = im.record(cwd, " ".join(a.text), who, "stated", rules)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    print(im.trailer_line(i))
+    print("written as Gitvow-Intent on every commit the agent makes in this session", file=sys.stderr)
+    return 0
+
+
 def cmd_decide(a: argparse.Namespace) -> int:
     """Record a person's answer to one finding or all of them."""
     cwd = os.getcwd()
@@ -1065,6 +1102,15 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--by")
     s.add_argument("--to", help="with refer: who the question should go to")
     s.set_defaults(f=cmd_revisit)
+    s = sub.add_parser(
+        "intent",
+        help='what this task is for, in the person\'s words: gitvow intent "let ops export orders"; alone, prints it',
+    )
+    s.add_argument("text", nargs="*", help="the intent; omit to print the one recorded")
+    s.add_argument("--clear", action="store_true", help="drop the recorded intent")
+    s.add_argument("--by", help="whose words these are, when not the committer")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_intent)
     s = sub.add_parser("decide", help="record a person's answer: gitvow decide 1 accept --scope staging")
     s.add_argument("finding", help="finding number from `gitvow decisions`, or 'all'")
     s.add_argument("answer", choices=["accept", "decline", "refer"], help="refer: not this person's call to make")

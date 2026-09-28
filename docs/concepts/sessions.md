@@ -7,11 +7,12 @@ One conversation with an agent, identified by the session id that agent assigns.
 A counted commit within a session. The first commit an agent makes in a session is step 1, the next step 2. The number lets you order a session's commits without looking at timestamps, and lets a reviewer see how far into a session a change was made.
 
 ## Trailers
-Two lines appended to the commit message by a `prepare-commit-msg` git hook:
+Lines appended to the commit message by a `prepare-commit-msg` git hook: the session, the step, and since 0.30 the [intent](../guides/intent.md) when the session has one:
 
 ```
 Gitvow-Session: 8f3d5c71-574a-4eec-8903-9425e3a8335b
 Gitvow-Step: 4
+Gitvow-Intent: Let ops export orders as CSV from the admin page. by nikhil source=prompt
 ```
 
 Trailers survive rebase, amend, squash and cherry-pick because they are part of the message rather than derived from the commit hash. Only commits the agent itself runs get them: the gate marks the moment the agent invokes `git commit`, and the git hook adds trailers only while that mark is fresh. A commit you make in a terminal, even while a session is open in the same repository, gets none. The absence of a trailer is therefore itself information: a person made this commit.

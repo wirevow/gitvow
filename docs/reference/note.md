@@ -18,7 +18,8 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `subagents` | object | `count` and `tool_calls` of side conversations in the session |
 | `snapshot` | string or null | the last snapshot ref taken before this commit, e.g. `refs/gitvow/snapshots/<session>/7` |
 | `decisions` | object[] | the findings this commit carried and how they were answered; see below |
-| `schema` | int | note schema version, currently 6 |
+| `intent` | object or null | schema 8: what the task was for, in the person's words: `text` (redacted, at most 200 characters), `by`, `source` (`stated` from `gitvow intent`, `prompt` from the first message of the session), `set_at`, `session_id`, `step`; see [State the intent](../guides/intent.md) |
+| `schema` | int | note schema version, currently 8 |
 | `transcript` | string | always "kept local; see ledger" |
 | `redaction` | string | statement of what redaction ran |
 
@@ -53,12 +54,13 @@ Stored under `refs/notes/gitvow/<session-id>` (gitvow 0.1 used the single ref `r
 | `decided_at` | string or null | local time the answer was recorded |
 | `human_turns_after_card` | int or null | user messages in the transcript between the card and the answer; `0` means the agent answered without a person speaking |
 | `proposed` | string or null | what the record proposed on the card from earlier decisions on the same finding: `accept`, `decline` or null |
+| `intent_covered` | bool | schema 8: the finding's subject shares a word with the session's stated intent (a term overlap, computed at card time; never an answer) |
 
 ### `edits_outside_repository` (schema 7)
 
 An object keyed by the name of another checkout the agent edited during the session, each with `count` and up to 20 `paths` relative to that checkout. Empty when every edit stayed inside this repository. The gate evaluated those edits; this repository's note is the only record of them.
 
-The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields. Schema 7 added `observed` as an `answer` and the `edits_outside_repository` object; schema 6 added `to` to `decisions[]`; a note written by an older gitvow reads the same as it always did.
+The schema is additive. New fields may appear; existing fields keep their meaning. Consumers should ignore unknown fields. Schema 8 added `intent` and `decisions[].intent_covered`; schema 7 added `observed` as an `answer` and the `edits_outside_repository` object; schema 6 added `to` to `decisions[]`; a note written by an older gitvow reads the same as it always did.
 
 ## The claim note
 

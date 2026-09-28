@@ -198,6 +198,11 @@
     "commit_window_seconds": 1800,
     "_doc_commit_window": "How long after the gate sees the agent's `git commit` the git hooks still treat the commit as the agent's and write its trailers. Guards against a stale flag catching a person's later commit; too short and a harness that queues tool calls loses trailers. When a commit lands past the window, PostToolUse says so and logs commit_without_trailer."
   },
+  "intent": {
+    "from_prompt": true,
+    "ask_when_missing": true,
+    "_doc": "from_prompt: in Claude Code, the first line of the session's first message is recorded as the intent, in the person's words, redacted, at most 200 characters (source=prompt on the trailer); false records nothing until someone runs gitvow intent. ask_when_missing: the agent is told at session start to ask once, in one line, when the first message did not say what the task is for; false says nothing."
+  },
   "llm_classifier": {
     "enabled": false,
     "command": "",

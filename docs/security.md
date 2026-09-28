@@ -263,6 +263,13 @@ gitvow reads the agent transcript to build the note and the session record. Tran
 output, which can contain secrets and personal data. gitvow therefore never copies tool output anywhere:
 it records tool names, a shortened and redacted argument, and the agent's last stated plan after redaction.
 
+Since 0.30 it also reads the person's first message in Claude Code, to record the session's intent in their
+words. It keeps the first line only, after the same redaction, at most 200 characters, and that line goes on
+the agent's commits as a trailer, so it reaches every reader of the history. If a first message may carry
+something that must not, state the intent with `gitvow intent` and set `intent.from_prompt: false`, or run
+`gitvow intent --clear` before the first commit. A message that is a slash command, a nudge or pasted content is
+never taken.
+
 ### Redaction is best effort
 
 Layered patterns plus an entropy pass lower the probability that a secret reaches git. They cannot make it

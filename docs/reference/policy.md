@@ -13,7 +13,8 @@
   "llm_classifier": {"enabled": false, "command": "<program and arguments, run without a shell>"},
   "snapshots": {"enabled": true, "max_per_session": 200, "exclude": [".env*", "*.pem", "*.key", "*secret*", "*credential*", ".gitvow/**", ".claude/**"]},
   "pricing": {"<model name or prefix>": {"input": 0, "output": 0, "cache_read": 0, "cache_write": 0}},
-  "decisions": {"mode": "open", "session_scope": true, "authorities": [], "production_branches": ["main", "master", "production"], "rule_threshold": 3, "rule_decay_days": 90}
+  "decisions": {"mode": "open", "session_scope": true, "authorities": [], "production_branches": ["main", "master", "production"], "rule_threshold": 3, "rule_decay_days": 90},
+  "intent": {"from_prompt": true, "ask_when_missing": true}
 }
 ```
 
@@ -29,6 +30,7 @@
 | `snapshots` | after each agent edit | not a gate rule; controls working-tree snapshots, see [Snapshots](../concepts/snapshots.md) | |
 | `llm_classifier` | anything not decided above | command prints `ALLOW` / `CONFIRM reason` / `DENY reason` | as printed, immediately; failure → confirm |
 | `decisions` | the card and the git hooks | not a gate rule; `mode` `open` (default: the agent's commit is stopped once with the card, then goes through with `Gitvow-Open` for every unanswered finding; a person's commit goes through the same way) or `strict` (agent and person alike refused until every finding is decided); `authorities` names whose decisions count and who alone may accept a proposed rule, matched against committer email, its local part or name; `production_branches` where scoped decisions are reopened by the report; `rule_threshold` consistent **unscoped** answers by authorities before a finding is *proposed* as a rule, and the number of answers dated after a rejection before it is proposed again; `rule_decay_days` days without a new confirmation before a rule lapses; `session_scope` (default `true`) records an immediate confirm as a finding and lets one answer hold for the session, `false` asks every time and records nothing | |
+| `intent` | session start and the first message | not a gate rule; `from_prompt` (default `true`) records the first line of the session's first message as the intent in Claude Code, redacted, at most 200 characters, `source=prompt` on the trailer; `ask_when_missing` (default `true`) tells the agent at session start to ask once, in one line, when the first message did not say what the task is for. See [State the intent](../guides/intent.md) | |
 
 ### `program` and `verbs`
 A command rule may name a `program` (or a list of them) and the `verbs` that make it consequential, instead of a hand-written regex. gitvow builds the regex and allows options between the two: `kubectl --context prod delete pod x` is a `kubectl delete`. A hand-written `\bkubectl\s+delete` is not, and until 0.17.1 the default policy was written that way; replaying three engineers' real sessions found 163 cluster mutations that had walked past it on a `--context` flag. Each verb is a regex fragment, so multi-word verbs are written `pr\s+merge`. The finding a `program` rule raises is `run <program> (<reason>)`, so the program name is what precedent attaches to. Write new command rules in this form; keep `pattern` for shapes it cannot express, such as the database-write rule, which needs a client program and a statement anywhere after it.

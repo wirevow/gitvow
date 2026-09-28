@@ -235,7 +235,7 @@ def test_brief_from_cache_carries_source_age_and_staleness(repo, home):
 def test_session_start_hands_over_pack_and_brief(repo, home, payload):
     git(repo, "remote", "add", "origin", "git@github.com:acme/payments-api.git")
     rc, out = session_start(payload("SessionStart"), str(home))
-    assert rc == 0 and out == ""
+    assert rc == 0 and "pack" not in out.lower().replace("gitvow intent", "")  # only the intent line before a pack
     _pack(home)
     _brief(home)
     rc, out = session_start(payload("SessionStart"), str(home))

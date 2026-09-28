@@ -18,6 +18,7 @@ AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory")
 EVENT_MAP: dict[str, dict[str, str]] = {
     "claude": {
         "SessionStart": "SessionStart",
+        "UserPromptSubmit": "UserPromptSubmit",
         "PreToolUse": "PreToolUse",
         "PostToolUse": "PostToolUse",
         "Stop": "Stop",
@@ -137,6 +138,8 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
     }
     if gv_event in ("SessionStart", "Stop"):
         return [(gv_event, base)]
+    if gv_event == "UserPromptSubmit":
+        return [(gv_event, {**base, "prompt": str(payload.get("prompt") or "")})]
     if gv_event == "Subagent":
         return [
             (

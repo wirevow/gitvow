@@ -299,6 +299,8 @@ def card(
             **{r["finding"]: {**r, "state": "proposal"} for r in derived["proposals"]},
             **{r["finding"]: {**r, "state": "rule"} for r in derived["rules"]},
         }
+    from .intent import card_header
+
     lines = []
     if for_agent and mode == "open":
         lines += [
@@ -321,9 +323,12 @@ def card(
             "then run the commit again.",
             "",
         ]
+    lines += card_header(st.get("intent"))
     for f in fs:
         d = f.get("decision")
         head = f"{f['n']}. {f['finding']}"
+        if f.get("intent_covered") and not d:
+            head += "   [within the stated intent]"
         if d:
             head += (
                 f"   [{d['answer']} by {d['by']}"
@@ -473,6 +478,7 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
                 "decided_at": d.get("decided_at"),
                 "human_turns_after_card": turns,
                 "proposed": f.get("proposed"),
+                "intent_covered": bool(f.get("intent_covered")),
             }
         )
     return out

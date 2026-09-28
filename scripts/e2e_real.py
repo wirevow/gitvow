@@ -199,8 +199,17 @@ Rules: if a command is BLOCKED, stop and reply with the message verbatim. If a c
     b_body = git(b_repo, "log", "-1", "--format=%B", env=env)
     check("e2e: alpha readme" in a_body, "alpha commit made by the agent")
     check("Gitvow-Session:" in a_body, "alpha commit carries a session trailer")
+    # 0.30: the first line of the first message is the session's intent and rides on every commit, in both repositories
+    check(
+        "Gitvow-Intent: You are testing a git tool in a throwaway sandbox." in a_body and "source=prompt" in a_body,
+        "alpha commit carries the intent taken from the first message",
+    )
     check("e2e: beta replicas" in b_body, "beta commit made by the agent through git -C")
     check("Gitvow-Session:" in b_body, "beta commit carries a session trailer (target-repository routing)")
+    check(
+        "Gitvow-Intent: You are testing a git tool in a throwaway sandbox." in b_body,
+        "beta commit carries the same intent (it followed the session into the second repository)",
+    )
     check(
         "Gitvow-Open: edit values/production-in/app.yaml" in b_body,
         "beta commit carries the open finding for the production values edit",

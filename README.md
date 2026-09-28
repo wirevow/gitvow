@@ -65,7 +65,7 @@ The docs site is the source of truth: **https://wirevow.dev/gitvow** (built from
 
 - [Quick start](docs/quickstart.md)
 - Concepts: [Sessions, steps and notes](docs/concepts/sessions.md) · [The gate](docs/concepts/gate.md) · [What stays out of git](docs/concepts/storage.md)
-- Guides: [Install per user or per repo](docs/guides/install.md) · [Write a policy](docs/guides/policy.md) · [Read a commit's session](docs/guides/reading.md) · [Run a trial](docs/guides/trial.md) · [Redaction](docs/guides/redaction.md)
+- Guides: [Install per user or per repo](docs/guides/install.md) · [Write a policy](docs/guides/policy.md) · [Read a commit's session](docs/guides/reading.md) · [Answer the card](docs/guides/decisions.md) · [State the intent](docs/guides/intent.md) · [Run a trial](docs/guides/trial.md) · [Redaction](docs/guides/redaction.md)
 - Reference: [CLI](docs/reference/cli.md) · [Hook payloads](docs/reference/hooks.md) · [Note schema](docs/reference/note.md) · [Policy schema](docs/reference/policy.md)
 - [Security](docs/security.md) · [Roadmap](docs/roadmap.md) · [FAQ](docs/faq.md)
 
@@ -74,13 +74,14 @@ The docs site is the source of truth: **https://wirevow.dev/gitvow** (built from
 ```
 Claude Code ──hook──▶ gitvow hook PreToolUse ──▶ policy ──▶ allow / confirm / deny  (exit 0 / 2 / 2)
             ──hook──▶ gitvow hook PostToolUse ─▶ on `git commit`: read transcript → redact → git notes add
-git commit ──prepare-commit-msg──▶ Gitvow-Session / Gitvow-Step trailers   (from .git/gitvow-session.json)
+Claude Code ──hook──▶ gitvow hook UserPromptSubmit ▶ first line of the first message → redact → the session's intent
+git commit ──prepare-commit-msg──▶ Gitvow-Session / Gitvow-Step / Gitvow-Intent trailers   (from .git/gitvow-session.json)
 Claude Code ──hook──▶ gitvow hook Stop ─────────▶ ~/.gitvow/ledger/<session>.json
 ```
 
 | Data | Where | Enters git? |
 |---|---|---|
-| session id, step | commit trailers | yes |
+| session id, step, intent (one redacted line in the person's words) | commit trailers | yes |
 | session note (structure, redacted plan, attribution) | `refs/notes/sessions` | as a note; local until pushed |
 | ledger, hook log, session state | `~/.gitvow/`, `<repo>/.git/` | no |
 | transcript | untouched | never |

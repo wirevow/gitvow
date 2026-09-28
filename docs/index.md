@@ -2,7 +2,7 @@
 
 **Who made this change, what were they trying to do, and was it allowed?** For code written with AI agents, git alone cannot answer. gitvow makes it answer, using only git and a few hooks.
 
-- Every commit made during an agent session carries the session id and a step number as **commit trailers**.
+- Every commit made during an agent session carries the session id and a step number as **commit trailers**, and the **intent**: what the task was for, in the person's words, taken from their first message or stated once with `gitvow intent`.
 - Every such commit gets a **session note**: what the agent said it was doing, which tools it used, which files it touched, how much of the commit it wrote. Redacted before it is written. Stored as a git note, never in the tree.
 - Every tool call passes a **gate** before it runs: destructive commands are refused, risky ones require the agent to ask you first, and edits to gate-bearing files need a human. The rules are a JSON file you own.
 - The full session summary goes to a **local ledger** in your home directory. Nothing leaves the machine unless you push it.

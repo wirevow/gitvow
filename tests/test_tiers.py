@@ -67,7 +67,7 @@ def test_observe_rule_records_without_asking(repo, home, payload, transcript):
     code, _ = post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     assert code == 0
     note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
-    assert note["schema"] == 7 and [d["answer"] for d in note["decisions"]] == ["observed", "observed"]
+    assert note["schema"] == 8 and [d["answer"] for d in note["decisions"]] == ["observed", "observed"]
     # observed is not debt and not precedent
     assert dec.open_debt(str(repo)) == []
     assert [o["finding"] for o in dec.observed(str(repo))] == ["edit Dockerfile", "run aws (AWS write)"]

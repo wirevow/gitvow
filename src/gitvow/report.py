@@ -117,6 +117,7 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             entry.update(
                 {
                     "plan": plan,
+                    "intent": (note.get("intent") or {}).get("text") if isinstance(note.get("intent"), dict) else None,
                     "tools_used": note.get("tools_used", []),
                     "tool_calls": note.get("tool_calls_so_far"),
                     "turns": note.get("assistant_turns_so_far"),
@@ -198,6 +199,8 @@ def render_markdown(r: dict[str, Any]) -> str:
             lines += ["**Session note:** missing (not pushed)", ""]
             continue
         plan = c["plan"].strip().replace("\n", " ")
+        if c.get("intent"):
+            lines.append(f"**Intent:** {c['intent']}")
         lines.append(f"**Plan:** {plan[:400] if plan else '(none stated before committing)'}")
         tools = ", ".join(c["tools_used"]) or "none recorded"
         u = c.get("usage") or {}

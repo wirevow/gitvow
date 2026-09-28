@@ -303,6 +303,12 @@ def _validate(pol: dict[str, Any], path: str) -> None:
         raise PolicyError(f"{path}: decisions.session_scope must be true or false")
     if dec.get("indirect_commands", "observe") not in INDIRECT_TIERS:
         raise PolicyError(f"{path}: decisions.indirect_commands must be one of {INDIRECT_TIERS}")
+    intent = pol.get("intent", {})
+    if not isinstance(intent, dict):
+        raise PolicyError(f"{path}: intent must be an object")
+    for key in ("from_prompt", "ask_when_missing"):
+        if not isinstance(intent.get(key, True), bool):
+            raise PolicyError(f"{path}: intent.{key} must be true or false")
     for key in ("mcp_allow", "mcp_deny"):
         for pat in pol.get(key, []):
             try:

@@ -23,7 +23,8 @@ Point an agent at it once; from then on its tools are the record's questions.
 | `record_standing` | How does this class of finding stand: earned rules, proposals, and the decisions people recorded, newest first? | trailers and notes |
 | `record_why` | Why does this file look the way it does? | trailers, notes, snapshots |
 | `record_recall` | Has this been worked on before? | notes, the ledger |
-| `record_handoff` | What should the next agent know to continue? | ledger, notes, uncommitted state |
+| `record_handoff` | What should the next agent know to continue? Intent, plan, commits, open findings. | ledger, notes, uncommitted state |
+| `record_intent` | What is the current task for, in the person's words, and what did recent commits say they were for? | the session state, notes |
 | `record_pack` | Which organisation rules are in force here, accepted by whom, until when? | `~/.gitvow/cache/packs/` |
 | `record_check` | What would the gate say to this command or this edit? A dry run; nothing runs, nothing is recorded. | the policy |
 | `record_status` | Is the record being written here? | the install, the session state |

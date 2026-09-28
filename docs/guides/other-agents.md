@@ -4,7 +4,7 @@ gitvow's record and gate are agent-neutral: trailers, notes, snapshots and the l
 
 | Agent | Verified | Hooks configured in | Events used | How a block is delivered |
 |---|---|---|---|---|
-| Claude Code | real session | `~/.claude/settings.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
+| Claude Code | real session | `~/.claude/settings.json` | SessionStart, UserPromptSubmit, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr; `permissionDecision: ask` for a confirm in the prompting modes |
 | Codex CLI | real session | `~/.codex/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
 | Gemini CLI | vendor docs only | `~/.gemini/settings.json` | SessionStart, BeforeTool, AfterTool, SessionEnd | exit 2, reason on stderr |
 | Cursor | real session | `~/.cursor/hooks.json` | sessionStart, preToolUse, beforeShellExecution, afterFileEdit, stop | JSON `permission: deny` or `ask` with `agent_message` |
@@ -60,6 +60,7 @@ Check both at once: `gitvow selftest --agent codex` proves the adapter, then in 
 - `gitvow show`, `gitvow report`, `gitvow snapshots` and the pull request action work unchanged, because they read git, not the agent.
 
 ## What differs, honestly
+- **Only Claude Code hands gitvow the person's message.** The [intent](intent.md) is taken from the first line of the session's first message through `UserPromptSubmit`, which the other adapters do not have yet. With Codex, Cursor, Gemini, Copilot and Factory the intent is recorded by `gitvow intent "<words>"`, run by the person or by the agent after asking once; the trailer, the note and the card are then identical.
 - **Codex edits arrive as patches.** Codex's file edits are a single `apply_patch` call carrying a patch, not a file path. gitvow parses the patch for the files it touches and the lines it adds, so path rules, route questions, attribution and snapshots work, but a rule that depends on the exact edit text sees the patch text.
 - **Codex wraps its tool calls in JavaScript.** In the session file, Codex 0.15 records one `exec` tool whose input is a snippet such as `await tools.exec_command({"cmd": ...})` or `await tools.apply_patch("...")`. gitvow unwraps it, so notes and reports name `Bash` and `Edit` rather than `exec`. The hook payload itself is unaffected; this only concerns what the transcript reader can see.
 - **Cursor's transcript is not read.** The stated plan and tool counts come from the transcript. gitvow reads Claude Code's format, Codex's session files (`~/.codex/sessions/.../rollout-*.jsonl`) and Gemini CLI's chat recordings (`~/.gemini/tmp/<project>/chats/session-*.jsonl`), each detected from the file itself. Cursor does not document the file behind `transcript_path`, so for Cursor the note records the commit, trailers, snapshot and attribution and leaves the plan empty. The Codex and Gemini readers follow the formats as published in each project's source and community write-ups; they are marked *unverified against a live file* until a user confirms.

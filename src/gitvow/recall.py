@@ -71,6 +71,12 @@ def _plan(note: dict[str, Any] | None) -> str:
     return (p[: MAX_PLAN - 1] + "…") if len(p) > MAX_PLAN else p
 
 
+def _intent(rec: dict[str, Any] | None) -> str:
+    """The stated intent in a note or ledger record (0.30), as text; empty before then."""
+    i = (rec or {}).get("intent") or {}
+    return str(i.get("text") or "") if isinstance(i, dict) else ""
+
+
 def why(cwd: str, path: str) -> str:
     top = toplevel(cwd) or cwd
     rel = os.path.relpath(os.path.abspath(path), top) if os.path.isabs(path) else path
@@ -186,6 +192,7 @@ def recall(cwd: str, words: list[str], home: str | None = None, limit: int = 10)
             [
                 r["subject"],
                 _plan(r["note"]),
+                _intent(r["note"]),
                 " ".join((r["note"] or {}).get("files_written_by_agent_this_session") or []),
             ]
         ).lower()
@@ -208,7 +215,10 @@ def recall(cwd: str, words: list[str], home: str | None = None, limit: int = 10)
         if os.path.realpath(rec.get("repo") or "") != os.path.realpath(top):
             continue
         hay = (
-            " ".join([rec.get("last_stated_plan") or ""] + [t.get("arg", "") for t in rec.get("tool_calls", [])])
+            " ".join(
+                [rec.get("last_stated_plan") or "", _intent(rec)]
+                + [t.get("arg", "") for t in rec.get("tool_calls", [])]
+            )
         ).lower()
         score = sum(1 for t in terms if t in hay)
         if score and rec.get("session_id") not in hits:
@@ -265,6 +275,12 @@ def handoff(cwd: str, session_id: str | None = None, home: str | None = None) ->
                 if e.get("kind") == "confirm_required" and e.get("session_id") == sid:
                     confirms.append(f"{e.get('detail', '')[:60]} ({e.get('reason', '')[:60]})")
     out = [f"# Handoff · session {sid[:8]} · repo {os.path.basename(top)}", ""]
+    intent = (
+        _intent(st if st.get("session_id") == sid else None)
+        or _intent(rec)
+        or next((_intent(r["note"]) for r in commits if _intent(r["note"])), "")
+    )
+    out.append(f"Intent: {intent or '(none stated)'}")
     out.append(f"Last stated plan: {plan or '(none recorded)'}")
     out.append(
         "Commits this session: "

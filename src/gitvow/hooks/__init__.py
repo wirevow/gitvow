@@ -9,6 +9,7 @@ import time
 from typing import Any
 
 from .. import decisions as dec
+from .. import intent as intent_mod
 from .. import snapshots
 from ..paths import is_credential_path
 from ..policy import PolicyError, confirm_message, evaluate, load_policy, message_for
@@ -19,7 +20,7 @@ from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 7  # 7 (0.18): decisions[].answer may be "observed"; note gains edits_outside_repository. 6 added `to` to decisions[]: a referral may name who the question should have gone to
+NOTE_SCHEMA = 8  # 8 (0.30): note gains `intent`, decisions[] gain `intent_covered`. 7 (0.18): decisions[].answer may be "observed"; note gains edits_outside_repository. 6 added `to` to decisions[]: a referral may name who the question should have gone to
 # `git commit`, including the global options that may sit between the two words. `git -c k=v commit` and
 # `git -C dir commit` are the same act and used to slip past a `\bgit\s+commit\b` match entirely, which made
 # the card trivially avoidable by anyone who knew it. Options are enumerated rather than matched loosely so
@@ -59,9 +60,40 @@ def session_start(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     )
     st.pop("pending_commit", None)
     st.pop("card_ack", None)
+    if not same_session:
+        st.pop("intent", None)  # an intent belongs to one session; the next task states its own
     save_state(cwd, st)
     log_event(cwd, "session_start", {"session_id": h.get("session_id")})
-    return 0, _rules_context(cwd, home)
+    ctx = _rules_context(cwd, home)
+    if toplevel(cwd):
+        ctx += intent_mod.context(cwd, _policy_or_empty(cwd, home), h.get("session_id"))
+    return 0, ctx
+
+
+def user_prompt_submit(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
+    """The first message of a session, when it states a task, becomes the session's intent in the person's words.
+
+    Only the first: a session has one intent unless a person restates it with `gitvow intent`. The prompt itself is
+    never stored; the first line, redacted and cut to MAX_TEXT characters, is. Off with policy `intent.from_prompt`.
+    """
+    cwd = h.get("cwd") or os.getcwd()
+    if not toplevel(cwd):
+        return 0, ""
+    pol = _policy_or_empty(cwd, home)
+    if not intent_mod.settings(pol)["from_prompt"]:
+        return 0, ""
+    sid = h.get("session_id") or load_state(cwd).get("session_id")
+    if intent_mod.current(cwd, sid):
+        return 0, ""
+    text = intent_mod.from_prompt(h.get("prompt"))
+    if not text:
+        return 0, ""
+    rules, _ = _rules_or_none(cwd, home)
+    if rules is None:
+        return 0, ""  # no redaction, nothing written: the person's words may hold a secret
+    who, _, _ = dec.identity(cwd)
+    intent_mod.record(cwd, text, who, "prompt", rules, sid)
+    return 0, ""
 
 
 def _rules_context(cwd: str, home: str | None) -> str:
@@ -188,6 +220,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     if _duplicate(h, cwd, "pre"):
         return 0, ""
     _note_touched(session_cwd, cwd)
+    intent_mod.propagate(session_cwd, cwd)
     try:
         pol = load_policy(cwd, home)
     except PolicyError as e:
@@ -259,10 +292,18 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
                 st["pending_commit"] = time.time()
             save_state(cwd, st)
             proposed = dec.mark_proposals(cwd, pol)
+            covered = intent_mod.mark_coverage(cwd)
             log_event(
                 cwd,
                 "card",
-                {"findings": len(pending), "proposed": proposed, "mode": mode, "session_id": h.get("session_id")},
+                {
+                    "findings": len(pending),
+                    "proposed": proposed,
+                    "intent": intent_mod.current(cwd) is not None,
+                    "intent_covered": covered,
+                    "mode": mode,
+                    "session_id": h.get("session_id"),
+                },
             )
             return 2, dec.card(cwd, pol=pol, mode=mode)
         st["session_id"] = h.get("session_id") or st.get("session_id")
@@ -489,6 +530,7 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         "subagents": summ["subagents"],
         "snapshot": st.get("last_snapshot"),
         "decisions": decisions,
+        "intent": st.get("intent"),
         "edits_outside_repository": st.get("edits_elsewhere") or {},
         "transcript": "kept local; see ledger",
         "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time",
@@ -528,6 +570,7 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         "tool_calls": summ["tool_calls"],
         "commits_during_session": commits,
         "repos_touched": st.get("repos_touched") or [],
+        "intent": st.get("intent"),
         "last_stated_plan": summ["last_assistant_text"],
         "usage": estimate(summ["usage"], _policy_or_empty(cwd, home)),
         "subagents": summ["subagents"],
@@ -540,6 +583,7 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
 
 HANDLERS = {
     "SessionStart": session_start,
+    "UserPromptSubmit": user_prompt_submit,
     "PreToolUse": pre_tool_use,
     "PostToolUse": post_tool_use,
     "Stop": stop,

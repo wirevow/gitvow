@@ -8,7 +8,8 @@ from tests.conftest import git
 
 
 def test_session_start_records_state(repo, home, payload):
-    assert session_start(payload("SessionStart"), str(home)) == (0, "")
+    rc, ctx = session_start(payload("SessionStart"), str(home))
+    assert rc == 0 and "gitvow intent" in ctx  # 0.30: no rules yet, but the agent is told how intent is captured
     st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
     assert st["session_id"] == "sess-1" and st["steps"] == 0
 
@@ -43,7 +44,7 @@ def test_commit_flow_trailer_note_and_attribution(repo, home, payload, transcrip
     note = git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD")
     assert note.startswith("gitvow-session")
     data = json.loads(note.split("\n", 1)[1])
-    assert data["schema"] == 7 and data["step"] == 1 and data["tools_used"] == ["Bash", "Edit"]
+    assert data["schema"] == 8 and data["step"] == 1 and data["tools_used"] == ["Bash", "Edit"]
     assert "[github-token]" in data["last_stated_plan"] and "[email:" in data["last_stated_plan"]
     assert "ghp_" not in note and "ops@example.com" not in note
     att = data["attribution"]

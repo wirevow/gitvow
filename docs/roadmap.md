@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.30 — Intent (shipped)
+One line at task start, in the person's words, on every commit of the session as `Gitvow-Intent` and in the note. Taken from the first message in Claude Code, or stated with `gitvow intent`. The card shows which findings fall within it; the digest counts them. The experiment: whether asking once at task start removes more consequential questions than gating each action does. Exit: a period of the dogfood record with the intent line filled, read.
+
 ## 0.28 — The record server (shipped)
 Any agent asks the record over MCP, read-only: brief, claims, standing, why, recall, handoff, pack, a dry run of the policy, status. Coverage stated on every answer; quoted content marked as data.
 

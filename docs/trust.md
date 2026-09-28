@@ -36,6 +36,11 @@ that started it, answers read-only questions about one repository, and writes no
 - **The agent's transcript**, on the machine, at commit and at session stop, to build the note and the ledger
   entry: tool names, a shortened and redacted argument per call, the last stated plan after redaction, token
   usage. Tool output is never copied anywhere. The transcript itself is never copied anywhere.
+- **The person's message**, in Claude Code, through `UserPromptSubmit` (0.30): only until the session has an
+  intent, and only its first line, redacted and cut to 200 characters, is kept, as the session's intent. A slash
+  command, a one- or two-word message or pasted content records nothing. The message is not logged, not
+  stored and not sent; the hook log records that an intent was set and how many characters it has. Policy
+  `intent.from_prompt: false` stops the read entirely; the hook then exits without looking at the message.
 - **`~/.gitvow/cache/brief/`**, the store's brief for this repository, fetched by a previous `sync`. Nothing
   is fetched during a tool call.
 - **The reach of a matched command**, when a rule names a `target`: the kubeconfig's `current-context` line
@@ -65,7 +70,7 @@ and source under `internal/secrets/` stays visible.
 Inside the repository's git directory, never in the tree:
 
 - `.git/gitvow-session.json`: the session's findings, decisions, pending-commit flag, attribution blob ids,
-  edits that landed elsewhere, the repositories the session reached.
+  edits that landed elsewhere, the repositories the session reached, the stated intent (one redacted line).
 - `.git/gitvow-hooks.log`: one line per hook event, redacted, appended.
 - Loose objects for attribution blobs (`git hash-object -w`), unreachable from any ref, pruned by `git gc`.
 - `refs/notes/gitvow/<session>`: the session note per commit.

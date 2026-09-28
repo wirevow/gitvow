@@ -17,6 +17,8 @@ Before I commit, two things need your decision:
 Accept or decline each?
 ```
 
+When the session has a stated [intent](intent.md), the card opens with it, and a finding that shares a word with it is marked `[within the stated intent]`. That is context for your answer, not the answer; nothing is decided for you.
+
 Answer in the conversation: "1 accept, 2 decline, needs security review". If one of them is not your call, say that instead of guessing — "2 is security's, not mine" — and the agent records a referral. The agent records the answers and commits. The commit carries:
 
 ```

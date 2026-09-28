@@ -42,6 +42,8 @@ gitvow claims reject <n|id> [--reason R] [--by WHO]      reject a claim; it is n
 gitvow claims show <id>                                   one claim's record
 gitvow revisit <commit> [accept|decline|refer] [--finding N] [--scope S] [--to WHO] [--reason R] [--by WHO]
                                                           list a commit's decisions, or answer one again with an empty commit carrying Gitvow-Revisits; the earlier trailer stays
+gitvow intent ["<what this task is for>"] [--by WHO] [--clear] [--json]
+                                                          state the session's intent in the person's words (redacted, one line, at most 200 characters); rides on every commit the agent makes in the session as Gitvow-Intent and into the note. Alone: print the one recorded (exit 1 if none). In Claude Code the first line of the first message is recorded automatically unless policy intent.from_prompt is false
 gitvow decide <n|all> accept|decline|refer [--scope S] [--to WHO] [--reason R] [--by WHO]
                                                           record a person's answer to finding n (or every open finding); written as trailers on the next commit. refer means "not my call": it closes the card, is tracked apart from open debt, and never counts towards a proposed rule
 gitvow redact <text>                                      apply the built-in layers plus your rules files to text and print the result

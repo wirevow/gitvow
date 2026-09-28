@@ -10,6 +10,7 @@ Every adapter produces the Claude Code shape documented in [Hook payloads](hooks
 | gitvow handler | Codex | Gemini | Cursor | Copilot CLI | Factory |
 |---|---|---|---|---|---|
 | SessionStart | `SessionStart` | `SessionStart` | `sessionStart` | `sessionStart` | `SessionStart` |
+| UserPromptSubmit (intent from the first message) | not mapped | not mapped | not mapped | not mapped | not mapped |
 | PreToolUse | `PreToolUse` | `BeforeTool` | `preToolUse`, `beforeShellExecution`, `beforeMCPExecution` | `preToolUse` | `PreToolUse` |
 | PostToolUse | `PostToolUse` | `AfterTool` | `afterFileEdit`, `afterShellExecution` | `postToolUse` | `PostToolUse` |
 | Stop | `Stop` | `SessionEnd` | `stop` | `sessionEnd` | `Stop` |

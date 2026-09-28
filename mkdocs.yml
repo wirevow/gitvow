@@ -43,6 +43,7 @@ nav:
       - A period in one page: guides/digest.md
       - What each session cost: guides/cost.md
       - Answer the card: guides/decisions.md
+      - State the intent: guides/intent.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md
