@@ -7,6 +7,7 @@ import json
 import os
 import re
 import sys
+from typing import Any
 
 from . import __version__
 from . import decisions as dec
@@ -859,6 +860,30 @@ def cmd_handoff(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_reach(a: argparse.Namespace) -> int:
+    """Who owns a path; or, without one, the reach summary: decided paths with an owner, unowned paths."""
+    from . import reach as rc
+
+    cwd = os.getcwd()
+    top = toplevel(cwd)
+    if not top:
+        print("not inside a git repository", file=sys.stderr)
+        return 2
+    try:
+        pol: dict[str, Any] | None = load_policy(cwd)
+    except PolicyError:
+        pol = None
+    if a.path:
+        ap = os.path.abspath(a.path)
+        rel = os.path.relpath(ap, top) if ap.startswith(top) else a.path.strip("/")
+        o = rc.resolve(top, rel, pol)
+        print(json.dumps({"path": rel, **o}, indent=1) if a.json else rc.render_one(rel, o), end="")
+        return 0 if o["owners"] else 1
+    s = rc.summary(top, pol)
+    print(json.dumps(s, indent=1) if a.json else rc.render(s), end="")
+    return 0
+
+
 def cmd_outcomes(a: argparse.Namespace) -> int:
     """Grade every decision-bearing commit by what happened to it: merged, closed, landed direct, reverted."""
     from . import outcomes as oc
@@ -1179,6 +1204,13 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("handoff", help="markdown summary for the next agent")
     s.add_argument("--session")
     s.set_defaults(f=cmd_handoff)
+    s = sub.add_parser(
+        "reach",
+        help="who owns a path (CODEOWNERS at HEAD, then decisions.authorities); alone: decided paths with and without an owner",
+    )
+    s.add_argument("path", nargs="?", help="repository-relative or absolute path; omit for the summary")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_reach)
     s = sub.add_parser(
         "outcomes",
         help="did the decisions hold? grade each decision-bearing commit by its pull request verdict, landing and reverts",

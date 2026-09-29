@@ -1,0 +1,6 @@
+# Ownership as gitvow reads it (docs/guides/reach.md): last matching line wins.
+*                       @nikhil-bora
+/src/gitvow/policy.py   @nikhil-bora
+/src/gitvow/default_policy.json  @nikhil-bora
+/docs/trust.md          @nikhil-bora
+/docs/security.md       @nikhil-bora

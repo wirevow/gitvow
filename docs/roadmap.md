@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.32 — Reach (shipped)
+Who owns the path a finding is about, from the repository's own ownership file at HEAD with the policy's authorities as fallback. On the finding, the card, the note, the report and the digest; a referral with nobody named goes to the owner. Unowned paths carrying decisions counted as a gap of their own. One repository, no forge. Exit: the two numbers read on the dogfood repositories.
+
 ## 0.31 — Did the decision hold? (shipped)
 `gitvow outcomes` grades each decision-bearing commit by its pull request verdict (GitHub, read-only), whether it landed on a production branch, and reverts within a policy window, and writes the grade beside the decision on its own notes ref. Held, did not hold, overridden, pending. The digest, the report and the record server carry it. One repository, its own history; attribution across an organisation stays with the store. Exit: the dogfood repositories graded, and the first number for "decisions held" read.
 

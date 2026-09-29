@@ -18,6 +18,7 @@ Sessions: 9 · agent share of added lines 0.83 · lines changed by people after 
 Gate: 6 confirmations asked, 2 denials · top reasons: pushing to a remote (4), force push (2)
 Cost: $23.60 estimated · 4.1M input, 0.3M output tokens
 Outcomes: 12 decisions graded on 9 commits · 10 held · 1 did not hold · 1 overridden · 0 pending · revert window 1d · 3 landed without a pull request
+Reach: 7 of 9 decided paths have an owner · 2 unowned paths carry decisions · owners from .github/CODEOWNERS@4356ffa1b2c3
 Intent: 4 of 9 sessions stated one · 5 of 9 card findings fell within it (4 accepted, 1 declined)
 
 ### Sessions

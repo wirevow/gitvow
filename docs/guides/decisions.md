@@ -42,8 +42,10 @@ The third answer is a referral. It says the question reached the wrong person, w
 
 ```sh
 gitvow decide 1 refer --to security --reason "they own this module"
-gitvow decide 1 refer                              # --to is optional
+gitvow decide 1 refer                              # --to is optional: since 0.32 it defaults to the path's owner
 ```
+
+Since 0.32 the card names the [owner](reach.md) of each finding's path, read from the repository's ownership file, and offers the referral to them. A path with no owner is shown as unowned surface, which is a finding about the repository rather than about the change.
 
 The commit carries `Gitvow-Referred: <finding> by <you> to=security: they own this module`. The referral closes the card and the commit goes through — holding it against the wrong person produces a wrong answer, not a right one — and the record keeps saying the finding is waiting. `gitvow digest` lists it under "Referred, waiting on someone else", apart from decision debt, and the pull request report says who it needs rather than that somebody forgot. When the right person answers, `gitvow revisit <commit> accept --by <them>` records it and the referral stops waiting.
 

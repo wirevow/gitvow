@@ -65,7 +65,7 @@ The docs site is the source of truth: **https://wirevow.dev/gitvow** (built from
 
 - [Quick start](docs/quickstart.md)
 - Concepts: [Sessions, steps and notes](docs/concepts/sessions.md) · [The gate](docs/concepts/gate.md) · [What stays out of git](docs/concepts/storage.md)
-- Guides: [Install per user or per repo](docs/guides/install.md) · [Write a policy](docs/guides/policy.md) · [Read a commit's session](docs/guides/reading.md) · [Answer the card](docs/guides/decisions.md) · [State the intent](docs/guides/intent.md) · [Did the decision hold?](docs/guides/outcomes.md) · [Run a trial](docs/guides/trial.md) · [Redaction](docs/guides/redaction.md)
+- Guides: [Install per user or per repo](docs/guides/install.md) · [Write a policy](docs/guides/policy.md) · [Read a commit's session](docs/guides/reading.md) · [Answer the card](docs/guides/decisions.md) · [State the intent](docs/guides/intent.md) · [Did the decision hold?](docs/guides/outcomes.md) · [Who owns this path?](docs/guides/reach.md) · [Run a trial](docs/guides/trial.md) · [Redaction](docs/guides/redaction.md)
 - Reference: [CLI](docs/reference/cli.md) · [Hook payloads](docs/reference/hooks.md) · [Note schema](docs/reference/note.md) · [Policy schema](docs/reference/policy.md)
 - [Security](docs/security.md) · [Roadmap](docs/roadmap.md) · [FAQ](docs/faq.md)
 

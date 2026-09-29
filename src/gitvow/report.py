@@ -52,6 +52,8 @@ def _decisions(
         n = by_finding.get(r["finding"]) or {}
         r["authority"] = n.get("authority")
         r["to"] = r.get("to") or n.get("to")
+        r["owner"] = n.get("owner")
+        r["unowned"] = bool(n.get("unowned"))
         r["evidence"] = n.get("evidence") or []
         r["human_turns_after_card"] = n.get("human_turns_after_card")
         wanted = {"accept": "accepted", "decline": "declined"}.get(n.get("proposed") or "")
@@ -267,9 +269,10 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
             # Not debt and not an answer. Naming the person is the whole remediation, so it leads the line.
             whom = f" to {d['to']}" if d.get("to") else ""
             why = f": {d['note']}" if d.get("note") else ""
+            unowned = " · **unowned path**" if d.get("unowned") else ""
             out.append(
                 f"**Referred{whom}:** {d['finding']} — {d.get('by') or 'unknown'} was not the person to decide "
-                f"this{why}; it needs a different person, not a reminder. `gitvow revisit` records their answer"
+                f"this{why}; it needs a different person, not a reminder. `gitvow revisit` records their answer{unowned}"
             )
             continue
         who = d.get("by") or "unknown"
@@ -277,6 +280,11 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
         scope = f", scope {d['scope']}" if d.get("scope") else ""
         note = f": {d['note']}" if d.get("note") else ""
         line = f"**{d['answer'].capitalize()}:** {d['finding']} by {who}{auth}{scope}{note}"
+        o = d.get("owner")
+        if o and o.get("owners"):
+            line += f" · owner {' '.join(o['owners'])}"
+        elif o and o.get("unowned"):
+            line += " · **unowned path**"
         if d.get("pre_answered"):
             line += " · matched the record's proposal"
         if d.get("human_turns_after_card") == 0:

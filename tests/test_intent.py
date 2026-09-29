@@ -69,7 +69,7 @@ def test_first_prompt_becomes_the_intent_and_rides_on_every_commit(repo, home, p
     assert code == 0 and "session note attached" in msg
     note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
     assert (
-        note["schema"] == 8
+        note["schema"] == 9
         and note["intent"]["text"].startswith("Let ops export")
         and note["intent"]["source"] == "prompt"
     )

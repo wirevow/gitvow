@@ -123,11 +123,17 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                     reasons[e.get("reason") or "?"] += 1
     decided = _decisions_in_period(top, since_day)
     from .outcomes import summary as outcome_summary
+    from .policy import PolicyError, load_policy
 
     outcomes = outcome_summary(top, since_day)
+    from .reach import summary as reach_summary
+
+    try:
+        reach = reach_summary(top, load_policy(top), since_day)
+    except PolicyError:
+        reach = reach_summary(top, None, since_day)
     debt = dec.open_debt(top)
     referred = dec.referrals(top)
-    from .policy import PolicyError, load_policy
     from .rules import derive
 
     rule_proposals: int | None = None
@@ -203,6 +209,8 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
         # accepted/declined split says how such findings were answered when they were. Nothing here is per person.
         # Did the decisions hold? Read from the notes `gitvow outcomes` wrote; the digest never asks the forge.
         "outcomes": outcomes,
+        # Who owns the paths decisions were made on, resolved against the ownership file at HEAD (0.32).
+        "reach": reach,
         "intent": {
             "sessions_with_intent": sum(1 for s in sess_list if s.get("intent")),
             "sessions": len(sess_list),
@@ -313,6 +321,11 @@ def render(d: dict[str, Any]) -> str:
     oc_line = summary_line(d.get("outcomes") or {})
     if oc_line:
         out.append(oc_line)
+    from .reach import summary_line as reach_line
+
+    rl = reach_line(d.get("reach") or {})
+    if rl:
+        out.append(rl)
     it = d.get("intent") or {}
     if it.get("sessions"):
         line = f"Intent: {it['sessions_with_intent']} of {it['sessions']} session{'s' if it['sessions'] != 1 else ''} stated one"

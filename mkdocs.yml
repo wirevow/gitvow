@@ -45,6 +45,7 @@ nav:
       - Answer the card: guides/decisions.md
       - State the intent: guides/intent.md
       - Did the decision hold?: guides/outcomes.md
+      - Who owns this path?: guides/reach.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

@@ -89,9 +89,18 @@ def session_answer(cwd: str, finding: str) -> dict[str, Any] | None:
 
 def add(cwd: str, findings: list[dict[str, Any]], step: int, tool: str, rules: list[tuple[str, str]] | None) -> int:
     """Merge newly raised findings into the state; the same finding raised again only counts. Returns how many are new."""
+    from .reach import attach
+
     st = load_state(cwd)
     have: list[dict[str, Any]] = st.setdefault("findings", [])
     new = 0
+    try:
+        from .policy import load_policy
+
+        pol: dict[str, Any] | None = load_policy(cwd)
+    except Exception:  # the owner is context on the finding; a policy problem is the gate's to report
+        pol = None
+    attach(cwd, findings, pol)
     for f in findings:
         text = redact(f["finding"], rules) if rules is not None else f["finding"]
         for h in have:
@@ -114,6 +123,7 @@ def add(cwd: str, findings: list[dict[str, Any]], step: int, tool: str, rules: l
                     "raised_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
                     "last_tool": tool,
                     "decision": None,
+                    "owner": f.get("owner"),
                     **({"observe": True} if f.get("observe") else {}),
                     **({"immediate": True} if f.get("immediate") else {}),
                 }
@@ -300,6 +310,7 @@ def card(
             **{r["finding"]: {**r, "state": "rule"} for r in derived["rules"]},
         }
     from .intent import card_header
+    from .reach import card_line as reach_card_line
 
     lines = []
     if for_agent and mode == "open":
@@ -344,6 +355,11 @@ def card(
         for e in (f.get("evidence") or [])[:4]:
             if e and e not in f["reason"]:
                 lines.append(f"   evidence: {e}")
+        owner_line = reach_card_line(f)
+        if owner_line:
+            lines.append(owner_line)
+            if not d and for_agent and (f.get("owner") or {}).get("owners"):
+                lines.append(f"   not their call? gitvow decide {f['n']} refer --to {f['owner']['owners'][0]}")
         if not d:
             _, sentence = proposal(history(cwd, f["finding"]))
             lines.append(f"   record: {sentence}")
@@ -417,13 +433,18 @@ def decide(
     note = redact(reason, rules)[:200] if reason and rules is not None else (reason or None)
     done = []
     for i in idx:
+        # A referral with nobody named goes to the path's owner when the record knows one (0.32): that is the
+        # whole point of knowing the owner. A name the person gave always wins.
+        to_whom = (to or "").strip() or None
+        if answer == "refer" and not to_whom and (fs[i].get("owner") or {}).get("owners"):
+            to_whom = fs[i]["owner"]["owners"][0]
         fs[i]["decision"] = {
             "answer": ANSWER_VERBS[answer],
             "by": ident,
             "authority": auth,
             # A referral is not a conditional yes, so it carries no scope even if one was passed.
             "scope": (scope or "").strip() or None if answer != "refer" else None,
-            "to": (to or "").strip() or None if answer == "refer" else None,
+            "to": to_whom if answer == "refer" else None,
             "note": note,
             "decided_at": time.strftime("%Y-%m-%dT%H:%M:%S"),
             "user_turns": user_turns,
@@ -479,6 +500,8 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
                 "human_turns_after_card": turns,
                 "proposed": f.get("proposed"),
                 "intent_covered": bool(f.get("intent_covered")),
+                "owner": f.get("owner"),
+                "unowned": bool((f.get("owner") or {}).get("unowned")),
             }
         )
     return out
