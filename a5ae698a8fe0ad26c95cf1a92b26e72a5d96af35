@@ -2,9 +2,9 @@ gitvow-session
 {
  "schema": 9,
  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
- "step": 31,
- "committed_at": "2026-09-29T13:16:22",
- "assistant_turns_so_far": 26055,
+ "step": 32,
+ "committed_at": "2026-09-29T14:26:53",
+ "assistant_turns_so_far": 26107,
  "tool_calls_so_far": 500,
  "tools_used": [
   "Agent",
@@ -19,7 +19,7 @@ gitvow-session
   "ToolSearch",
   "Write"
  ],
- "last_stated_plan": "Committing the 0.33.1 patch, alone.",
+ "last_stated_plan": "Code written; fixing two import issues (os in decisions, and the subprocess env not being passed in the notes push), then running the new tests.",
  "files_in_commit": [
   "CHANGELOG.md           |  3 +++",
   "pyproject.toml         |  2 +-",
@@ -78,10 +78,10 @@ gitvow-session
   ]
  },
  "usage": {
-  "input_tokens": 117530,
-  "output_tokens": 8202474,
-  "cache_read_tokens": 3210979599,
-  "cache_write_tokens": 93200217,
+  "input_tokens": 118056,
+  "output_tokens": 8232281,
+  "cache_read_tokens": 3223887875,
+  "cache_write_tokens": 93240163,
   "reasoning_tokens": 0,
   "models": {
    "claude-opus-4-6": 9228,
@@ -91,7 +91,7 @@ gitvow-session
    "claude-fable-5": 715,
    "claude-opus-4-8": 75,
    "claude-opus-5": 1104,
-   "claude-fable-5-1": 1891
+   "claude-fable-5-1": 1913
   },
   "by_model": {
    "claude-opus-4-6": {
@@ -144,15 +144,15 @@ gitvow-session
     "reasoning": 0
    },
    "claude-fable-5-1": {
-    "input": 46212,
-    "output": 3345450,
-    "cache_read": 916143370,
-    "cache_write": 24412894,
+    "input": 46738,
+    "output": 3375257,
+    "cache_read": 929051646,
+    "cache_write": 24452840,
     "reasoning": 0
    }
   },
-  "total_tokens": 3312499820,
-  "estimated_cost_usd": 7061.2342,
+  "total_tokens": 3325478375,
+  "estimated_cost_usd": 7083.589,
   "pricing": "gitvow defaults 2026-09",
   "unpriced_models": [
    "<synthetic>"
@@ -168,7 +168,7 @@ gitvow-session
   "count": 0,
   "tool_calls": 0
  },
- "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/286",
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/292",
  "decisions": [],
  "intent": {
   "text": "for point 1 we need opencode too, yes send the runbook",
