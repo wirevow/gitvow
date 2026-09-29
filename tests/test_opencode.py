@@ -99,7 +99,15 @@ def test_install_writes_the_plugin_with_an_absolute_argv_and_uninstall_removes_o
     assert 'const GITVOW_HOOK = "/opt/bin/gitvow hook --agent opencode";' in text
     assert 'const ARGV = ["/opt/bin/gitvow", "hook", "--agent", "opencode"];' in text
     assert "export const GitvowPlugin" in text and "tool.execute.before" in text and "chat.message" in text
-    assert hook_commands(str(path)) == ["/opt/bin/gitvow hook --agent opencode"]
+    assert hook_commands(str(path)) == [
+        f"/opt/bin/gitvow hook --agent opencode {ev}"
+        for ev in ("PostToolUse", "PreToolUse", "SessionStart", "Stop", "UserPromptSubmit")
+    ]
+    from gitvow.status import build as status_build
+
+    checks = status_build(str(repo), str(home))
+    oc = [c for c in checks if "opencode" in c[1]]
+    assert oc and not any(c[0] == "fail" and "older gitvow" in c[1] for c in oc), oc
     assert ("opencode", "user", str(path)) in installed_agents(str(home))
     assert expected_events("opencode") == {"SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop"}
     install_user(str(home), cmd_prefix="/opt/bin/gitvow", agent="opencode")  # idempotent

@@ -569,7 +569,12 @@ def hook_commands(path: str) -> list[str]:
                 text = fh.read()
         except OSError:
             return []
-        return [json.loads(m) for m in re.findall(r'const GITVOW_HOOK = ("(?:[^"\\]|\\.)*");', text) if MARKER in m]
+        hooks = [json.loads(m) for m in re.findall(r'const GITVOW_HOOK = ("(?:[^"\\]|\\.)*");', text) if MARKER in m]
+        if not hooks:
+            return []
+        # one command per event the plugin forwards, so the staleness check reads a plugin like a settings file
+        events = sorted(set(re.findall(r'run\("([A-Za-z]+)"', text)))
+        return [f"{hooks[0]} {ev}" for ev in events] or hooks
     try:
         with open(path) as fh:
             data = json.load(fh)
