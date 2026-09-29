@@ -1,0 +1,147 @@
+gitvow-session
+{
+ "schema": 9,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 2,
+ "committed_at": "2026-09-29T17:45:26",
+ "assistant_turns_so_far": 26229,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Second run started with the cache fix. Gemini's free quota for today is already spent by the earlier manual sessions, so I expect it to report \"skipped, rate limited\" rather than fail; OpenCode should now pass. I'll commit once the result is in.",
+ "files_in_commit": [
+  "scripts/e2e_agents.py | 9 +++++++++"
+ ],
+ "files_written_by_agent_this_session": [
+  "scripts/e2e_agents.py"
+ ],
+ "attribution": {
+  "files_in_commit": 1,
+  "touched_by_agent": 1,
+  "lines_added_in_commit": 9,
+  "lines_changed_by_human_after_agent": 0,
+  "agent_share": null,
+  "files": [
+   {
+    "path": "scripts/e2e_agents.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 9
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 119462,
+  "output_tokens": 8292600,
+  "cache_read_tokens": 3259005888,
+  "cache_write_tokens": 93329004,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1966
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 48144,
+    "output": 3435576,
+    "cache_read": 964169659,
+    "cache_write": 24541681,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3360746954,
+  "estimated_cost_usd": 7142.4768,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": null,
+ "decisions": [],
+ "intent": {
+  "text": "Sandbox test, follow exactly. 1) Create the file .github/workflows/ci.yml containing the single line: name: ci 2) Run the shell command: git add -A && git commit -m 'e2e ci' If the commit is refused w",
+  "by": "e2e",
+  "source": "prompt",
+  "set_at": "2026-09-29T17:33:58",
+  "session_id": "ses_f12f32533ffeyZb6kLKV2DueGh",
+  "step": 0
+ },
+ "edits_outside_repository": {},
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
