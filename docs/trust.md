@@ -107,7 +107,7 @@ pack of an unknown schema, or past its `expires`, changes nothing and says why. 
 
 ## What it executes
 
-- `git`, as a subprocess, for the commands named above. Never with `-c core.hooksPath` or `--no-verify`. Since 0.34, `git commit --amend -F <message>` on one commit only: the agent's own, seconds old and unpushed, when the gate saw the agent make it and the git hooks did not run (Gemini CLI disables them), to write the trailers the hooks would have written; the tree, author and parents are untouched, and a commit that already carries a session trailer is never amended. In that same case, `git push <remote> refs/notes/gitvow/*` after the agent's push, because the pre-push hook did not run.
+- `git`, as a subprocess, for the commands named above. Never with `-c core.hooksPath` or `--no-verify`. Since 0.34, `git commit --amend -F <message>` on one commit only: the agent's own, seconds old and unpushed, when the gate saw the agent make it and the git hooks did not run (Gemini CLI disables them), to write the trailers the hooks would have written; the tree, author and parents are untouched, and a commit that already carries a session trailer is never amended. And `git push <remote> refs/notes/gitvow/*` after every push the agent makes (0.34.1), because the pre-push hook steps aside for an agent's push: two pushes processed at once made GitHub reject the branch.
 - `python3`, from the git hooks, to read the session state; the hooks are shell scripts that chain to the
   repository's own hooks when present.
 - A provider or external adapter you configured, as a subprocess, with the hook payload on stdin.

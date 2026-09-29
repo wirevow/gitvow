@@ -72,11 +72,20 @@ PRE_PUSH_HOOK = """#!/bin/sh
 # gitvow: push session notes (refs/notes/gitvow/*) to the same remote whenever a branch is pushed.
 # The inner push re-enters this hook; GITVOW_PUSHING_NOTES stops the recursion.
 REMOTE="$1"
-if [ -z "$GITVOW_PUSHING_NOTES" ] && [ -n "$REMOTE" ] && git for-each-ref --count=1 refs/notes/gitvow/ | grep -q .; then
+GD0="$(git rev-parse --git-dir)"; STATE0="$GD0/gitvow-session.json"
+# An agent's push: the gate saw the command and PostToolUse pushes the notes *after* the branch lands, so this
+# hook stays out of the way. Two pushes overlapping on the server made GitHub reject the branch with
+# "fatal error in commit_refs" (seen four times in a day of releases); one after the other never does.
+AGENT_PUSH=""
+if [ -f "$STATE0" ]; then
+  AGENT_PUSH=$(python3 -c "import json,time;s=json.load(open('$STATE0'));p=s.get('pending_push') or 0;w=s.get('pending_ttl') or 300;print('1' if time.time()-p<w else '')" 2>/dev/null)
+fi
+if [ -z "$GITVOW_PUSHING_NOTES" ] && [ -z "$AGENT_PUSH" ] && [ -n "$REMOTE" ] && git for-each-ref --count=1 refs/notes/gitvow/ | grep -q .; then
   # Errors used to be discarded, so a notes push that failed left a record nobody could see was missing.
   # The failure is now said once, on the hook's stderr, and never stops the branch push.
-  GD0="$(git rev-parse --git-dir)"
-  if ! GITVOW_PUSHING_NOTES=1 git push --quiet "$REMOTE" 'refs/notes/gitvow/*:refs/notes/gitvow/*' 2>"$GD0/gitvow-notes-push.err" </dev/null; then
+  if GITVOW_PUSHING_NOTES=1 git push --quiet "$REMOTE" 'refs/notes/gitvow/*:refs/notes/gitvow/*' 2>"$GD0/gitvow-notes-push.err" </dev/null; then
+    sleep 1  # let the server finish committing the notes refs before the branch push reaches it
+  else
     echo "gitvow: pushing refs/notes/gitvow/* to $REMOTE failed ($(head -c 200 "$GD0/gitvow-notes-push.err" | tr '\\n' ' ')); run: gitvow push-notes $REMOTE" >&2
   fi
 fi

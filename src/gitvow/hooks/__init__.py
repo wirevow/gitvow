@@ -275,6 +275,13 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
             "observed" if d.observed else "finding",
             {"tool": tool, "reason": d.reason[:200], "new": new, "session_id": h.get("session_id")},
         )
+    if tool == "Bash" and PUSH_RE.search(inp.get("command", "")) and not os.environ.get("GITVOW_PUSHING_NOTES"):
+        # The agent is about to push. The pre-push hook steps aside while this is fresh, and PostToolUse pushes
+        # the notes after the branch has landed, so the two pushes never overlap on the server.
+        st = load_state(cwd)
+        st["pending_push"] = time.time()
+        st["pending_ttl"] = int((pol.get("decisions") or {}).get("commit_window_seconds", 1800))
+        save_state(cwd, st)
     if tool == "Bash" and COMMIT_RE.search(inp.get("command", "")):
         pending = dec.undecided(cwd)
         mode = (pol.get("decisions") or {}).get("mode", "open")
@@ -482,8 +489,13 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         return 0, ""
     if tool == "Bash" and not COMMIT_RE.search(inp.get("command", "")):
         _record_prompt_approval(cwd, inp, home)
-        if hooks_disabled_by_env() and PUSH_RE.search(inp.get("command", "")):
-            # the pre-push hook that carries the notes never ran; carry them now, after the push it belongs to
+        if PUSH_RE.search(inp.get("command", "")) and not os.environ.get("GITVOW_PUSHING_NOTES"):
+            # The notes travel after the branch, never alongside it: the pre-push hook stepped aside for this
+            # push (or never ran, as under Gemini), so carry them now, sequentially.
+            st = load_state(cwd)
+            if "pending_push" in st:
+                st.pop("pending_push", None)
+                save_state(cwd, st)
             _push_notes_after(cwd, inp.get("command", ""))
         return 0, ""
     if tool != "Bash":
@@ -662,7 +674,9 @@ def _push_notes_after(cwd: str, command: str) -> None:
         capture_output=True,
         text=True,
     )
-    log_event(cwd, "notes_pushed_by_hook", {"remote": remote, "ok": r.returncode == 0, "error": (r.stderr or "")[:120]})
+    log_event(
+        cwd, "notes_pushed_after_push", {"remote": remote, "ok": r.returncode == 0, "error": (r.stderr or "")[:120]}
+    )
 
 
 def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:

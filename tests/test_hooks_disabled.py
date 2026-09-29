@@ -113,14 +113,15 @@ def test_notes_are_pushed_after_the_agents_push_when_hooks_are_off(repo, home, p
         check=True,
     )
     assert git(bare, "for-each-ref", "refs/notes/") == ""
-    # hooks on: gitvow trusts the pre-push hook and does nothing here
-    post_tool_use(payload("PostToolUse", "Bash", {"command": "git push origin main"}), str(home))
-    assert git(bare, "for-each-ref", "refs/notes/") == ""
-    for k, v in GEMINI_ENV.items():
-        monkeypatch.setenv(k, v)
+    # after any agent push the notes follow, sequentially (0.34.1): hooks on or off makes no difference here
     post_tool_use(payload("PostToolUse", "Bash", {"command": "git push origin main"}), str(home))
     assert git(bare, "rev-parse", "refs/notes/gitvow/s1") == git(repo, "rev-parse", "refs/notes/gitvow/s1")
-    assert '"kind": "notes_pushed_by_hook"' in (repo / ".git" / "gitvow-hooks.log").read_text()
+    assert '"kind": "notes_pushed_after_push"' in (repo / ".git" / "gitvow-hooks.log").read_text()
+    for k, v in GEMINI_ENV.items():
+        monkeypatch.setenv(k, v)
+    git(repo, "notes", "--ref=gitvow/s1", "add", "-f", "-m", 'gitvow-session\n{"x": 1}', "HEAD")
+    post_tool_use(payload("PostToolUse", "Bash", {"command": "git push origin main"}), str(home))
+    assert git(bare, "rev-parse", "refs/notes/gitvow/s1") == git(repo, "rev-parse", "refs/notes/gitvow/s1")
 
 
 def test_identity_falls_back_to_the_gitconfig_file_gemini_hides(repo, home, monkeypatch):
@@ -132,3 +133,27 @@ def test_identity_falls_back_to_the_gitconfig_file_gemini_hides(repo, home, monk
     monkeypatch.delenv("GIT_CONFIG_GLOBAL")
     monkeypatch.setenv("GIT_CONFIG_GLOBAL", str(home / ".gitconfig"))
     assert dec.identity(str(repo))[0] == "priya"  # the ordinary path still reads it
+
+
+def test_the_pre_push_hook_steps_aside_for_an_agents_push(repo, home, payload, tmp_path):
+    """The gate marks the agent's push; the hook then leaves the notes to PostToolUse, so the two never overlap."""
+    bare = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
+    git(repo, "remote", "add", "origin", str(bare))
+    _write_git_hook(str(repo / ".gitvow" / "git-hooks"))
+    git(repo, "config", "core.hooksPath", ".gitvow/git-hooks")
+    git(repo, "notes", "--ref=gitvow/s1", "add", "-m", "gitvow-session\n{}", "HEAD")
+    session_start(payload("SessionStart"), str(home))
+    code, _ = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git push origin feature"}), str(home))
+    assert code == 0
+    st = json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    assert st["pending_push"] and st["pending_ttl"] == 1800
+    subprocess.run(["git", "push", "-q", "origin", "HEAD:refs/heads/feature"], cwd=repo, check=True)
+    assert git(bare, "for-each-ref", "refs/notes/") == ""  # the hook stepped aside
+    post_tool_use(payload("PostToolUse", "Bash", {"command": "git push origin feature"}), str(home))
+    assert git(bare, "rev-parse", "refs/notes/gitvow/s1") == git(repo, "rev-parse", "refs/notes/gitvow/s1")
+    assert "pending_push" not in json.loads((repo / ".git" / "gitvow-session.json").read_text())
+    # a person's push, no gate involved: the hook carries the notes itself
+    git(repo, "notes", "--ref=gitvow/s1", "add", "-f", "-m", 'gitvow-session\n{"y": 2}', "HEAD")
+    subprocess.run(["git", "push", "-q", "origin", "HEAD:refs/heads/feature2"], cwd=repo, check=True)
+    assert git(bare, "rev-parse", "refs/notes/gitvow/s1") == git(repo, "rev-parse", "refs/notes/gitvow/s1")
