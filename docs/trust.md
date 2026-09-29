@@ -111,6 +111,9 @@ pack of an unknown schema, or past its `expires`, changes nothing and says why. 
 - `python3`, from the git hooks, to read the session state; the hooks are shell scripts that chain to the
   repository's own hooks when present.
 - A provider or external adapter you configured, as a subprocess, with the hook payload on stdin.
+- `gh api repos/<owner>/<repo>/commits/<sha>/pulls`, only when you run `gitvow outcomes` (0.31), only for a
+  repository whose `origin` is on github.com, one GET per decision-bearing commit, with your own `gh` login.
+  Nothing is written to the forge. `--no-scm` skips it; without `gh`, history alone speaks and the note says so.
 - Nothing from the repository. gitvow never runs a build, a test, or a command suggested by repository
   content. `gitvow check -- <command>` evaluates a command against policy and does not run it.
 

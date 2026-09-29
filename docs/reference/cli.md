@@ -58,6 +58,8 @@ gitvow why <path>                                         which sessions shaped 
 gitvow trace <path>[:<start>-<end>]                       who wrote these lines: agent (session, step, plan) or person
 gitvow recall <words...> [--limit N]                      sessions whose notes or ledger mention the words
 gitvow handoff [--session ID]                             markdown summary for the next agent: plan, commits, files, uncommitted state, open confirmations
+gitvow outcomes [--since 90d] [--dry-run] [--no-scm] [--regrade] [--json]
+                                                          did the decisions hold? grade each decision-bearing commit by its pull request verdict (GitHub via gh, read-only), whether it landed on a production branch, and reverts within outcomes.revert_window_days; one note per commit on refs/notes/gitvow/outcomes
 gitvow digest [--since 7d|YYYY-MM-DD] [--json]              period summary: agent vs human commits, sessions with plans and attribution, gate activity, most-changed files, decision debt and referrals listed apart, proposed rules awaiting an authority
 gitvow push-notes [remote]                                push refs/notes/gitvow/* to the remote (default origin)
 gitvow collect [--out DIR]                                gather ledger, logs, trailers and notes into one redacted directory (default ~/Desktop)

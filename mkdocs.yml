@@ -44,6 +44,7 @@ nav:
       - What each session cost: guides/cost.md
       - Answer the card: guides/decisions.md
       - State the intent: guides/intent.md
+      - Did the decision hold?: guides/outcomes.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

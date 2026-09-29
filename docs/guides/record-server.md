@@ -24,6 +24,7 @@ Point an agent at it once; from then on its tools are the record's questions.
 | `record_why` | Why does this file look the way it does? | trailers, notes, snapshots |
 | `record_recall` | Has this been worked on before? | notes, the ledger |
 | `record_handoff` | What should the next agent know to continue? Intent, plan, commits, open findings. | ledger, notes, uncommitted state |
+| `record_outcomes` | Did the decisions hold? Each decision-bearing commit graded by its pull request verdict, landing and reverts, from grades `gitvow outcomes` already wrote. | `refs/notes/gitvow/outcomes` |
 | `record_intent` | What is the current task for, in the person's words, and what did recent commits say they were for? | the session state, notes |
 | `record_pack` | Which organisation rules are in force here, accepted by whom, until when? | `~/.gitvow/cache/packs/` |
 | `record_check` | What would the gate say to this command or this edit? A dry run; nothing runs, nothing is recorded. | the policy |

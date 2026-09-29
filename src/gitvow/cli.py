@@ -737,12 +737,20 @@ def cmd_show(a: argparse.Namespace) -> int:
     # A rule decision has no session, so its note lives on one ref of its own; try it too rather than
     # printing "(no session note)" on a commit that does carry the evidence for the rule it created.
     refs = ([notes_ref(m.group(1))] if m else []) + [RULES_NOTES_REF, CLAIMS_NOTES_REF, LEGACY_NOTES_REF]
+    found = False
     for ref in refs:
         rc, note, _ = git(["notes", f"--ref={ref}", "show", a.commit], os.getcwd())
         if rc == 0:
             print(note)
-            return 0
-    print("(no session note)")
+            found = True
+            break
+    if not found:
+        print("(no session note)")
+    from .outcomes import OUTCOMES_REF
+
+    rc, note, _ = git(["notes", f"--ref={OUTCOMES_REF}", "show", a.commit], os.getcwd())
+    if rc == 0:
+        print(note)  # the grade, appended beside the decision on its own ref (0.31)
     return 0
 
 
@@ -848,6 +856,27 @@ def cmd_recall(a: argparse.Namespace) -> int:
 
 def cmd_handoff(a: argparse.Namespace) -> int:
     print(rec.handoff(os.getcwd(), a.session))
+    return 0
+
+
+def cmd_outcomes(a: argparse.Namespace) -> int:
+    """Grade every decision-bearing commit by what happened to it: merged, closed, landed direct, reverted."""
+    from . import outcomes as oc
+
+    cwd = os.getcwd()
+    if not toplevel(cwd):
+        print("not inside a git repository", file=sys.stderr)
+        return 2
+    try:
+        pol = load_policy(cwd)
+    except PolicyError as e:
+        print(f"policy error: {e}", file=sys.stderr)
+        return 2
+    out = oc.run(cwd, pol, since=a.since, dry_run=a.dry_run, scm=not a.no_scm, regrade=a.regrade)
+    if a.json:
+        print(json.dumps(out, indent=1))
+    else:
+        print(oc.render(out), end="")
     return 0
 
 
@@ -1150,6 +1179,16 @@ def main(argv: list[str] | None = None) -> int:
     s = sub.add_parser("handoff", help="markdown summary for the next agent")
     s.add_argument("--session")
     s.set_defaults(f=cmd_handoff)
+    s = sub.add_parser(
+        "outcomes",
+        help="did the decisions hold? grade each decision-bearing commit by its pull request verdict, landing and reverts",
+    )
+    s.add_argument("--since", default="90d", help="window of commits to grade (default 90d)")
+    s.add_argument("--dry-run", action="store_true", help="grade and print; write no notes")
+    s.add_argument("--no-scm", action="store_true", help="do not ask the forge; verdicts from git alone")
+    s.add_argument("--regrade", action="store_true", help="grade again even where the grade was final")
+    s.add_argument("--json", action="store_true")
+    s.set_defaults(f=cmd_outcomes)
     s = sub.add_parser("digest", help="period summary: agent vs human commits, sessions, attribution, gate activity")
     s.add_argument("--since", default="7d")
     s.add_argument("--json", action="store_true")

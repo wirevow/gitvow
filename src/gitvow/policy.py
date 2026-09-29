@@ -303,6 +303,12 @@ def _validate(pol: dict[str, Any], path: str) -> None:
         raise PolicyError(f"{path}: decisions.session_scope must be true or false")
     if dec.get("indirect_commands", "observe") not in INDIRECT_TIERS:
         raise PolicyError(f"{path}: decisions.indirect_commands must be one of {INDIRECT_TIERS}")
+    oc = pol.get("outcomes", {})
+    if not isinstance(oc, dict):
+        raise PolicyError(f"{path}: outcomes must be an object")
+    days = oc.get("revert_window_days", 1)
+    if not isinstance(days, int) or isinstance(days, bool) or not 1 <= days <= 365:
+        raise PolicyError(f"{path}: outcomes.revert_window_days must be an integer from 1 to 365")
     intent = pol.get("intent", {})
     if not isinstance(intent, dict):
         raise PolicyError(f"{path}: intent must be an object")

@@ -203,6 +203,10 @@
     "ask_when_missing": true,
     "_doc": "from_prompt: in Claude Code, the first line of the session's first message is recorded as the intent, in the person's words, redacted, at most 200 characters (source=prompt on the trailer); false records nothing until someone runs gitvow intent. ask_when_missing: the agent is told at session start to ask once, in one line, when the first message did not say what the task is for; false says nothing."
   },
+  "outcomes": {
+    "revert_window_days": 1,
+    "_doc": "revert_window_days: a decision-bearing commit reverted within this many days of landing is graded as a decision that did not hold; a later revert is recorded and does not change the grade. The public census found agent work that gets reverted is reverted within about a day. gitvow outcomes writes the grades to refs/notes/gitvow/outcomes."
+  },
   "llm_classifier": {
     "enabled": false,
     "command": "",

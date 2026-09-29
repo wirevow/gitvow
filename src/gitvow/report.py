@@ -111,6 +111,9 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             note = _note_for(cwd, sha, sid)
         entry["note_found"] = note is not None
         entry["decisions"] = _decisions(body, note, target, production)
+        from .outcomes import read as read_outcome
+
+        entry["outcome"] = read_outcome(cwd, sha)
         if note:
             plan = note.get("last_stated_plan") or ""
             att = note.get("attribution") or {}
@@ -196,7 +199,9 @@ def render_markdown(r: dict[str, Any]) -> str:
             f"### {c['short']} {c['subject']} — session {sid}, step {c['step'] if c['step'] is not None else '?'}"
         )
         if not c["note_found"]:
-            lines += ["**Session note:** missing (not pushed)", ""]
+            lines += ["**Session note:** missing (not pushed)"]
+            lines += _outcome_lines(c)
+            lines.append("")
             continue
         plan = c["plan"].strip().replace("\n", " ")
         if c.get("intent"):
@@ -228,8 +233,25 @@ def render_markdown(r: dict[str, Any]) -> str:
             parts.append("no plan to compare")
         lines.append("**Said vs did:** " + " · ".join(parts))
         lines += _decision_lines(c.get("decisions") or [], r.get("target"))
+        lines += _outcome_lines(c)
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
+
+
+def _outcome_lines(c: dict[str, Any]) -> list[str]:
+    """The grade `gitvow outcomes` wrote beside the decisions, when there is one (0.31)."""
+    oc = c.get("outcome")
+    if not oc:
+        return []
+    v = oc.get("verdict") or {}
+    where = f"pull request #{v['pull_request']}" if v.get("pull_request") else v.get("kind", "?")
+    when = f" on {v['landed_at']}" if v.get("landed_at") else ""
+    grades = ", ".join(
+        f"{d['answer']} {d['finding']}: {d['outcome'].replace('_', ' ')}" for d in oc.get("decisions") or []
+    )
+    rv = oc.get("revert")
+    revert = f" · reverted by {rv['sha'][:7]}{'' if rv.get('in_window') else ' after the window'}" if rv else ""
+    return [f"**Outcome:** {where}{when}{revert} · {grades}"]
 
 
 def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:

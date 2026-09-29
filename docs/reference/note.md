@@ -66,6 +66,24 @@ The schema is additive. New fields may appear; existing fields keep their meanin
 
 Stored under `refs/notes/gitvow/claims` on the empty commit `gitvow claims confirm|reject` writes. First line `gitvow-claim`, then JSON (schema 1): `claim_id`, `verdict` (`confirmed` or `rejected`), `by`, `authority` (`speaker` when the confirmer is the person who said it, else `policy`, `commit-access` or `none`), `decided_at`, `text` (as recorded), `original_text` (as extracted, verbatim), `edited`, `paths`, `reach` (`repo`), `speaker`, `kind`, `source` (a pointer: kind, file, message index; never the source content), `said_at`, `classification` (the extractor's opinion), `reason`. The trailer carries the id, the person, the bound paths and the first 120 characters; the note carries the rest. Person-reach preferences are never written to git; they live in `~/.gitvow/claims/preferences.jsonl` on the speaker's own machine.
 
+## The outcome note
+
+`gitvow outcomes` (0.31) grades each decision-bearing commit by what happened to it and writes the grade under `refs/notes/gitvow/outcomes`: its own ref, appended beside the decision, never rewriting the session note. First line `gitvow-outcome`, then JSON:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `schema` | int | outcome note schema, currently 1 |
+| `graded_at` | string | UTC time the grade was written |
+| `window_days` | int | the revert window the grade used (`outcomes.revert_window_days`) |
+| `verdict.kind` | string | `merged` (a pull request merged it), `closed` (a pull request closed unmerged), `open`, `direct` (reachable from a production branch with no pull request), `unknown` |
+| `verdict.source` | string | `github` when the forge answered, `git` when history alone spoke |
+| `verdict.pull_request`, `verdict.url` | int, string or null | the pull request that carried the commit |
+| `verdict.landed_ts`, `verdict.landed_at` | int, string or null | when it landed: the merge time, or the commit time for a direct landing |
+| `revert` | object or null | `sha` of the reverting commit, `after_seconds` since landing, `in_window` |
+| `decisions[]` | object[] | per decision on the commit: `finding`, `answer`, `outcome` (`held`, `not_held`, `overridden`, `pending`) |
+
+See [Did the decision hold?](../guides/outcomes.md) for the grading table.
+
 ## The rule-decision note
 
 Accepting or rejecting a proposed rule is itself a decision, so it is recorded the way decisions are. `gitvow rules accept|reject` writes an empty commit carrying the trailer and attaches a note under `refs/notes/gitvow/rules` — its own ref, because a rule decision is not a session. First line `gitvow-rule-decision`, then JSON:

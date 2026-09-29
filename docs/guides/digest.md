@@ -17,6 +17,8 @@ Commits: 41 · by agents 29 (71%) · by people 12
 Sessions: 9 · agent share of added lines 0.83 · lines changed by people after agents 212
 Gate: 6 confirmations asked, 2 denials · top reasons: pushing to a remote (4), force push (2)
 Cost: $23.60 estimated · 4.1M input, 0.3M output tokens
+Outcomes: 12 decisions graded on 9 commits · 10 held · 1 did not hold · 1 overridden · 0 pending · revert window 1d · 3 landed without a pull request
+Intent: 4 of 9 sessions stated one · 5 of 9 card findings fell within it (4 accepted, 1 declined)
 
 ### Sessions
 8f3d5c71  09-09  4 commits  share 1.00  "Change the cache key to include week start so per-org settings do not collide"

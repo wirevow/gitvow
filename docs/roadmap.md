@@ -2,6 +2,9 @@
 
 gitvow is deliberately small. These are the things it should grow into, in order, with the exit test for each.
 
+## 0.31 — Did the decision hold? (shipped)
+`gitvow outcomes` grades each decision-bearing commit by its pull request verdict (GitHub, read-only), whether it landed on a production branch, and reverts within a policy window, and writes the grade beside the decision on its own notes ref. Held, did not hold, overridden, pending. The digest, the report and the record server carry it. One repository, its own history; attribution across an organisation stays with the store. Exit: the dogfood repositories graded, and the first number for "decisions held" read.
+
 ## 0.30 — Intent (shipped)
 One line at task start, in the person's words, on every commit of the session as `Gitvow-Intent` and in the note. Taken from the first message in Claude Code, or stated with `gitvow intent`. The card shows which findings fall within it; the digest counts them. The experiment: whether asking once at task start removes more consequential questions than gating each action does. Exit: a period of the dogfood record with the intent line filled, read.
 

@@ -59,6 +59,8 @@ Inputs, all optional:
 
 Each agent commit's report lists the decisions it carries: what was accepted or declined, by whom, with what scope and reason, any `Gitvow-Open` finding nobody decided, and any `Gitvow-Referred` finding that reached the wrong person. Referrals are counted and worded separately from open findings, because a reviewer who reads "3 open" chases the team and a reviewer who reads "3 waiting on security" chases security. When a decision's scope does not cover the branch the pull request targets and that branch is in `decisions.production_branches`, the report reopens it: "accepted for staging; this pull request targets main". The check does not fail on it; the reviewer decides.
 
+When `gitvow outcomes` has graded a commit, its report carries an **Outcome** line: how it landed (a pull request, or directly on a production branch), any revert, and per decision whether it held. See [Did the decision hold?](outcomes.md).
+
 ### Squash merges
 
 A squash merge writes one new commit whose message GitHub takes from the pull request title and description. The original commits' trailers do not reach the target branch unless they are in that message. The action therefore writes a block into the pull request description on every push:

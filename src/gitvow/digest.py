@@ -122,6 +122,9 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
                     gate[kind] += 1
                     reasons[e.get("reason") or "?"] += 1
     decided = _decisions_in_period(top, since_day)
+    from .outcomes import summary as outcome_summary
+
+    outcomes = outcome_summary(top, since_day)
     debt = dec.open_debt(top)
     referred = dec.referrals(top)
     from .policy import PolicyError, load_policy
@@ -198,6 +201,8 @@ def build(cwd: str, since: str = "7d") -> dict[str, Any]:
         # The experiment behind intent capture: does one line at task start make card questions unnecessary?
         # "within" is a word overlap between the intent and the finding's subject, counted at card time; the
         # accepted/declined split says how such findings were answered when they were. Nothing here is per person.
+        # Did the decisions hold? Read from the notes `gitvow outcomes` wrote; the digest never asks the forge.
+        "outcomes": outcomes,
         "intent": {
             "sessions_with_intent": sum(1 for s in sess_list if s.get("intent")),
             "sessions": len(sess_list),
@@ -303,6 +308,11 @@ def render(d: dict[str, Any]) -> str:
             f"{pb['pre_answered']} question{'s' if pb['pre_answered'] != 1 else ''} pre-answered by the record · "
             f"{pb['answers_matching_proposal']} answer{'s' if pb['answers_matching_proposal'] != 1 else ''} matched the proposal"
         )
+    from .outcomes import summary_line
+
+    oc_line = summary_line(d.get("outcomes") or {})
+    if oc_line:
+        out.append(oc_line)
     it = d.get("intent") or {}
     if it.get("sessions"):
         line = f"Intent: {it['sessions_with_intent']} of {it['sessions']} session{'s' if it['sessions'] != 1 else ''} stated one"
