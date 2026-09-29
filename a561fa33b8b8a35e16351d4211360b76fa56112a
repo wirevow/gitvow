@@ -1,0 +1,276 @@
+gitvow-session
+{
+ "schema": 9,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 28,
+ "committed_at": "2026-09-29T12:54:11",
+ "assistant_turns_so_far": 26027,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Green. Committing 0.33.0, alone.",
+ "files_in_commit": [
+  "CHANGELOG.md                       |   4 +",
+  "docs/guides/other-agents.md        |  11 ++-",
+  "docs/index.md                      |   2 +-",
+  "docs/reference/adapter-protocol.md |   4 +-",
+  "docs/reference/adapters.md         |   5 +-",
+  "pyproject.toml                     |   2 +-",
+  "src/gitvow/adapters.py             |  29 +++++-",
+  "src/gitvow/install.py              | 105 ++++++++++++++++++++",
+  "src/gitvow/intent.py               |   3 +-",
+  "src/gitvow/selftest.py             |  23 +++++",
+  "tests/test_intent.py               |   1 +",
+  "tests/test_opencode.py             | 192 +++++++++++++++++++++++++++++++++++++"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "docs/guides/other-agents.md",
+  "docs/index.md",
+  "docs/reference/adapters.md",
+  "pyproject.toml",
+  "src/gitvow/adapters.py",
+  "src/gitvow/install.py",
+  "src/gitvow/intent.py",
+  "tests/test_intent.py",
+  "tests/test_opencode.py"
+ ],
+ "attribution": {
+  "files_in_commit": 12,
+  "touched_by_agent": 10,
+  "lines_added_in_commit": 372,
+  "lines_changed_by_human_after_agent": 265,
+  "agent_share": 0.42,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 4,
+    "human_lines_removed": 0,
+    "agent_blob": "7f7455aa13a6809b22e3b46a2a9e36f8da04ae8a",
+    "committed_blob": "6f1ce0c8ebac95f2b3ef18cd6d6ca04874a45a97"
+   },
+   {
+    "path": "docs/guides/other-agents.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 9,
+    "human_lines_added": 9,
+    "human_lines_removed": 2,
+    "agent_blob": "453d4398ff01d4fde34a46aec8dfefe70ca74a99",
+    "committed_blob": "c188574288a6c91ce93e610e06c8230b7ce3a070"
+   },
+   {
+    "path": "docs/index.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 1,
+    "human_lines_removed": 1,
+    "agent_blob": "6b2df5d0f009b838242e491ef2a726bf286347ab",
+    "committed_blob": "ade115d7d54dde9576cd11971d6cf7fa543840dd"
+   },
+   {
+    "path": "docs/reference/adapter-protocol.md",
+    "agent_wrote": false,
+    "lines_added_in_commit": 2
+   },
+   {
+    "path": "docs/reference/adapters.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4,
+    "human_lines_added": 4,
+    "human_lines_removed": 1,
+    "agent_blob": "ef91bca140adb704dc5c3a63dd65441d70e780a2",
+    "committed_blob": "7bc601955610568e0d27ee504b8713be6e38b2f9"
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 1,
+    "human_lines_removed": 1,
+    "agent_blob": "4fb6cf3e8126ad171b458bd7cf3eb75141c47d3a",
+    "committed_blob": "57c166027e2d18241ee92d6ed2fa41c9a65abb95"
+   },
+   {
+    "path": "src/gitvow/adapters.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 28,
+    "human_lines_added": 28,
+    "human_lines_removed": 1,
+    "agent_blob": "43514457c4b4a7c5b028162ff4fb09987c8340a0",
+    "committed_blob": "817ddfc266b3da265e5ac7047fcb6a8e6a2411c7"
+   },
+   {
+    "path": "src/gitvow/install.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 105,
+    "human_lines_added": 105,
+    "human_lines_removed": 0,
+    "agent_blob": "b00a4fd20087363ccc4cd33f5ab96fd6f654c103",
+    "committed_blob": "5f56f4d4de193c1c33ff7ea1075ae54dc01005cc"
+   },
+   {
+    "path": "src/gitvow/intent.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2,
+    "human_lines_added": 29,
+    "human_lines_removed": 2,
+    "agent_blob": "efa2987d5c1982954d2f8ec2c9736c87b39c514b",
+    "committed_blob": "ddcea15545f90244d3f7ee67d7b141538c413289"
+   },
+   {
+    "path": "src/gitvow/selftest.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 23
+   },
+   {
+    "path": "tests/test_intent.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 26,
+    "human_lines_removed": 8,
+    "agent_blob": "7e91373bdd12d7e7440787c6417a9d7751109f1b",
+    "committed_blob": "e86ac5b3e2738974fa27d8981f9d245ee15285b4"
+   },
+   {
+    "path": "tests/test_opencode.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 192,
+    "human_lines_added": 34,
+    "human_lines_removed": 8,
+    "agent_blob": "fba6afbd3ecdde5a7c771cedb720b1d50b2dd285",
+    "committed_blob": "1cb68037c39a870f991fb8861753f3fdc316a9bb"
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 117174,
+  "output_tokens": 8191573,
+  "cache_read_tokens": 3204158193,
+  "cache_write_tokens": 93184311,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 1879
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 45856,
+    "output": 3334549,
+    "cache_read": 909321964,
+    "cache_write": 24396988,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3305651251,
+  "estimated_cost_usd": 7049.8809,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/286",
+ "decisions": [],
+ "intent": {
+  "text": "\"Sandbox test, follow exactly. 1) Create the file .github/workflows/ci.yml with the single line: name: ci 2) Run the shell command: git add -A && git commit -m 'oc ci' If the commit is refused with a",
+  "by": "t",
+  "source": "prompt",
+  "set_at": "2026-09-29T11:32:20",
+  "session_id": "ses_f143e3c41ffewvdyuMkci7roLM",
+  "step": 0
+ },
+ "edits_outside_repository": {
+  "wirevow": {
+   "count": 2,
+   "paths": [
+    "strategy/product-strategy.md",
+    "strategy/assessment-2026-09-23.md"
+   ]
+  },
+  "store": {
+   "count": 1,
+   "paths": [
+    "docs/team-store.md"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
