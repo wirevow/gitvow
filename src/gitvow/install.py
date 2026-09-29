@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import shutil
 import sys
 from typing import Any
@@ -195,7 +196,88 @@ AGENT_FILES = {
     "cursor": (".cursor/hooks.json", ".cursor/hooks.json"),
     "copilot": (".copilot/hooks/gitvow.json", ".github/hooks/gitvow.json"),
     "factory": (".factory/hooks.json", ".factory/hooks.json"),
+    "opencode": (".config/opencode/plugins/gitvow.js", ".opencode/plugins/gitvow.js"),
 }
+
+# OpenCode loads JavaScript plugins, not hook commands. gitvow writes one that runs `gitvow hook --agent opencode
+# <event>` with the payload on stdin and throws on exit 2, which is how a plugin blocks a tool there. The command
+# is kept as one string literal so `hook_commands` and `status` can find and resolve it like any other agent's.
+OPENCODE_PLUGIN = r"""// gitvow: installed by `gitvow install --agent opencode`; `gitvow uninstall --agent opencode` removes this file.
+// Do not edit: install rewrites it. See https://wirevow.dev/gitvow/guides/other-agents/
+import { spawnSync } from "node:child_process";
+
+const GITVOW_HOOK = __HOOK__; // "<gitvow> hook --agent opencode"
+const ARGV = __ARGV__;
+
+function run(event, payload) {
+  const r = spawnSync(ARGV[0], ARGV.slice(1).concat([event]), {
+    input: JSON.stringify(payload),
+    encoding: "utf8",
+    timeout: 30000,
+  });
+  return { code: r.status, err: (r.stderr || "").trim(), out: (r.stdout || "").trim(), spawn: r.error };
+}
+
+export const GitvowPlugin = async ({ directory, worktree }) => {
+  const cwd = worktree || directory;
+  return {
+    event: async ({ event }) => {
+      const t = event && event.type;
+      const p = (event && event.properties) || {};
+      const sid = (p.info && p.info.id) || p.sessionID || "";
+      if (t === "session.created") run("SessionStart", { session_id: sid, cwd });
+      if (t === "session.idle") run("Stop", { session_id: sid, cwd });
+    },
+    "chat.message": async (input, output) => {
+      const parts = (output && output.parts) || [];
+      const text = parts.filter((x) => x && x.type === "text").map((x) => x.text || "").join("\n");
+      run("UserPromptSubmit", { session_id: input.sessionID, cwd, prompt: text });
+    },
+    "tool.execute.before": async (input, output) => {
+      const r = run("PreToolUse", {
+        session_id: input.sessionID,
+        cwd,
+        tool_name: input.tool,
+        tool_input: (output && output.args) || {},
+        tool_use_id: input.callID,
+      });
+      // Fail closed: a gate that did not run is not a gate. Exit 2 is gitvow's verdict, anything else is a fault.
+      if (r.spawn) throw new Error("gitvow hook did not run: " + r.spawn.message);
+      if (r.code === 2) throw new Error(r.err || "blocked by gitvow");
+      if (r.code !== 0) throw new Error("gitvow hook failed (" + r.code + "): " + r.err);
+    },
+    "tool.execute.after": async (input) => {
+      run("PostToolUse", {
+        session_id: input.sessionID,
+        cwd,
+        tool_name: input.tool,
+        tool_input: input.args || {},
+        tool_use_id: input.callID,
+      });
+    },
+  };
+};
+"""
+
+
+def render_opencode_plugin(cmd_prefix: str) -> str:
+    import shlex
+
+    argv = [*shlex.split(cmd_prefix), "hook", "--agent", "opencode"]
+    return OPENCODE_PLUGIN.replace("__HOOK__", json.dumps(" ".join(argv))).replace("__ARGV__", json.dumps(argv))
+
+
+def write_opencode_plugin(path: str, cmd_prefix: str, root: str | None = None) -> None:
+    write_if_changed(check_target(path, root), render_opencode_plugin(cmd_prefix))
+
+
+def remove_opencode_plugin(path: str) -> None:
+    """Delete the plugin only if it is ours: a file without the marker is somebody else's and stays."""
+    if os.path.exists(path):
+        with open(path) as fh:
+            text = fh.read()
+        if MARKER in text:
+            os.remove(path)
 
 
 def _agent_entries(agent: str, cmd_prefix: str) -> dict[str, list[dict[str, Any]]]:
@@ -251,6 +333,8 @@ def _agent_entries(agent: str, cmd_prefix: str) -> dict[str, list[dict[str, Any]
             "PostToolUse": [fe("PostToolUse", "Execute|Edit|Create|ApplyPatch|MultiEdit")],
             "Stop": [fe("Stop", None)],
         }
+    if agent == "opencode":
+        return {ev: [] for ev in ("SessionStart", "UserPromptSubmit", "PreToolUse", "PostToolUse", "Stop")}
     if agent == "cursor":
 
         def u(ev: str) -> dict[str, Any]:
@@ -315,6 +399,9 @@ def _is_ours(entry: dict[str, Any]) -> bool:
 
 
 def merge_agent_settings(path: str, agent: str, cmd_prefix: str, root: str | None = None) -> None:
+    if agent == "opencode":
+        write_opencode_plugin(path, cmd_prefix, root)
+        return
     cur: dict[str, Any] = {}
     if os.path.exists(path):
         with open(path) as fh:
@@ -330,6 +417,9 @@ def merge_agent_settings(path: str, agent: str, cmd_prefix: str, root: str | Non
 
 def unmerge_agent_settings(path: str) -> None:
     if not os.path.exists(path):
+        return
+    if path.endswith(".js"):
+        remove_opencode_plugin(path)
         return
     with open(path) as fh:
         cur = json.load(fh)
@@ -391,6 +481,12 @@ def agent_next_steps(agent: str, home: str, repo: str | None = None) -> list[str
             f"{agent}: restart it if a session is already open. Hooks are read at start-up, so a session "
             "that began before this install is not gated and will not say so."
         )
+    if agent == "opencode":
+        return [
+            *steps,
+            "opencode: the plugin blocks a tool by throwing, so the agent sees gitvow's message as a tool error and "
+            "relays it; a confirm is answered with `gitvow decide <n> accept --scope session` and the command run again.",
+        ]
     if agent != "codex":
         return steps
     out = [
@@ -434,6 +530,7 @@ AGENT_PROBES: dict[str, tuple[tuple[str, ...], tuple[str, ...], tuple[str, ...]]
     "cursor": ((".cursor",), ("/Applications/Cursor.app",), ("cursor-agent", "cursor")),
     "copilot": ((".copilot",), (), ("copilot",)),
     "factory": ((".factory",), (), ("droid",)),
+    "opencode": ((".config/opencode", ".local/share/opencode"), (), ("opencode",)),
 }
 
 
@@ -465,6 +562,14 @@ def hook_commands(path: str) -> list[str]:
     """Every gitvow hook command in an agent settings file, whatever the schema around it."""
     if not os.path.exists(path):
         return []
+    if path.endswith(".js"):
+        # the OpenCode plugin keeps its command as one string literal, on purpose
+        try:
+            with open(path) as fh:
+                text = fh.read()
+        except OSError:
+            return []
+        return [json.loads(m) for m in re.findall(r'const GITVOW_HOOK = ("(?:[^"\\]|\\.)*");', text) if MARKER in m]
     try:
         with open(path) as fh:
             data = json.load(fh)

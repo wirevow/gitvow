@@ -1,9 +1,9 @@
 # External adapter protocol
 
-The six built-in adapters are Python inside gitvow. Any other agent can be supported without changing gitvow: put an executable named `gitvow-agent-<name>` on the PATH, and `gitvow hook --agent <name>`, `gitvow install --agent <name>` and `gitvow selftest --agent <name>` will use it. gitvow never imports the executable; it runs it with JSON on stdin and reads JSON from stdout, the same discipline as providers.
+The seven built-in adapters are Python inside gitvow (OpenCode's is a plugin file gitvow writes plus Python behind it). Any other agent can be supported without changing gitvow: put an executable named `gitvow-agent-<name>` on the PATH, and `gitvow hook --agent <name>`, `gitvow install --agent <name>` and `gitvow selftest --agent <name>` will use it. gitvow never imports the executable; it runs it with JSON on stdin and reads JSON from stdout, the same discipline as providers.
 
 ## Discovery
-`gitvow-agent-<name>` is looked up on the PATH, then in `~/.gitvow/agents/`. A built-in name always wins, so an external adapter cannot shadow Claude Code, Codex, Gemini, Cursor, Copilot or Factory.
+`gitvow-agent-<name>` is looked up on the PATH, then in `~/.gitvow/agents/`. A built-in name always wins, so an external adapter cannot shadow Claude Code, Codex, Gemini, Cursor, Copilot, Factory or OpenCode.
 
 ## Subcommands
 

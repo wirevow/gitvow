@@ -34,6 +34,7 @@ def test_from_prompt_takes_the_first_line_and_skips_what_is_not_an_intent():
     assert im.from_prompt("!git status") is None
     assert im.from_prompt("go") is None and im.from_prompt("yes please") is None  # a nudge, not a task
     assert im.from_prompt("") is None and im.from_prompt(None) is None
+    assert im.from_prompt('"Let ops export orders as CSV."') == "Let ops export orders as CSV."  # OpenCode quotes it
     pasted = '<pasted_content id="x">secret dump\nmore</pasted_content>\nfix the login redirect loop'
     assert im.from_prompt(pasted) == "fix the login redirect loop"
     long = "word " * 80
@@ -197,8 +198,15 @@ def test_intent_follows_the_session_into_a_second_repository(repo, home, payload
     session_start(payload("SessionStart"), str(home))
     user_prompt_submit({**payload("UserPromptSubmit"), "prompt": PROMPT}, str(home))
     cmd = f"git -C {other} commit -am x"
+    # another agent's session left its own intent in the working directory's state: it must not travel
+    foreign = payload("PreToolUse", "Bash", {"command": cmd}, transcript)
+    foreign["session_id"] = "someone-elses-session"
+    assert pre_tool_use(foreign, str(home))[0] == 0
+    assert im.current(str(other)) is None
     assert pre_tool_use(payload("PreToolUse", "Bash", {"command": cmd}, transcript), str(home))[0] == 0
     assert im.current(str(other))["text"].startswith("Let ops export")
+    # and an intent already there from this session is not replaced by a later hop
+    assert im.current(str(other))["session_id"] == "sess-1"
     (other / "b.txt").write_text("changed\n")
     git(other, "commit", "-qam", "in the other repository")
     assert "Gitvow-Intent: Let ops export" in git(other, "log", "-1", "--format=%B")

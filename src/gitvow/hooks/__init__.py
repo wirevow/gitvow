@@ -224,7 +224,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     if _duplicate(h, cwd, "pre"):
         return 0, ""
     _note_touched(session_cwd, cwd)
-    intent_mod.propagate(session_cwd, cwd)
+    intent_mod.propagate(session_cwd, cwd, h.get("session_id"))
     try:
         pol = load_policy(cwd, home)
     except PolicyError as e:

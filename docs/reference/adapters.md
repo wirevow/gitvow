@@ -1,6 +1,6 @@
 # Adapter reference
 
-`gitvow hook --agent <claude|codex|gemini|cursor|copilot|factory|any external name> <Event>` reads the agent's payload on stdin, normalises it, runs the corresponding gitvow handler, and answers in the agent's form. `--agent claude` is the default and changes nothing.
+`gitvow hook --agent <claude|codex|gemini|cursor|copilot|factory|opencode|any external name> <Event>` reads the agent's payload on stdin, normalises it, runs the corresponding gitvow handler, and answers in the agent's form. `--agent claude` is the default and changes nothing.
 
 ## Normalised payload
 Every adapter produces the Claude Code shape documented in [Hook payloads](hooks.md): `session_id`, `transcript_path`, `cwd`, `hook_event_name`, `tool_name`, `tool_input`. Session ids come from `session_id` (Codex, Gemini, Factory), `conversation_id` (Cursor) or `sessionId` (Copilot, whose payloads are camelCase: `toolName`, `toolArgs`).
@@ -15,11 +15,14 @@ Every adapter produces the Claude Code shape documented in [Hook payloads](hooks
 | PostToolUse | `PostToolUse` | `AfterTool` | `afterFileEdit`, `afterShellExecution` | `postToolUse` | `PostToolUse` |
 | Stop | `Stop` | `SessionEnd` | `stop` | `sessionEnd` | `Stop` |
 
+OpenCode is not in the table because its plugin, written by `gitvow install --agent opencode`, already speaks gitvow's event names: it calls `gitvow hook --agent opencode SessionStart|UserPromptSubmit|PreToolUse|PostToolUse|Stop` from OpenCode's `session.created`, `chat.message`, `tool.execute.before`, `tool.execute.after` and `session.idle`, with `tool_name`, `tool_input` (OpenCode's `args`), `tool_use_id` (its `callID`) and `prompt` (the text parts of the message).
+
 ## Responses
 
 - **Codex, Gemini**: allow is exit 0 with no stdout; deny and confirm are exit 2 with the message on stderr. Both agents document exit 2 as a block with stderr as the reason.
 - **Copilot CLI**: stdout JSON `{"permissionDecision": "allow" | "deny" | "ask", "permissionDecisionReason": ...}`, exit 0. Copilot treats exit 2 as deny too, but JSON is what lets a confirmation become its native `ask`.
 - **Factory**: exit 2 with the message on stderr, as documented for `PreToolUse`.
+- **OpenCode**: exit 2 with the message on stderr; the plugin throws an error carrying it, which blocks the tool and shows the reason to the agent. Exit 0 is silence. A hook that cannot run at all is a thrown error too: fail closed.
 - **Cursor**: stdout JSON. Allow is `{"permission": "allow"}`. Deny is `{"permission": "deny", "user_message": ..., "agent_message": ...}`. Confirm is `{"permission": "ask", ...}`, so Cursor prompts the user natively. Exit code 0 in all cases.
 
 ## Codex patch parsing

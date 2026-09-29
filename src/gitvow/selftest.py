@@ -111,6 +111,29 @@ def run_agent(agent: str) -> int:
                     },
                 ),
             ],
+            "opencode": [
+                ("SessionStart", {"session_id": "st", "cwd": repo}),
+                (
+                    "PreToolUse",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "bash",
+                        "tool_input": {"command": "git push --force"},
+                        "tool_use_id": "call-1",
+                    },
+                ),
+                (
+                    "PostToolUse",
+                    {
+                        "session_id": "st",
+                        "cwd": repo,
+                        "tool_name": "edit",
+                        "tool_input": {"filePath": os.path.join(repo, "a.txt"), "oldString": "a", "newString": "b"},
+                        "tool_use_id": "call-2",
+                    },
+                ),
+            ],
             "cursor": [
                 ("sessionStart", {"conversation_id": "st", "workspace_roots": [repo]}),
                 (

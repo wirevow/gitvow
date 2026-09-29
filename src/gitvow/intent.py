@@ -29,6 +29,7 @@ from .state import load_state, log_event, save_state
 TRAILER = "Gitvow-Intent"
 MAX_TEXT = 200
 MIN_WORDS = 3
+_QUOTES = "\"' " + "\u201c\u201d\u2018\u2019"  # straight and curly quotes, and the space between
 DEFAULT_RESTATE_MINUTES = 60  # a task-shaped message this long after the intent was set gets the agent a nudge
 INTENT_RE = re.compile(rf"^{TRAILER}:\s*(?P<text>.+?)\s+by\s+(?P<by>\S+)(?:\s+source=(?P<source>\S+))?\s*$", re.M)
 # Blocks a harness adds around or inside the person's message: pasted text, editor selections, system reminders.
@@ -66,7 +67,7 @@ def from_prompt(prompt: str | None) -> str | None:
     first = next((ln.strip() for ln in text.splitlines() if ln.strip()), "")
     if not first or first.startswith("/") or first.startswith("!"):
         return None
-    first = " ".join(first.split())
+    first = " ".join(first.split()).strip(_QUOTES)  # a harness may hand the message over still quoted
     if len(first.split()) < MIN_WORDS:
         return None
     return first[:MAX_TEXT]
@@ -119,21 +120,23 @@ def clear(cwd: str) -> bool:
     return had
 
 
-def propagate(session_cwd: str, target_cwd: str) -> None:
-    """The session's intent follows the session into another repository it reaches (0.25 routing).
+def propagate(session_cwd: str, target_cwd: str, session_id: str | None = None) -> None:
+    """This session's intent follows it into another repository it reaches (0.25 routing).
 
     The intent lives in the state of the repository the session started in; a commit made through `git -C` in a
-    second repository reads that repository's state. Copy the intent across, once, when the target has none or has
-    one from a different session.
+    second repository reads that repository's state. Copy the intent across when the target has none, or has one
+    from another session. Only an intent that belongs to *this* session travels: the working directory's state may
+    hold another agent's session (found when an OpenCode test session's first message rode onto a release commit
+    of the repository the founder's own session was working in), and that must never be carried anywhere.
     """
-    if session_cwd == target_cwd:
+    if session_cwd == target_cwd or not session_id:
         return
-    src = current(session_cwd)
-    if not src:
+    src = current(session_cwd, session_id)
+    if not src or src.get("session_id") != session_id:
         return
     st = load_state(target_cwd)
     have = st.get("intent") or {}
-    if have.get("text") and have.get("session_id") == src.get("session_id"):
+    if have.get("text") and have.get("session_id") == session_id:
         return
     st["intent"] = dict(src)
     save_state(target_cwd, st)

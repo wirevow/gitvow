@@ -12,7 +12,7 @@ from typing import Any
 
 from .decisions import CARD_HEADER, OPEN_CARD_HEADER
 
-AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory")
+AGENTS = ("claude", "codex", "gemini", "cursor", "copilot", "factory", "opencode")
 
 # agent event -> gitvow handler
 EVENT_MAP: dict[str, dict[str, str]] = {
@@ -43,6 +43,15 @@ EVENT_MAP: dict[str, dict[str, str]] = {
         "Stop": "Stop",
         "SessionEnd": "Stop",
     },
+    # OpenCode has no shell hooks; gitvow installs a plugin that calls `gitvow hook --agent opencode <event>` with
+    # the events already in gitvow's names, so the map is the identity.
+    "opencode": {
+        "SessionStart": "SessionStart",
+        "UserPromptSubmit": "UserPromptSubmit",
+        "PreToolUse": "PreToolUse",
+        "PostToolUse": "PostToolUse",
+        "Stop": "Stop",
+    },
     "cursor": {
         "sessionStart": "SessionStart",
         "preToolUse": "PreToolUse",
@@ -56,6 +65,9 @@ EVENT_MAP: dict[str, dict[str, str]] = {
 }
 
 GEMINI_TOOLS = {"run_shell_command": "Bash", "write_file": "Write", "replace": "Edit", "edit": "Edit"}
+# OpenCode's built-in tools and their arguments: bash {command}, edit {filePath, oldString, newString}, write
+# {filePath, content}. `patch` carries a diff with no single path and is passed through under its own name.
+OPENCODE_TOOLS = {"bash": "Bash", "edit": "Edit", "write": "Write"}
 COPILOT_TOOLS = {
     "bash": "Bash",
     "powershell": "Bash",
@@ -201,6 +213,21 @@ def normalize(agent: str, event: str, payload: dict[str, Any]) -> list[tuple[str
         return [(gv_event, {**base, "tool_name": tool, "tool_input": inp})]
     if agent == "gemini":
         return [(gv_event, {**base, "tool_name": GEMINI_TOOLS.get(tool, tool), "tool_input": inp})]
+    if agent == "opencode":
+        mapped = OPENCODE_TOOLS.get(tool, tool)
+        out_in: dict[str, Any] = dict(inp)
+        if mapped in ("Edit", "Write"):
+            out_in = {
+                **inp,
+                "file_path": str(inp.get("filePath") or inp.get("file_path") or ""),
+                "old_string": str(inp.get("oldString") or ""),
+                "new_string": str(inp.get("newString") or ""),
+                "content": str(inp.get("content") or ""),
+            }
+        elif mapped == "Bash":
+            out_in = {**inp, "command": str(inp.get("command") or "")}
+        extra = {k: payload[k] for k in ("tool_use_id", "prompt") if k in payload}
+        return [(gv_event, {**base, **extra, "tool_name": mapped, "tool_input": out_in})]
     if agent == "cursor":
         if event == "beforeShellExecution" or event == "afterShellExecution":
             return [(gv_event, {**base, "tool_name": "Bash", "tool_input": {"command": payload.get("command", "")}})]

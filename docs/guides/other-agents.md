@@ -10,6 +10,7 @@ gitvow's record and gate are agent-neutral: trailers, notes, snapshots and the l
 | Cursor | real session | `~/.cursor/hooks.json` | sessionStart, preToolUse, beforeShellExecution, afterFileEdit, stop | JSON `permission: deny` or `ask` with `agent_message` |
 | Copilot CLI | vendor docs only | `~/.copilot/hooks/gitvow.json` | sessionStart, preToolUse, postToolUse, sessionEnd | JSON `permissionDecision: deny` or `ask` with `permissionDecisionReason` |
 | Factory Droid | vendor docs only | `~/.factory/hooks.json` | SessionStart, PreToolUse, PostToolUse, Stop | exit 2, reason on stderr |
+| OpenCode | real session | `~/.config/opencode/plugins/gitvow.js` (a plugin gitvow writes) | session.created, chat.message, tool.execute.before, tool.execute.after, session.idle | the plugin throws with gitvow's reason, which OpenCode shows as the tool's error |
 
 ## Install
 
@@ -19,7 +20,7 @@ gitvow install --user            # configures every agent found on this machine
 gitvow install --user --check    # the same, then runs the self-check so you see the gate work
 ```
 
-`install` looks for each agent's configuration directory and command, prints what it found, and configures all of them. Pass `--agent codex` (or gemini, cursor, copilot, factory, or an external adapter name) to pick one. `uninstall` with no `--agent` removes gitvow from every agent it configured, leaving any hooks of your own in place.
+`install` looks for each agent's configuration directory and command, prints what it found, and configures all of them. Pass `--agent codex` (or gemini, cursor, copilot, factory, opencode, or an external adapter name) to pick one. `uninstall` with no `--agent` removes gitvow from every agent it configured, leaving any hooks of your own in place.
 
 Each install merges gitvow's entries into that agent's configuration file, idempotently, and `gitvow uninstall --user --agent <name>` removes exactly those entries.
 
@@ -38,6 +39,10 @@ All of these read their hook configuration when a session starts, so a session a
 ### One thing to know about desktop agents
 
 Cursor runs as a desktop application, so it does not inherit the PATH of your terminal. A per-repository install records the bare command `gitvow`, which a desktop agent frequently cannot find; the hook then fails, and because gitvow installs Cursor's hooks fail-closed, Cursor blocks the tool and reports that the hook returned no output. Install per user as well, so the absolute path is recorded, and run `gitvow status`, which resolves the exact command each agent will run and says which of them depends on PATH.
+
+### OpenCode loads a plugin, not hooks
+
+OpenCode has no hook commands; it loads JavaScript plugins from `~/.config/opencode/plugins/` (or `.opencode/plugins/` in a repository). `gitvow install --agent opencode` writes one, `gitvow.js`, that runs `gitvow hook --agent opencode <event>` with the payload on stdin for `session.created`, `chat.message`, `tool.execute.before`, `tool.execute.after` and `session.idle`, and **throws** when gitvow answers exit 2. Throwing is how a plugin blocks a tool there, so OpenCode shows gitvow's reason as the tool's error and the agent relays it. A confirm is therefore never OpenCode's own question: the agent asks you, records the answer with `gitvow decide <n> accept --scope session`, and runs the command again. The plugin fails closed: when gitvow cannot be run at all, every tool call is refused with the reason. The first message of a session becomes the intent through `chat.message`, as in Claude Code. OpenCode stores sessions as its own files rather than a transcript gitvow reads, so notes carry no plan, tool counts or cost there, like Cursor. Restart OpenCode after installing; plugins load at start-up. The absolute path of `gitvow` is written into the plugin, so a desktop launch without your shell's PATH still finds it.
 
 ### Two extra steps for Codex CLI
 
@@ -67,7 +72,7 @@ Check both at once: `gitvow selftest --agent codex` proves the adapter, then in 
 - **Cursor has no hook before a file edit** other than the generic `preToolUse`; gitvow uses that for gating and `afterFileEdit` for snapshots. If Cursor's built-in edit tool bypasses `preToolUse` in a future version, the gate still sees shell commands and MCP calls through `beforeShellExecution` and `beforeMCPExecution`.
 - **Copilot CLI passes no transcript path**, so its notes never carry a plan; everything else works. Factory passes one, but its format is not documented, so the same applies.
 - **Cursor writes no transcript, and its hooks are fail-closed.** The note for a Cursor commit carries the trailers, decisions, attribution and snapshot, and leaves the plan, tool counts and cost empty, because those come from a transcript Cursor does not expose. gitvow installs its Cursor hooks with `failClosed: true`, so every hook answers with a JSON permission object even for events it does not use; a silent hook would block the tool.
-- **Verification status.** Claude Code, Codex CLI and Cursor have been exercised in real sessions end to end: the gate collects a finding, the card stops the commit, a person's answer becomes trailers, and the note carries the decision and attribution. The Gemini CLI, Copilot CLI and Factory adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
+- **Verification status.** Claude Code, Codex CLI, Cursor and OpenCode (1.18, 2026-09-29: force push refused through the plugin, the card shown on the commit, the retry committed with session, intent and open-finding trailers and a note, the first message captured as the intent, the snapshot and the ledger written) have been exercised in real sessions end to end: the gate collects a finding, the card stops the commit, a person's answer becomes trailers, and the note carries the decision and attribution. The Gemini CLI, Copilot CLI and Factory adapters are built and tested against the payload shapes in each vendor's documentation, and marked *unverified in a real session* until someone with that agent installed runs `gitvow selftest --agent <name>` and a real session against a scratch repository. Please report what you see.
 
 ## An agent not listed here
 Write a `gitvow-agent-<name>` executable and put it on the PATH; gitvow discovers it and every command that takes `--agent` accepts the new name. The contract is three small subcommands over JSON, described in the [external adapter protocol](../reference/adapter-protocol.md), with a complete example in the repository.
@@ -88,4 +93,6 @@ Write a `gitvow-agent-<name>` executable and put it on the PATH; gitvow discover
 | Copilot `edit`, `str_replace_editor`, `apply_patch` / `create` | `Edit` / `Write` with `file_path` (from `path` or `file_path`), `old_string`, `new_string`, `content` |
 | Factory `Execute` | `Bash` with `command` |
 | Factory `Edit`, `ApplyPatch` / `Create` | `Edit` / `Write` with `file_path`, `old_string`, `new_string`, `content` |
+| OpenCode `bash` | `Bash` with `command` |
+| OpenCode `edit`, `write` | `Edit` / `Write` with `file_path` (from `filePath`), `old_string`, `new_string`, `content`; `patch` passes through under its own name |
 | any `mcp__server__tool` | unchanged |
