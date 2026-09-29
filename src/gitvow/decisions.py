@@ -13,6 +13,7 @@ behind on its answers.
 
 from __future__ import annotations
 
+import os
 import re
 import time
 from typing import Any
@@ -137,6 +138,13 @@ def identity(cwd: str, by: str | None = None) -> tuple[str, str, str]:
     """(trailer identity, email, name). The trailer uses the email's local part, else the name with spaces joined."""
     _, email, _ = git(["config", "user.email"], cwd)
     _, name, _ = git(["config", "user.name"], cwd)
+    if (not email or not name) and os.environ.get("GIT_CONFIG_GLOBAL") in ("/dev/null", os.devnull):
+        # Gemini CLI hides the global config from every command it runs; the person's identity is still in the
+        # file, and a decision recorded from inside that shell must still name them.
+        gc = os.path.expanduser("~/.gitconfig")
+        if os.path.exists(gc):
+            email = email or git(["config", "--file", gc, "user.email"], cwd)[1]
+            name = name or git(["config", "--file", gc, "user.name"], cwd)[1]
     if by:
         return re.sub(r"\s+", "-", by.strip()), email, name
     if email and "@" in email:

@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
+import subprocess  # nosec B404 - argv only, no shell
+import tempfile
 import time
 from typing import Any
 
@@ -294,6 +297,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
                 # An agent with its own approve button runs the commit the moment the person clicks yes, with
                 # no second pass through this gate; mark the commit as the agent's so it still gets its trailers.
                 st["pending_commit"] = time.time()
+                st["pending_head"] = git(["rev-parse", "HEAD"], cwd)[1]
             save_state(cwd, st)
             proposed = dec.mark_proposals(cwd, pol)
             covered = intent_mod.mark_coverage(cwd)
@@ -314,6 +318,7 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         st["transcript_path"] = h.get("transcript_path") or st.get("transcript_path")
         st["steps"] = st.get("steps", 0) + 1
         st["pending_commit"] = time.time()  # the git hook adds trailers only while this is fresh
+        st["pending_head"] = git(["rev-parse", "HEAD"], cwd)[1]  # so a commit that did not happen is never "repaired"
         # How long "fresh" is. Five minutes was the original guard against a stale flag catching a person's
         # later commit; a harness that queues tool calls can run the agent's commit well after the gate saw it,
         # and one of our own release commits lost its trailer to a seven-minute queue. The window is policy.
@@ -477,13 +482,18 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         return 0, ""
     if tool == "Bash" and not COMMIT_RE.search(inp.get("command", "")):
         _record_prompt_approval(cwd, inp, home)
+        if hooks_disabled_by_env() and PUSH_RE.search(inp.get("command", "")):
+            # the pre-push hook that carries the notes never ran; carry them now, after the push it belongs to
+            _push_notes_after(cwd, inp.get("command", ""))
         return 0, ""
     if tool != "Bash":
         return 0, ""
     st = load_state(cwd)
     pending_at = st.get("pending_commit")
-    if "pending_commit" in st or "card_ack" in st:
+    pending_head = st.get("pending_head")
+    if "pending_commit" in st or "card_ack" in st or "pending_head" in st:
         st.pop("pending_commit", None)
+        st.pop("pending_head", None)
         st.pop("card_ack", None)  # the commit happened; the next set of findings earns its own card
         save_state(cwd, st)
     rc, head, _ = git(["rev-parse", "HEAD"], cwd)
@@ -494,11 +504,14 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         return 0, warn
     summ = summarize(h.get("transcript_path") or st.get("transcript_path"), rules=rules)
     _, head_msg, _ = git(["log", "-1", "--format=%B", head], cwd)
+    repaired = ""
     if "Gitvow-Session:" not in head_msg:
         # The commit did not go through, was not the agent's, or landed after the window closed. The last case
         # is a silent hole in the record unless said out loud, so measure it and say it.
         rc, cts, _ = git(["log", "-1", "--format=%ct", head], cwd)
-        if pending_at and rc == 0 and cts.isdigit() and int(cts) >= int(pending_at):
+        # A new commit only: the same HEAD as when the gate saw the command means the commit did not happen.
+        new_commit = pending_head is None or head != pending_head
+        if pending_at and new_commit and rc == 0 and cts.isdigit() and int(cts) >= int(pending_at):
             gap = int(cts) - int(pending_at)
             window = int(st.get("pending_ttl") or 300)
             if gap >= window:
@@ -508,7 +521,14 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
                     f"{window}s window, so it carries no session trailer and no note. Raise "
                     f"decisions.commit_window_seconds if your agent queues tool calls this long."
                 )
-        return 0, ""
+            # Inside the window and no trailer: the agent's commit went through but the git hooks did not run.
+            # Gemini CLI does this by design (its shell disables git's config and hooks); a repository can do it
+            # by accident. The record must not depend on them: write the trailers now, onto the agent's own
+            # commit, unpushed and seconds old, and move the findings the way post-commit would have.
+            head, head_msg = _repair_commit(cwd, head, head_msg, st, h.get("session_id"))
+            repaired = f"; trailers written by gitvow because the git hooks did not run ({_hooks_why()})"
+        else:
+            return 0, ""
     _, files, _ = git(["show", "--stat", "--format=", head], cwd)
     attribution = _attribution(cwd, head, st.get("agent_blobs", {}), summ["files_written"])
     session_id = h.get("session_id") or st.get("session_id")
@@ -548,7 +568,101 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         {"commit": head[:12], "session_id": session_id, "step": note["step"], "decisions": len(decisions)},
     )
     extra = f", {len(decisions)} decision{'s' if len(decisions) != 1 else ''} recorded" if decisions else ""
-    return 0, f"session note attached to {head[:12]} (refs/notes/{ref}){extra}"
+    return 0, f"session note attached to {head[:12]} (refs/notes/{ref}){extra}{repaired}"
+
+
+PUSH_RE = re.compile(r"\bgit\b[^|;&\n]*\s+push(?![\w-])")
+
+
+def hooks_disabled_by_env(env: dict[str, str] | None = None) -> bool:
+    """True when the environment this hook runs in turns git's hooks off.
+
+    Gemini CLI runs every tool command, and therefore every hook gitvow registers with it, with
+    `GIT_CONFIG_GLOBAL=/dev/null`, `GIT_CONFIG_NOSYSTEM=1` and `core.hooksPath` overridden to empty through
+    `GIT_CONFIG_COUNT`, so that a repository's git configuration cannot run commands. gitvow's git hooks are
+    configuration too, and they never run there.
+    """
+    e = os.environ if env is None else env
+    try:
+        n = int(e.get("GIT_CONFIG_COUNT") or 0)
+    except ValueError:
+        n = 0
+    for i in range(n):
+        if e.get(f"GIT_CONFIG_KEY_{i}", "").lower() == "core.hookspath":
+            v = e.get(f"GIT_CONFIG_VALUE_{i}", "")
+            return v in ("", "/dev/null") or not os.path.isdir(v)
+    return False
+
+
+def _hooks_why() -> str:
+    if hooks_disabled_by_env():
+        return "the agent runs git with core.hooksPath overridden in its environment"
+    return "core.hooksPath does not reach gitvow's hooks here; run `gitvow status`"
+
+
+def _repair_commit(cwd: str, head: str, head_msg: str, st: dict[str, Any], session_id: str | None) -> tuple[str, str]:
+    """Write the trailers prepare-commit-msg would have written onto the agent's just-made commit, by amending
+    its message only, and move the findings out of the open list as post-commit would have. Returns the new
+    head and message. Never touches a commit that already carries a session trailer."""
+    lines = [
+        f"Gitvow-Session: {session_id or st.get('session_id') or 'unknown'}",
+        f"Gitvow-Step: {st.get('steps') or 0}",
+    ]
+    if (st.get("intent") or {}).get("text"):
+        lines.append(intent_mod.trailer_line(st["intent"]))
+    fs = st.get("findings") or []
+    for f in fs:
+        if f.get("immediate") and not f.get("decision"):
+            continue  # asked, never answered, never ran: nothing to record
+        lines.append(dec.trailer_line(f))
+    body = head_msg.rstrip("\n") + "\n\n" + "\n".join(lines) + "\n"
+    fd, path = tempfile.mkstemp(prefix="gitvow-msg-")
+    try:
+        with os.fdopen(fd, "w") as fh:
+            fh.write(body)
+        rc, _, err = git(["commit", "--amend", "-q", "-F", path], cwd)
+    finally:
+        with contextlib.suppress(OSError):
+            os.remove(path)
+    if rc != 0:
+        log_event(cwd, "trailer_repair_failed", {"commit": head[:12], "error": err[:160]})
+        return head, head_msg
+    _, new_head, _ = git(["rev-parse", "HEAD"], cwd)
+    if fs:
+        st = load_state(cwd)
+        st["last_commit"] = {"sha": new_head, "at": time.strftime("%Y-%m-%dT%H:%M:%S"), "findings": fs}
+        st["findings"] = []
+        save_state(cwd, st)
+    log_event(
+        cwd,
+        "trailers_repaired",
+        {"commit": new_head[:12], "replaced": head[:12], "trailers": len(lines), "why": _hooks_why()[:120]},
+    )
+    _, msg, _ = git(["log", "-1", "--format=%B", new_head], cwd)
+    return new_head, msg
+
+
+def _push_notes_after(cwd: str, command: str) -> None:
+    """The pre-push hook did not run, so the notes did not travel with the branch. Send them now, to the same
+    remote, and say so in the log. Never for our own notes push."""
+    if os.environ.get("GITVOW_PUSHING_NOTES"):
+        return
+    m = re.search(r"\bpush\b((?:\s+-\S+)*)\s+(?!-)(\S+)", command)
+    remote = m.group(2) if m else "origin"
+    if remote.startswith(("refs/", ":")) or ("/" in remote and not remote.startswith(("http", "git@", "ssh"))):
+        remote = "origin"
+    rc, _, _ = git(["for-each-ref", "--count=1", "refs/notes/gitvow/"], cwd)
+    if rc != 0:
+        return
+    env = {**os.environ, "GITVOW_PUSHING_NOTES": "1"}
+    r = subprocess.run(  # nosec B603 B607 - argv only
+        ["git", "push", "--quiet", remote, "refs/notes/gitvow/*:refs/notes/gitvow/*"],
+        cwd=cwd,
+        env=env,
+        capture_output=True,
+        text=True,
+    )
+    log_event(cwd, "notes_pushed_by_hook", {"remote": remote, "ok": r.returncode == 0, "error": (r.stderr or "")[:120]})
 
 
 def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
