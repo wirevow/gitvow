@@ -915,11 +915,45 @@ def cmd_push_notes(a: argparse.Namespace) -> int:
     import subprocess
 
     env = {**os.environ, "GITVOW_PUSHING_NOTES": "1"}  # the pre-push hook must not push the same refs again
+    cwd = toplevel(os.getcwd())
+    if not cwd:
+        print("not inside a git repository", file=sys.stderr)
+        return 2
     r = subprocess.run(
-        ["git", "push", a.remote, "refs/notes/gitvow/*:refs/notes/gitvow/*"], env=env, capture_output=True, text=True
+        ["git", "push", a.remote, "refs/notes/gitvow/*:refs/notes/gitvow/*"],
+        env=env,
+        cwd=cwd,
+        capture_output=True,
+        text=True,
     )
     print((r.stderr or r.stdout).strip() or "notes pushed", file=sys.stderr if r.returncode else sys.stdout)
-    return 1 if r.returncode else 0
+    if r.returncode:
+        return 1
+    # Trust, then check: a push that reports nothing to do while a ref differs is a record that never arrived.
+    # Compare every local gitvow notes ref with what the remote now holds and say which ones are not there.
+    missing = _notes_not_on_remote(cwd, a.remote)
+    if missing:
+        for ref, local, remote in missing:
+            print(
+                f"{ref}: local {local[:12]}, remote {remote[:12] if remote else 'absent'} after the push",
+                file=sys.stderr,
+            )
+        print(f"{len(missing)} notes ref{'s' if len(missing) != 1 else ''} not on {a.remote}", file=sys.stderr)
+        return 1
+    return 0
+
+
+def _notes_not_on_remote(cwd: str, remote: str) -> list[tuple[str, str, str | None]]:
+    """(ref, local sha, remote sha or None) for every refs/notes/gitvow/* whose remote copy differs."""
+    rc, out, _ = git(["for-each-ref", "--format=%(objectname) %(refname)", "refs/notes/gitvow/"], cwd)
+    if rc != 0 or not out:
+        return []
+    local = {ref: sha for sha, ref in (ln.split(" ", 1) for ln in out.splitlines() if " " in ln)}
+    rc, out, _ = git(["ls-remote", remote, "refs/notes/gitvow/*"], cwd)
+    if rc != 0:
+        return []  # the remote could not be read; the push itself already reported its own outcome
+    held = {ref: sha for sha, ref in (ln.split("\t", 1) for ln in out.splitlines() if "\t" in ln)}
+    return [(ref, sha, held.get(ref)) for ref, sha in sorted(local.items()) if held.get(ref) != sha]
 
 
 def cmd_collect(a: argparse.Namespace) -> int:

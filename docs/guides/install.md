@@ -47,6 +47,8 @@ current default. To take the new default in that case, delete the file and rerun
 ### Upgrading (older notes)
 `pip install --upgrade gitvow` replaces the package but not the git hook files written by `install`, nor the hook commands in settings. After upgrading, re-run the same install command you used (`gitvow install --user` or `gitvow install <repo>`). It is idempotent and refreshes both.
 
+With `uv`, upgrade with `uv tool upgrade gitvow`. In the minutes after a release the package index can lag behind the release page, and `uv tool install --reinstall --refresh gitvow` then quietly reinstalls the previous version; pin when it matters: `uv tool install --reinstall "gitvow==0.32.0"`. Check with `gitvow --version` before re-running `install`.
+
 `gitvow status` detects an install left behind by an older release: git hooks whose contents differ from what this version writes, and agent settings missing events this version installs. Both matter. An install from before 0.12 has no `pre-commit` or `post-commit` hook, so the decision card never fires on a commit made by a person, and nothing else would tell you. Repositories that committed `.gitvow/` refresh it in a pull request like any other change.
 
 ## Uninstall

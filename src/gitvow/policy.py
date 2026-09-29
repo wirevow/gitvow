@@ -315,6 +315,9 @@ def _validate(pol: dict[str, Any], path: str) -> None:
     for key in ("from_prompt", "ask_when_missing"):
         if not isinstance(intent.get(key, True), bool):
             raise PolicyError(f"{path}: intent.{key} must be true or false")
+    mins = intent.get("restate_after_minutes", 60)
+    if not isinstance(mins, int) or isinstance(mins, bool) or mins < 0:
+        raise PolicyError(f"{path}: intent.restate_after_minutes must be an integer of minutes (0 turns the nudge off)")
     for key in ("mcp_allow", "mcp_deny"):
         for pat in pol.get(key, []):
             try:

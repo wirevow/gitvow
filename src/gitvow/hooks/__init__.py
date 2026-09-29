@@ -83,9 +83,13 @@ def user_prompt_submit(h: dict[str, Any], home: str | None = None) -> tuple[int,
     if not intent_mod.settings(pol)["from_prompt"]:
         return 0, ""
     sid = h.get("session_id") or load_state(cwd).get("session_id")
-    if intent_mod.current(cwd, sid):
-        return 0, ""
     text = intent_mod.from_prompt(h.get("prompt"))
+    have = intent_mod.current(cwd, sid)
+    if have:
+        # A later message that reads like a task, long after the intent was set, may be a new task. The person
+        # is not asked; the agent is told, once per such message, so it restates when the task really changed.
+        # Found in our own dogfood: a release commit carried the intent of the day before.
+        return 0, intent_mod.stale_nudge(have, text, intent_mod.settings(pol))
     if not text:
         return 0, ""
     rules, _ = _rules_or_none(cwd, home)

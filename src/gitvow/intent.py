@@ -29,6 +29,7 @@ from .state import load_state, log_event, save_state
 TRAILER = "Gitvow-Intent"
 MAX_TEXT = 200
 MIN_WORDS = 3
+DEFAULT_RESTATE_MINUTES = 60  # a task-shaped message this long after the intent was set gets the agent a nudge
 INTENT_RE = re.compile(rf"^{TRAILER}:\s*(?P<text>.+?)\s+by\s+(?P<by>\S+)(?:\s+source=(?P<source>\S+))?\s*$", re.M)
 # Blocks a harness adds around or inside the person's message: pasted text, editor selections, system reminders.
 # None of them are the person's words about the task.
@@ -52,6 +53,7 @@ def settings(pol: dict[str, Any] | None) -> dict[str, Any]:
     return {
         "from_prompt": bool(cfg.get("from_prompt", True)),
         "ask_when_missing": bool(cfg.get("ask_when_missing", True)),
+        "restate_after_minutes": int(cfg.get("restate_after_minutes", DEFAULT_RESTATE_MINUTES)),
     }
 
 
@@ -219,4 +221,26 @@ def context(cwd: str, pol: dict[str, Any] | None, session_id: str | None = None)
     return (
         f"\n{first}If that message does not say what the task is for, ask once, in one line, before the first edit, "
         'and record their answer verbatim with: gitvow intent "<their words>". Never invent one.\n'
+    )
+
+
+def stale_nudge(have: dict[str, Any], text: str | None, cfg: dict[str, Any]) -> str:
+    """Context for the agent when a task-shaped message arrives long after the intent was set. Never a question
+    to the person, never a change to the record: the agent restates with `gitvow intent` if the task changed."""
+    minutes = int(cfg.get("restate_after_minutes") or 0)
+    if not text or minutes <= 0 or not have.get("set_at"):
+        return ""
+    try:
+        set_ts = time.mktime(time.strptime(have["set_at"], "%Y-%m-%dT%H:%M:%S"))
+    except (ValueError, TypeError):
+        return ""
+    age = (time.time() - set_ts) / 60
+    if age < minutes:
+        return ""
+    hours = age / 60
+    when = f"{int(hours)}h ago" if hours >= 1 else f"{int(age)}m ago"
+    return (
+        f'gitvow: this session\'s intent was recorded {when} as "{have.get("text")}". If this message starts a '
+        'different task, restate it in the person\'s words before the first edit: gitvow intent "<their words>". '
+        "If it is the same task, do nothing."
     )
