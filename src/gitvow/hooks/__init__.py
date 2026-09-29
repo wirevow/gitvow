@@ -469,6 +469,21 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
     cwd = target_cwd(tool, inp, session_cwd)
     if _duplicate(h, cwd, "post"):
         return 0, ""
+    code, msg = _post_tool_use(h, home, tool, inp, cwd)
+    if tool == "Bash" and PUSH_RE.search(inp.get("command", "")) and not os.environ.get("GITVOW_PUSHING_NOTES"):
+        # The notes travel after the branch, never alongside it: the pre-push hook stepped aside for this push
+        # (or never ran, as under Gemini). Done last, after any note for a `commit && push` chain was attached,
+        # so the note travels with the push it belongs to.
+        st = load_state(cwd)
+        if "pending_push" in st:
+            st.pop("pending_push", None)
+            save_state(cwd, st)
+        _push_notes_after(cwd, inp.get("command", ""))
+    return code, msg
+
+
+def _post_tool_use(h: dict[str, Any], home: str | None, tool: str, inp: dict[str, Any], cwd: str) -> tuple[int, str]:
+    session_cwd = h.get("cwd") or os.getcwd()
     if tool in EDIT_TOOLS:
         fp = str(inp.get("file_path") or inp.get("notebook_path") or "")
         if fp:
@@ -489,14 +504,6 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
         return 0, ""
     if tool == "Bash" and not COMMIT_RE.search(inp.get("command", "")):
         _record_prompt_approval(cwd, inp, home)
-        if PUSH_RE.search(inp.get("command", "")) and not os.environ.get("GITVOW_PUSHING_NOTES"):
-            # The notes travel after the branch, never alongside it: the pre-push hook stepped aside for this
-            # push (or never ran, as under Gemini), so carry them now, sequentially.
-            st = load_state(cwd)
-            if "pending_push" in st:
-                st.pop("pending_push", None)
-                save_state(cwd, st)
-            _push_notes_after(cwd, inp.get("command", ""))
         return 0, ""
     if tool != "Bash":
         return 0, ""

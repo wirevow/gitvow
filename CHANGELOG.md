@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.34.2 — 2026-09-29
+- **A `git commit … && git push` chain carries its note.** 0.34.1 moved the notes push to after the agent's push, but a command that both commits and pushes took the commit path in `PostToolUse` and never reached it, so with the hook stepping aside the notes stayed behind; seen on our own reinstall commits within the hour. The notes push now runs last, after any note for the chain's commit has been attached, so the note travels with the push it belongs to.
+
 ## 0.34.1 — 2026-09-29
 - **An agent's push and the notes push never overlap.** Four times in a day of releases the first push of `main` after a commit was rejected and a retry went through. The full output finally showed why: GitHub answered `fatal error in commit_refs`, because the pre-push hook's inner push of the notes refs and the branch push it runs inside were being processed at the same time. Now the gate marks the agent's push when it sees the command, the pre-push hook steps aside while that mark is fresh, and `PostToolUse` pushes the notes to the same remote after the branch has landed, one push after the other. A person's push from a terminal still carries the notes through the hook, which now pauses one second after its notes push so the server finishes before the branch arrives. The hook body changed: re-run `gitvow install --user` (and `gitvow install` in repositories installed per repository).
 

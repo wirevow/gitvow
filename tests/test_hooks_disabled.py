@@ -157,3 +157,23 @@ def test_the_pre_push_hook_steps_aside_for_an_agents_push(repo, home, payload, t
     git(repo, "notes", "--ref=gitvow/s1", "add", "-f", "-m", 'gitvow-session\n{"y": 2}', "HEAD")
     subprocess.run(["git", "push", "-q", "origin", "HEAD:refs/heads/feature2"], cwd=repo, check=True)
     assert git(bare, "rev-parse", "refs/notes/gitvow/s1") == git(repo, "rev-parse", "refs/notes/gitvow/s1")
+
+
+def test_a_commit_and_push_chain_sends_the_note_with_the_push(repo, home, payload, transcript, tmp_path):
+    """`git commit … && git push` takes the commit path; the notes must still follow, after the note is attached."""
+    bare = tmp_path / "remote.git"
+    subprocess.run(["git", "init", "-q", "--bare", str(bare)], check=True)
+    git(repo, "remote", "add", "origin", str(bare))
+    _write_git_hook(str(repo / ".gitvow" / "git-hooks"))
+    git(repo, "config", "core.hooksPath", ".gitvow/git-hooks")
+    session_start(payload("SessionStart"), str(home))
+    cmd = "git commit -am x && git push origin HEAD:refs/heads/feature"  # not protected: no question
+    assert pre_tool_use(payload("PreToolUse", "Bash", {"command": cmd}, transcript), str(home))[0] == 0
+    (repo / "a.txt").write_text("chain\n")
+    git(repo, "commit", "-qam", "chain")
+    subprocess.run(["git", "push", "-q", "origin", "HEAD:refs/heads/feature"], cwd=repo, check=True)
+    assert git(bare, "for-each-ref", "refs/notes/") == ""  # the hook stepped aside for the agent's push
+    code, msg = post_tool_use(payload("PostToolUse", "Bash", {"command": cmd}, transcript), str(home))
+    assert code == 0 and "session note attached" in msg
+    local = git(repo, "rev-parse", "refs/notes/gitvow/sess-1")
+    assert git(bare, "rev-parse", "refs/notes/gitvow/sess-1") == local  # the note just written is on the remote
