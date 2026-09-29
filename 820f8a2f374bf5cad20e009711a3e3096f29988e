@@ -2,9 +2,9 @@ gitvow-session
 {
  "schema": 9,
  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
- "step": 29,
- "committed_at": "2026-09-29T12:55:07",
- "assistant_turns_so_far": 26030,
+ "step": 30,
+ "committed_at": "2026-09-29T13:03:52",
+ "assistant_turns_so_far": 26035,
  "tool_calls_so_far": 500,
  "tools_used": [
   "Agent",
@@ -19,19 +19,20 @@ gitvow-session
   "ToolSearch",
   "Write"
  ],
- "last_stated_plan": "Green. Committing 0.33.0, alone.",
+ "last_stated_plan": "Amending the unpushed release commit with the propagation fix, alone.",
  "files_in_commit": [
-  "CHANGELOG.md                       |   4 +",
+  "CHANGELOG.md                       |   5 +",
   "docs/guides/other-agents.md        |  11 ++-",
   "docs/index.md                      |   2 +-",
   "docs/reference/adapter-protocol.md |   4 +-",
   "docs/reference/adapters.md         |   5 +-",
   "pyproject.toml                     |   2 +-",
   "src/gitvow/adapters.py             |  29 +++++-",
+  "src/gitvow/hooks/__init__.py       |   2 +-",
   "src/gitvow/install.py              | 105 ++++++++++++++++++++",
-  "src/gitvow/intent.py               |   3 +-",
+  "src/gitvow/intent.py               |  21 ++--",
   "src/gitvow/selftest.py             |  23 +++++",
-  "tests/test_intent.py               |   1 +",
+  "tests/test_intent.py               |   8 ++",
   "tests/test_opencode.py             | 192 +++++++++++++++++++++++++++++++++++++"
  ],
  "files_written_by_agent_this_session": [
@@ -41,26 +42,27 @@ gitvow-session
   "docs/reference/adapters.md",
   "pyproject.toml",
   "src/gitvow/adapters.py",
+  "src/gitvow/hooks/__init__.py",
   "src/gitvow/install.py",
   "src/gitvow/intent.py",
   "tests/test_intent.py",
   "tests/test_opencode.py"
  ],
  "attribution": {
-  "files_in_commit": 12,
-  "touched_by_agent": 10,
-  "lines_added_in_commit": 372,
-  "lines_changed_by_human_after_agent": 265,
-  "agent_share": 0.42,
+  "files_in_commit": 13,
+  "touched_by_agent": 11,
+  "lines_added_in_commit": 391,
+  "lines_changed_by_human_after_agent": 293,
+  "agent_share": 0.4,
   "files": [
    {
     "path": "CHANGELOG.md",
     "agent_wrote": true,
-    "lines_added_in_commit": 4,
-    "human_lines_added": 4,
+    "lines_added_in_commit": 5,
+    "human_lines_added": 5,
     "human_lines_removed": 0,
     "agent_blob": "7f7455aa13a6809b22e3b46a2a9e36f8da04ae8a",
-    "committed_blob": "6f1ce0c8ebac95f2b3ef18cd6d6ca04874a45a97"
+    "committed_blob": "6d60e9e5937e24dbb598bd1111ca8ca2caaecef8"
    },
    {
     "path": "docs/guides/other-agents.md",
@@ -113,6 +115,15 @@ gitvow-session
     "committed_blob": "817ddfc266b3da265e5ac7047fcb6a8e6a2411c7"
    },
    {
+    "path": "src/gitvow/hooks/__init__.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1,
+    "human_lines_added": 1,
+    "human_lines_removed": 1,
+    "agent_blob": "c29458d6cc7e368058e57746779910ac1fb0b742",
+    "committed_blob": "772634b9424042f3eff0d9a7001e8eb839183eac"
+   },
+   {
     "path": "src/gitvow/install.py",
     "agent_wrote": true,
     "lines_added_in_commit": 105,
@@ -124,11 +135,11 @@ gitvow-session
    {
     "path": "src/gitvow/intent.py",
     "agent_wrote": true,
-    "lines_added_in_commit": 2,
-    "human_lines_added": 29,
-    "human_lines_removed": 2,
+    "lines_added_in_commit": 12,
+    "human_lines_added": 39,
+    "human_lines_removed": 10,
     "agent_blob": "efa2987d5c1982954d2f8ec2c9736c87b39c514b",
-    "committed_blob": "ddcea15545f90244d3f7ee67d7b141538c413289"
+    "committed_blob": "8e1e6a2204834e1893ddfe8ae0d9649837e8366d"
    },
    {
     "path": "src/gitvow/selftest.py",
@@ -138,11 +149,11 @@ gitvow-session
    {
     "path": "tests/test_intent.py",
     "agent_wrote": true,
-    "lines_added_in_commit": 1,
-    "human_lines_added": 26,
+    "lines_added_in_commit": 8,
+    "human_lines_added": 33,
     "human_lines_removed": 8,
     "agent_blob": "7e91373bdd12d7e7440787c6417a9d7751109f1b",
-    "committed_blob": "e86ac5b3e2738974fa27d8981f9d245ee15285b4"
+    "committed_blob": "e57611dc2e27e042084d7d6da4683e938955c7d4"
    },
    {
     "path": "tests/test_opencode.py",
@@ -156,10 +167,10 @@ gitvow-session
   ]
  },
  "usage": {
-  "input_tokens": 117206,
-  "output_tokens": 8194114,
-  "cache_read_tokens": 3204718032,
-  "cache_write_tokens": 93185598,
+  "input_tokens": 117270,
+  "output_tokens": 8195399,
+  "cache_read_tokens": 3205843247,
+  "cache_write_tokens": 93189674,
   "reasoning_tokens": 0,
   "models": {
    "claude-opus-4-6": 9228,
@@ -169,7 +180,7 @@ gitvow-session
    "claude-fable-5": 715,
    "claude-opus-4-8": 75,
    "claude-opus-5": 1104,
-   "claude-fable-5-1": 1880
+   "claude-fable-5-1": 1882
   },
   "by_model": {
    "claude-opus-4-6": {
@@ -222,15 +233,15 @@ gitvow-session
     "reasoning": 0
    },
    "claude-fable-5-1": {
-    "input": 45888,
-    "output": 3337090,
-    "cache_read": 909881803,
-    "cache_write": 24398275,
+    "input": 45952,
+    "output": 3338375,
+    "cache_read": 911007018,
+    "cache_write": 24402351,
     "reasoning": 0
    }
   },
-  "total_tokens": 3306214950,
-  "estimated_cost_usd": 7050.9358,
+  "total_tokens": 3307345590,
+  "estimated_cost_usd": 7052.7974,
   "pricing": "gitvow defaults 2026-09",
   "unpriced_models": [
    "<synthetic>"
@@ -249,12 +260,12 @@ gitvow-session
  "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/286",
  "decisions": [],
  "intent": {
-  "text": "\"Sandbox test, follow exactly. 1) Create the file .github/workflows/ci.yml with the single line: name: ci 2) Run the shell command: git add -A && git commit -m 'oc ci' If the commit is refused with a",
-  "by": "t",
-  "source": "prompt",
-  "set_at": "2026-09-29T11:32:20",
-  "session_id": "ses_f143e3c41ffewvdyuMkci7roLM",
-  "step": 0
+  "text": "for point 1 we need opencode too, yes send the runbook",
+  "by": "13655781+nikhil-bora",
+  "source": "stated",
+  "set_at": "2026-09-29T12:58:01",
+  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+  "step": 29
  },
  "edits_outside_repository": {
   "wirevow": {
