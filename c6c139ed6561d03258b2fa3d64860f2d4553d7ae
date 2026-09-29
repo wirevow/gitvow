@@ -2,9 +2,9 @@ gitvow-session
 {
  "schema": 9,
  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
- "step": 37,
- "committed_at": "2026-09-29T15:13:30",
- "assistant_turns_so_far": 26155,
+ "step": 38,
+ "committed_at": "2026-09-29T15:21:18",
+ "assistant_turns_so_far": 26157,
  "tool_calls_so_far": 500,
  "tools_used": [
   "Agent",
@@ -45,10 +45,10 @@ gitvow-session
   ]
  },
  "usage": {
-  "input_tokens": 118544,
-  "output_tokens": 8258631,
-  "cache_read_tokens": 3235312409,
-  "cache_write_tokens": 93275427,
+  "input_tokens": 118576,
+  "output_tokens": 8259761,
+  "cache_read_tokens": 3235963364,
+  "cache_write_tokens": 93278441,
   "reasoning_tokens": 0,
   "models": {
    "claude-opus-4-6": 9228,
@@ -58,7 +58,7 @@ gitvow-session
    "claude-fable-5": 715,
    "claude-opus-4-8": 75,
    "claude-opus-5": 1104,
-   "claude-fable-5-1": 1931
+   "claude-fable-5-1": 1932
   },
   "by_model": {
    "claude-opus-4-6": {
@@ -111,15 +111,15 @@ gitvow-session
     "reasoning": 0
    },
    "claude-fable-5-1": {
-    "input": 47226,
-    "output": 3401607,
-    "cache_read": 940476180,
-    "cache_write": 24488104,
+    "input": 47258,
+    "output": 3402737,
+    "cache_read": 941127135,
+    "cache_write": 24491118,
     "reasoning": 0
    }
   },
-  "total_tokens": 3336965011,
-  "estimated_cost_usd": 7103.3706,
+  "total_tokens": 3337620142,
+  "estimated_cost_usd": 7104.4887,
   "pricing": "gitvow defaults 2026-09",
   "unpriced_models": [
    "<synthetic>"
