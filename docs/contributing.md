@@ -39,6 +39,8 @@ to a protected branch. Then it reads the record and asserts: trailers on both co
 finding recorded in the repository it belongs to, the card shown once, the push asked about and not made. `--keep`
 leaves the sandbox for inspection; `--json` prints the summary as data.
 
+`scripts/e2e_agents.py` does the same for the agents that are not Claude Code, through their own hook contracts: OpenCode on one of its free models, no sign-in, and Gemini CLI with the operator's key in `~/.gemini/.env` (copied into the throwaway home, never read or printed). Each gets a sandbox repository with gitvow from this checkout installed at repository scope, two sessions (an edit and a force push the gate must refuse; a gated file and a commit the card must stop once), and the same assertions on the record, plus one per agent: OpenCode's first message became the intent, and under Gemini gitvow wrote the trailers itself because Gemini disables git hooks. `--agent opencode` or `--agent gemini` runs one; an agent that is not installed, Gemini without a key, or a provider's free quota spent for the day is reported as skipped rather than failed. The nightly wrapper runs both scripts and writes `latest.json` with all three agents.
+
 It needs `claude` on PATH and a credential: `CLAUDE_CODE_OAUTH_TOKEN` (from `claude setup-token`), or on macOS the
 keychain item Claude Code itself writes, which is read and never printed. Run it before a release and after any
 change to `hooks/`, `install.py` or `policy.py`; a nightly run on a machine that is logged in is the intended home.
