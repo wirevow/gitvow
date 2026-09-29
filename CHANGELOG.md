@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.34.3 — 2026-09-29
+- The remote for the notes push after an agent's push is read from the `git push` segment of the command, not from any word `push` in the line: `echo "--- push main" && git push origin main` yielded the remote `main"` and the notes were not sent. Seen on our own release push within the hour.
+
 ## 0.34.2 — 2026-09-29
 - **A `git commit … && git push` chain carries its note.** 0.34.1 moved the notes push to after the agent's push, but a command that both commits and pushes took the commit path in `PostToolUse` and never reached it, so with the hook stepping aside the notes stayed behind; seen on our own reinstall commits within the hour. The notes push now runs last, after any note for the chain's commit has been attached, so the note travels with the push it belongs to.
 

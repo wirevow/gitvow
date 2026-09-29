@@ -666,10 +666,7 @@ def _push_notes_after(cwd: str, command: str) -> None:
     remote, and say so in the log. Never for our own notes push."""
     if os.environ.get("GITVOW_PUSHING_NOTES"):
         return
-    m = re.search(r"\bpush\b((?:\s+-\S+)*)\s+(?!-)(\S+)", command)
-    remote = m.group(2) if m else "origin"
-    if remote.startswith(("refs/", ":")) or ("/" in remote and not remote.startswith(("http", "git@", "ssh"))):
-        remote = "origin"
+    remote = push_remote(command)
     rc, _, _ = git(["for-each-ref", "--count=1", "refs/notes/gitvow/"], cwd)
     if rc != 0:
         return
@@ -728,3 +725,20 @@ HANDLERS = {
     "Stop": stop,
     "Subagent": subagent_event,
 }
+
+
+def push_remote(command: str) -> str:
+    """The remote named by the `git push` in a shell line, read from the git segment itself, not from any word
+    `push` in the line: `echo "--- push main" && git push origin main` once yielded `main"`. Default origin."""
+    from ..policy import _program_and_args, _segments
+
+    for seg in _segments(command) or []:
+        prog, args = _program_and_args(seg)
+        if os.path.basename(prog) != "git" or "push" not in args:
+            continue
+        after = args[args.index("push") + 1 :]
+        positional = [a for a in after if not a.startswith("-")]
+        if positional and not positional[0].startswith(("refs/", ":")):
+            return positional[0]
+        return "origin"
+    return "origin"

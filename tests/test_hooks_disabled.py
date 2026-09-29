@@ -9,6 +9,7 @@ from gitvow.hooks import (
     hooks_disabled_by_env,
     post_tool_use,
     pre_tool_use,
+    push_remote,
     session_start,
     user_prompt_submit,
 )
@@ -177,3 +178,12 @@ def test_a_commit_and_push_chain_sends_the_note_with_the_push(repo, home, payloa
     assert code == 0 and "session note attached" in msg
     local = git(repo, "rev-parse", "refs/notes/gitvow/sess-1")
     assert git(bare, "rev-parse", "refs/notes/gitvow/sess-1") == local  # the note just written is on the remote
+
+
+def test_the_remote_comes_from_the_git_segment_not_from_any_push_word():
+    assert push_remote('echo "--- push main" && git push origin main 2>&1; echo "exit $?"') == "origin"
+    assert push_remote("git -C /r push upstream feature") == "upstream"
+    assert push_remote("git push --force-with-lease team HEAD:refs/heads/x") == "team"
+    assert push_remote("git push") == "origin"
+    assert push_remote("git push :refs/tags/v1") == "origin"
+    assert push_remote("gitvow push-notes") == "origin"
