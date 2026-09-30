@@ -90,13 +90,19 @@ def install(repo: str, agent: str, env: dict) -> None:
     git(repo, "commit", "-qm", "gitvow install", env=env)
 
 
-def run_agent(agent: str, repo: str, prompt: str, env: dict, model: str) -> subprocess.CompletedProcess:
+PROMPT_RETRY = "Now run the exact same commit command once more: git add -A && git commit -m 'e2e ci'  Then reply done."
+
+
+def run_agent(
+    agent: str, repo: str, prompt: str, env: dict, model: str, continue_: bool = False
+) -> subprocess.CompletedProcess:
     # OpenCode takes its project from $PWD, not the process's working directory: the first nightly-style run
     # inherited the harness's PWD and edited and committed in *this checkout* instead of the sandbox. Say the
     # directory every way an agent might read it.
     env = {**env, "PWD": repo}
     if agent == "opencode":
-        return sh(["opencode", "run", "--dir", repo, "--model", model, prompt], cwd=repo, env=env)
+        more = ["--continue"] if continue_ else []
+        return sh(["opencode", "run", "--dir", repo, *more, "--model", model, prompt], cwd=repo, env=env)
     return sh(["gemini", "-m", model, "-p", prompt, "--approval-mode", "yolo"], cwd=repo, env=env)
 
 
@@ -168,6 +174,15 @@ def check_agent(agent: str, model: str, keep: bool) -> dict:
         r2 = run_agent(agent, repo, PROMPT_TWO, env, model)
         text2 = r2.stdout + r2.stderr
         tails = {"one": text1[-600:], "two": text2[-600:]}
+        if (
+            agent == "opencode"
+            and "OPEN FINDINGS" in text2
+            and git(repo, "log", "-1", "--format=%s", env=env) != "e2e ci"
+        ):
+            # The free model sometimes stops at the card instead of retrying as told. Continue the same session
+            # with the retry, which is what a person would type; the card's acknowledgement belongs to the session.
+            r3 = run_agent(agent, repo, PROMPT_RETRY, env, model, continue_=True)
+            tails["retry"] = (r3.stdout + r3.stderr)[-600:]
 
         # the sessions must have worked in the sandbox and nowhere else
         if git(ROOT, "status", "--porcelain", "--", "README.md", ".github/workflows/ci.yml", env=os.environ.copy()):
