@@ -38,11 +38,12 @@ from .export import remote_name
 from .state import git, toplevel
 
 OUTCOMES_REF = "gitvow/outcomes"  # refs/notes/gitvow/outcomes; pushed by the pre-push hook like every gitvow ref
-SCHEMA = 1
+SCHEMA = 2  # 2 (0.35): `rework` beside `revert`, and the outcome `reworked`
 DEFAULT_WINDOW_DAYS = 1
+DEFAULT_REWORK_DAYS = 7  # the fix loop shows as rework on the same lines within days, not as a revert
 DEFAULT_PRODUCTION = ("main", "master", "production")
 VERDICTS = ("merged", "closed", "open", "direct", "unknown")
-OUTCOMES = ("held", "not_held", "overridden", "pending")
+OUTCOMES = ("held", "not_held", "reworked", "overridden", "pending")
 _REVERT_RE = re.compile(r"This reverts commit ([0-9a-f]{7,40})", re.I)
 _GH_TIMEOUT = 20
 
@@ -54,8 +55,9 @@ class ScmUnavailableError(Exception):
 def settings(pol: dict[str, Any] | None) -> dict[str, Any]:
     cfg = (pol or {}).get("outcomes") or {}
     days = cfg.get("revert_window_days", DEFAULT_WINDOW_DAYS)
+    rework = cfg.get("rework_window_days", DEFAULT_REWORK_DAYS)
     branches = tuple(((pol or {}).get("decisions") or {}).get("production_branches") or DEFAULT_PRODUCTION)
-    return {"revert_window_days": int(days), "production_branches": branches}
+    return {"revert_window_days": int(days), "rework_window_days": int(rework), "production_branches": branches}
 
 
 # --- git ------------------------------------------------------------------------------------------------------
@@ -184,15 +186,85 @@ def verdict_for(cwd: str, sha: str, pr: dict[str, Any] | None, branches: tuple[s
     return ("direct", "git") if landed(cwd, sha, branches) else ("unknown", "git")
 
 
-def grade(answer: str, verdict: str, reverted_in_window: bool) -> str:
+def grade(answer: str, verdict: str, reverted_in_window: bool, reworked_in_window: bool = False) -> str:
+    """held / not_held / reworked / overridden / pending. Rework is weaker than a revert and gets its own word:
+    the change stayed, but someone else rewrote the very lines within the window, which is what a fix loop looks
+    like on an estate where almost nothing is reverted."""
     if answer == "referred" or verdict in ("open", "unknown"):
         return "pending"
     landed_ok = verdict in ("merged", "direct") and not reverted_in_window
     if answer == "accepted":
-        return "held" if landed_ok else "not_held"
+        if not landed_ok:
+            return "not_held"
+        return "reworked" if reworked_in_window else "held"
     if answer == "declined":
         return "overridden" if landed_ok else "held"
     return "pending"
+
+
+_HUNK_RE = re.compile(r"^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@", re.M)
+
+
+def added_ranges(cwd: str, sha: str) -> dict[str, list[tuple[int, int]]]:
+    """Per file, the line ranges the commit added or changed (new side). Empty for a merge commit."""
+    rc, _, _ = git(["rev-parse", "--verify", "-q", f"{sha}^2"], cwd)
+    if rc == 0:
+        return {}
+    rc, out, _ = git(["diff", "-U0", "--no-color", "--no-renames", f"{sha}^", sha], cwd)
+    if rc != 0:
+        return {}
+    ranges: dict[str, list[tuple[int, int]]] = {}
+    cur: str | None = None
+    for ln in out.splitlines():
+        if ln.startswith("+++ b/"):
+            cur = ln[6:]
+        elif ln.startswith("+++ /dev/null"):
+            cur = None
+        elif ln.startswith("@@") and cur:
+            m = _HUNK_RE.match(ln)
+            if m:
+                start = int(m.group(1))
+                count = int(m.group(2)) if m.group(2) is not None else 1
+                if count > 0:
+                    ranges.setdefault(cur, []).append((start, start + count - 1))
+    return ranges
+
+
+def rework_of(
+    cwd: str, sha: str, landed_ts: int, window_s: int, table: dict[str, dict[str, Any]]
+) -> dict[str, Any] | None:
+    """The earliest later commit by someone else that rewrote lines this commit added, inside the window.
+
+    Uses `git log -L` so the lines are followed through later edits rather than matched by number. Reverts are
+    counted elsewhere and excluded here; the committer's own follow-ups are not rework."""
+    _, author, _ = git(["log", "-1", "--format=%ae", sha], cwd)
+    best: dict[str, Any] | None = None
+    for path, ranges in added_ranges(cwd, sha).items():
+        for start, end in ranges[:20]:
+            rc, out, _ = git(
+                ["log", "--format=%H%x00%ae%x00%ct", f"-L{start},{end}:{path}", f"{sha}..HEAD", "--no-patch"], cwd
+            )
+            if rc != 0:
+                continue
+            for ln in out.splitlines():
+                if ln.count("\x00") != 2:
+                    continue
+                h, ae, ct = ln.split("\x00")
+                if not ct.isdigit() or h.startswith(sha) or sha.startswith(h):
+                    continue
+                gap = int(ct) - landed_ts
+                if (
+                    gap < 0
+                    or gap > window_s
+                    or ae == author
+                    or revert_of(h, table)
+                    or h in table
+                    or any(r["sha"] == h for r in table.values())
+                ):
+                    continue
+                if best is None or gap < best["after_seconds"]:
+                    best = {"sha": h[:12], "after_seconds": gap, "by_other": True, "path": path}
+    return best
 
 
 def read(cwd: str, sha: str) -> dict[str, Any] | None:
@@ -264,10 +336,15 @@ def run(
             rv = revert_of(c["sha"], table)
             gap = (rv["ts"] - (landed_ts or c["ts"])) if rv else None
             in_window = bool(rv) and gap is not None and gap <= window_s
+            rw = None
+            if kind in ("merged", "direct") and not in_window:
+                rw = rework_of(top, c["sha"], landed_ts or c["ts"], cfg["rework_window_days"] * 86400, table)
+            reworked = rw is not None
             note = {
                 "schema": SCHEMA,
                 "graded_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime(now)),
                 "window_days": cfg["revert_window_days"],
+                "rework_window_days": cfg["rework_window_days"],
                 "verdict": {
                     "kind": kind,
                     "source": source,
@@ -277,8 +354,13 @@ def run(
                     "landed_at": time.strftime("%Y-%m-%d", time.localtime(landed_ts)) if landed_ts else None,
                 },
                 "revert": ({"sha": rv["sha"][:12], "after_seconds": gap, "in_window": in_window} if rv else None),
+                "rework": rw,
                 "decisions": [
-                    {"finding": d["finding"], "answer": d["answer"], "outcome": grade(d["answer"], kind, in_window)}
+                    {
+                        "finding": d["finding"],
+                        "answer": d["answer"],
+                        "outcome": grade(d["answer"], kind, in_window, reworked),
+                    }
                     for d in c["decisions"]
                 ],
             }
@@ -341,7 +423,13 @@ def summary(cwd: str, since_day: str | None = None) -> dict[str, Any]:
 
 # --- rendering ---------------------------------------------------------------------------------------------------
 
-_LABEL = {"held": "held", "not_held": "did not hold", "overridden": "overridden", "pending": "pending"}
+_LABEL = {
+    "held": "held",
+    "not_held": "did not hold",
+    "reworked": "reworked",
+    "overridden": "overridden",
+    "pending": "pending",
+}
 
 
 def summary_line(s: dict[str, Any]) -> str:
@@ -352,7 +440,7 @@ def summary_line(s: dict[str, Any]) -> str:
     line = (
         f"Outcomes: {s['decisions']} decision{'s' if s['decisions'] != 1 else ''} graded on {s['commits_graded']} "
         f"commit{'s' if s['commits_graded'] != 1 else ''} · {o['held']} held · {o['not_held']} did not hold · "
-        f"{o['overridden']} overridden · {o['pending']} pending"
+        f"{o.get('reworked', 0)} reworked · {o['overridden']} overridden · {o['pending']} pending"
     )
     if s.get("window_days") is not None:
         line += f" · revert window {s['window_days']}d"
@@ -381,13 +469,15 @@ def render(out: dict[str, Any]) -> str:
         v = r["verdict"]
         where = f"PR #{v['pull_request']}" if v.get("pull_request") else v["kind"]
         when = f" {v['landed_at']}" if v.get("landed_at") else ""
+        rw = r.get("rework")
+        rework = f"  reworked by {rw['sha'][:7]} after {_dur(rw['after_seconds'])} ({rw['path']})" if rw else ""
         rv = r.get("revert")
         revert = (
             f"  reverted {rv['sha'][:7]} after {_dur(rv['after_seconds'])}{'' if rv['in_window'] else ' (after the window)'}"
             if rv
             else ""
         )
-        lines.append(f"{r['sha']}  {r['date']}  {v['kind']:8} {where}{when}{revert}")
+        lines.append(f"{r['sha']}  {r['date']}  {v['kind']:8} {where}{when}{revert}{rework}")
         for d in r["decisions"]:
             lines.append(f"    {_LABEL[d['outcome']]:13} {d['answer']:9} {d['finding']}")
     tail = []

@@ -39,6 +39,12 @@ def test_grade_matrix():
         assert oc.grade(answer, "open", False) == "pending"
         assert oc.grade(answer, "unknown", False) == "pending"
     assert oc.grade("referred", "merged", False) == "pending"
+    # rework: weaker than a revert, its own word, only for an accepted change that landed and stayed
+    assert oc.grade("accepted", "merged", False, True) == "reworked"
+    assert oc.grade("accepted", "direct", False, True) == "reworked"
+    assert oc.grade("accepted", "merged", True, True) == "not_held"  # a revert outranks rework
+    assert oc.grade("declined", "merged", False, True) == "overridden"
+    assert oc.grade("accepted", "open", False, True) == "pending"
 
 
 def test_git_alone_grades_landed_reverted_and_referred(repo, home):
@@ -65,16 +71,16 @@ def test_git_alone_grades_landed_reverted_and_referred(repo, home):
     assert by[r[:7]]["decisions"][0]["outcome"] == "pending"  # a referral is not an answer
     rv = by[b[:7]]["revert"]
     assert rv["in_window"] is True and rv["after_seconds"] < 60 and by[b[:7]]["decisions"][0]["outcome"] == "not_held"
-    assert out["outcomes"] == {"held": 1, "not_held": 1, "overridden": 1, "pending": 1}
+    assert out["outcomes"] == {"held": 1, "not_held": 1, "reworked": 0, "overridden": 1, "pending": 1}
     assert out["verdicts"]["direct"] == 4
     # written beside the decision, on its own ref, never touching the session note
     note = oc.read(str(repo), a)
-    assert note["schema"] == 1 and note["decisions"][0]["answer"] == "accepted"
+    assert note["schema"] == 2 and note["decisions"][0]["answer"] == "accepted"
     assert git(repo, "notes", "--ref=gitvow/outcomes", "show", a).startswith("gitvow-outcome")
     assert git(repo, "notes", "--ref=gitvow/s1", "list") == ""
     text = oc.render(out)
     assert (
-        "4 decisions graded on 4 commits · 1 held · 1 did not hold · 1 overridden · 1 pending · revert window 1d"
+        "4 decisions graded on 4 commits · 1 held · 1 did not hold · 0 reworked · 1 overridden · 1 pending · revert window 1d"
         in text
     )
     assert "4 landed without a pull request" in text and "forge not asked" in text
@@ -171,7 +177,7 @@ def test_digest_report_show_and_server_carry_the_grade(repo, home, monkeypatch, 
     d = build(str(repo), "7d")
     assert d["outcomes"]["decisions"] == 1 and d["outcomes"]["outcomes"]["held"] == 1
     assert (
-        "Outcomes: 1 decision graded on 1 commit · 1 held · 0 did not hold · 0 overridden · 0 pending · revert window 1d · 1 landed without a pull request"
+        "Outcomes: 1 decision graded on 1 commit · 1 held · 0 did not hold · 0 reworked · 0 overridden · 0 pending · revert window 1d · 1 landed without a pull request"
         in render(d)
     )
     assert " by t" not in render(d).split("Outcomes:")[1].split("\n")[0]
@@ -225,3 +231,46 @@ def test_revert_after_the_window_keeps_the_grade(repo, home):
     row = out["rows"][0]
     assert row["revert"]["in_window"] is False and row["decisions"][0]["outcome"] == "held"
     assert "(after the window)" in oc.render(out)
+
+
+def test_rework_on_the_same_lines_by_someone_else_within_the_window(repo, home):
+    """An accepted change whose added lines another person rewrites days later is reworked; the author's own
+    follow-up, or a rewrite of other lines, is not."""
+    (repo / "svc.py").write_text("a = 1\nb = 2\nc = 3\n")
+    git(repo, "add", "svc.py")
+    git(repo, "commit", "-qm", "base")
+    (repo / "svc.py").write_text("a = 1\nb = 20\nc = 3\n")  # the decision changes line 2
+    git(repo, "commit", "-qam", f"tune b\n\n{ACCEPT}")
+    decided = git(repo, "rev-parse", "HEAD")
+    assert oc.added_ranges(str(repo), decided) == {"svc.py": [(2, 2)]}
+    # the author's own follow-up on the same line: not rework
+    (repo / "svc.py").write_text("a = 1\nb = 21\nc = 3\n")
+    git(repo, "commit", "-qam", "nudge b")
+    # someone else rewrites a different line: not rework
+    (repo / "svc.py").write_text("a = 10\nb = 21\nc = 3\n")
+    git(repo, "-c", "user.email=other@test", "-c", "user.name=other", "commit", "-qam", "touch a")
+    out = oc.run(str(repo), {}, since=None, scm=False)
+    assert out["rows"][0]["decisions"][0]["outcome"] == "held" and out["rows"][0]["rework"] is None
+    # someone else rewrites the decided line within the window: reworked
+    (repo / "svc.py").write_text("a = 10\nb = 2\nc = 3\n")
+    git(repo, "-c", "user.email=other@test", "-c", "user.name=other", "commit", "-qam", "put b back by hand")
+    other = git(repo, "rev-parse", "HEAD")
+    out = oc.run(str(repo), {}, since=None, scm=False, regrade=True)
+    row = out["rows"][0]
+    assert row["decisions"][0]["outcome"] == "reworked"
+    assert (
+        row["rework"]["sha"] == other[:12] and row["rework"]["path"] == "svc.py" and row["rework"]["by_other"] is True
+    )
+    assert row["rework_window_days"] == 7 and row["schema"] == 2
+    assert out["outcomes"]["reworked"] == 1
+    text = oc.render(out)
+    assert f"reworked by {other[:7]} after" in text and "1 reworked" in text
+    # a revert outranks rework: covered by the grade matrix above; a real revert here would conflict with the rework
+    # the window is policy
+    from gitvow.policy import load_policy
+
+    (repo / ".gitvow").mkdir(exist_ok=True)
+    (repo / ".gitvow" / "policy.json").write_text(json.dumps({"outcomes": {"rework_window_days": 400}}))
+    with pytest.raises(PolicyError, match="rework_window_days"):
+        load_policy(str(repo), str(home))
+    assert oc.settings({"outcomes": {"rework_window_days": 3}})["rework_window_days"] == 3

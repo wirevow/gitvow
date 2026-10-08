@@ -19,21 +19,23 @@ Two sources, both read-only, and every note names which one spoke.
 
 ## The grade
 
-| answer | landed, not reverted in the window | reverted in the window, or closed unmerged | still open, or unknown |
-|---|---|---|---|
-| accepted | **held** | **did not hold** | pending |
-| declined | **overridden** | **held** | pending |
-| referred | pending | pending | pending |
+| answer | landed, not reverted, lines left alone | landed, added lines rewritten by someone else within the rework window | reverted in the window, or closed unmerged | still open, or unknown |
+|---|---|---|---|---|
+| accepted | **held** | **reworked** | **did not hold** | pending |
+| declined | **overridden** | **overridden** | **held** | pending |
+| referred | pending | pending | pending | pending |
 
 Landed means merged through a pull request or reachable from a production branch directly. A declined finding whose commit landed anyway is overridden: the decline said "this is not agreed" and the change went in regardless, which is exactly what open mode permits and exactly what a reviewer should see. A referral is never graded, because it is not an answer.
 
-The revert window is policy, default one day:
+Two windows are policy:
 
 ```json
-"outcomes": {"revert_window_days": 1}
+"outcomes": {"revert_window_days": 1, "rework_window_days": 7}
 ```
 
-The public census found that agent work that gets reverted is reverted within about a day, so the loop is fast. A revert after the window is recorded on the note and does not change the grade.
+The public census found that agent work that gets reverted is reverted within about a day, so the revert loop is fast. A revert after the window is recorded on the note and does not change the grade.
+
+**Rework** (0.35) is the second signal, added after reading a real estate where almost nothing was ever reverted and the fix loop showed instead as someone else rewriting the same lines a few days later. For an accepted change that landed and stayed, gitvow follows the lines it added through later history (`git log -L`) and, when another author rewrote any of them inside the rework window, grades the decision **reworked**, with the commit and the file on the note. The author's own follow-ups are not rework; a rewrite of other lines is not rework; a revert still outranks it. Rework is weaker evidence than a revert, which is why it keeps its own word rather than counting as "did not hold".
 
 ## Where the grade goes
 
@@ -43,7 +45,7 @@ The public census found that agent work that gets reverted is reverted within ab
 - **`gitvow digest`** gains one line, counts only, never a person:
 
 ```
-Outcomes: 12 decisions graded on 9 commits · 10 held · 1 did not hold · 1 overridden · 0 pending · revert window 1d · 3 landed without a pull request
+Outcomes: 12 decisions graded on 9 commits · 9 held · 1 did not hold · 1 reworked · 1 overridden · 0 pending · revert window 1d · 3 landed without a pull request
 ```
 
 - **The record server** answers `record_outcomes`.

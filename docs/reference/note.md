@@ -74,7 +74,7 @@ Stored under `refs/notes/gitvow/claims` on the empty commit `gitvow claims confi
 
 | Field | Type | Meaning |
 |---|---|---|
-| `schema` | int | outcome note schema, currently 1 |
+| `schema` | int | outcome note schema, currently 2 |
 | `graded_at` | string | UTC time the grade was written |
 | `window_days` | int | the revert window the grade used (`outcomes.revert_window_days`) |
 | `verdict.kind` | string | `merged` (a pull request merged it), `closed` (a pull request closed unmerged), `open`, `direct` (reachable from a production branch with no pull request), `unknown` |
@@ -82,7 +82,9 @@ Stored under `refs/notes/gitvow/claims` on the empty commit `gitvow claims confi
 | `verdict.pull_request`, `verdict.url` | int, string or null | the pull request that carried the commit |
 | `verdict.landed_ts`, `verdict.landed_at` | int, string or null | when it landed: the merge time, or the commit time for a direct landing |
 | `revert` | object or null | `sha` of the reverting commit, `after_seconds` since landing, `in_window` |
-| `decisions[]` | object[] | per decision on the commit: `finding`, `answer`, `outcome` (`held`, `not_held`, `overridden`, `pending`) |
+| `rework` | object or null | schema 2: the earliest later commit by another author that rewrote lines this commit added, inside `rework_window_days`: `sha`, `after_seconds`, `path`, `by_other` |
+| `rework_window_days` | int | schema 2: the rework window the grade used |
+| `decisions[]` | object[] | per decision on the commit: `finding`, `answer`, `outcome` (`held`, `not_held`, `reworked`, `overridden`, `pending`) |
 
 See [Did the decision hold?](../guides/outcomes.md) for the grading table.
 

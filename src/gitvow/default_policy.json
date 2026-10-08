@@ -206,7 +206,8 @@
   },
   "outcomes": {
     "revert_window_days": 1,
-    "_doc": "revert_window_days: a decision-bearing commit reverted within this many days of landing is graded as a decision that did not hold; a later revert is recorded and does not change the grade. The public census found agent work that gets reverted is reverted within about a day. gitvow outcomes writes the grades to refs/notes/gitvow/outcomes."
+    "rework_window_days": 7,
+    "_doc": "revert_window_days: a decision-bearing commit reverted within this many days of landing is graded as a decision that did not hold; a later revert is recorded and does not change the grade. The public census found agent work that gets reverted is reverted within about a day. gitvow outcomes writes the grades to refs/notes/gitvow/outcomes. rework_window_days: an accepted change whose added lines are rewritten by someone else within this many days of landing is graded reworked, the shape a fix loop takes on an estate where almost nothing is reverted; a revert still outranks it."
   },
   "llm_classifier": {
     "enabled": false,
