@@ -259,3 +259,29 @@ def test_record_server_and_handoff_show_the_intent(repo, home, payload, transcri
     rep = report_build(str(repo), "HEAD~1", "HEAD", None)
     assert rep["commits"][0]["intent"].startswith("Let ops export")
     assert "**Intent:** Let ops export" in render_markdown(rep)
+
+
+def test_card_coverage_counts_only_the_findings_on_the_card(repo, home, payload, transcript):
+    """An observed finding that shares a word with the intent is marked covered in the state but is not on the
+    card; the card event must not count it (the digest showed "2 of 1 card finding" in dogfood)."""
+    from gitvow import decisions as dec_mod
+
+    session_start(payload("SessionStart"), str(home))
+    user_prompt_submit(
+        {**payload("UserPromptSubmit"), "prompt": "tighten the authz rules before the staging cut"}, str(home)
+    )
+    pre_tool_use(payload("PreToolUse", "Edit", {"file_path": "core/authz_rules.go"}, transcript), str(home))
+    dec_mod.add(
+        str(repo),
+        [{"finding": "run authz-sync", "kind": "command", "subject": "authz-sync", "reason": "x", "observe": True}],
+        1,
+        "Bash",
+        [],
+    )
+    code, _ = pre_tool_use(payload("PreToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
+    assert code == 2
+    fs = json.loads((repo / ".git" / "gitvow-session.json").read_text())["findings"]
+    assert [f["intent_covered"] for f in fs] == [True, True]
+    log = [json.loads(ln) for ln in (repo / ".git" / "gitvow-hooks.log").read_text().splitlines()]
+    card = [e for e in log if e["kind"] == "card"][-1]
+    assert card["findings"] == 1 and card["intent_covered"] == 1

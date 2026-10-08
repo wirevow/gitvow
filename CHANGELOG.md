@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.35.1 — 2026-10-08
+- The digest's intent line counted findings within the intent over every finding in the session state, including observed ones that never reach the card, and read "2 of 1 card finding" on the first dogfood digest. The card event now counts only the findings on that card.
+
 ## 0.35.0 — 2026-10-08
 - **Outcomes: rework is the second signal.** A read-only pass over a real estate's history found reverts at one commit in four hundred and no class above half a percent: on an estate like that, "did the decision hold" graded by reverts alone is almost always yes and says nothing. The fix loop showed instead as someone else rewriting the same lines a few days later. `gitvow outcomes` now follows the lines an accepted change added (`git log -L`) and, when another author rewrote any of them inside `outcomes.rework_window_days` (default 7), grades the decision **reworked**, with the commit and the file on the note. The author's own follow-ups are not rework, a rewrite of other lines is not rework, and a revert still outranks it. Rework keeps its own word because it is weaker evidence than a revert. Outcome note schema 2; the digest, the report, the record server and `gitvow outcomes` show the new grade.
 

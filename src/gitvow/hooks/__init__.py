@@ -307,7 +307,13 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
                 st["pending_head"] = git(["rev-parse", "HEAD"], cwd)[1]
             save_state(cwd, st)
             proposed = dec.mark_proposals(cwd, pol)
-            covered = intent_mod.mark_coverage(cwd)
+            intent_mod.mark_coverage(cwd)
+            # count only the findings on this card: the state also holds observed and immediate findings that are
+            # not asked about here, and the digest divides covered by findings on the card (seen as 2 of 1 in dogfood)
+            on_card = {f["finding"] for f in pending}
+            covered = sum(
+                1 for f in load_state(cwd).get("findings") or [] if f.get("intent_covered") and f["finding"] in on_card
+            )
             log_event(
                 cwd,
                 "card",
