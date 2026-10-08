@@ -1,0 +1,24 @@
+gitvow-outcome
+{
+ "schema": 2,
+ "graded_at": "2026-10-08T05:36:36Z",
+ "window_days": 1,
+ "rework_window_days": 7,
+ "verdict": {
+  "kind": "direct",
+  "source": "git",
+  "pull_request": null,
+  "url": null,
+  "landed_ts": 1790741602,
+  "landed_at": "2026-09-30"
+ },
+ "revert": null,
+ "rework": null,
+ "decisions": [
+  {
+   "finding": "run git (pushing to a protected branch) @ remote=https://github.com/wirevow/gitvow.git branch=main",
+   "answer": "accepted",
+   "outcome": "held"
+  }
+ ]
+}
