@@ -46,6 +46,7 @@ nav:
       - State the intent: guides/intent.md
       - Did the decision hold?: guides/outcomes.md
       - Who owns this path?: guides/reach.md
+      - Hand the session to your own store: guides/sessions.md
   - Reference:
       - CLI: reference/cli.md
       - Hook payloads: reference/hooks.md

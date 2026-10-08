@@ -84,7 +84,7 @@ Claude Code ──hook──▶ gitvow hook Stop ─────────▶ 
 | session id, step, intent (one redacted line in the person's words) | commit trailers | yes |
 | session note (structure, redacted plan, attribution) | `refs/notes/sessions` | as a note; local until pushed |
 | ledger, hook log, session state | `~/.gitvow/`, `<repo>/.git/` | no |
-| transcript | untouched | never |
+| transcript | untouched | never; `gitvow sessions export`, typed by a person, can hand it complete to a store your organisation runs |
 
 ## Status
 

@@ -260,6 +260,9 @@ Rules: if a command is BLOCKED, stop and reply with the message verbatim. If a c
         "ok": not fails,
         "failed": fails,
         "elapsed_seconds": elapsed,
+        # the Gitvow- lines of both commits, so a failed check can be read without rerunning the agent
+        "alpha_trailers": [ln for ln in a_body.splitlines() if ln.startswith("Gitvow-")],
+        "beta_trailers": [ln for ln in b_body.splitlines() if ln.startswith("Gitvow-")],
         "claude": {
             "is_error": out.get("is_error"),
             "num_turns": out.get("num_turns"),

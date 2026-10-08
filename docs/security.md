@@ -252,10 +252,13 @@ Not "nothing", which is what this page used to say. Two things go to your remote
 
 Everything else stays local: snapshots under `refs/gitvow/snapshots/` (never pushed, and excluded from the
 `pre-push` hook), attribution blobs in `.git/objects`, the per-session JSON files under `~/.gitvow/ledger/`,
-the hook log in `.git/gitvow-hooks.log`, and the agent's transcript, which gitvow never copies anywhere.
-See [What stays out of git](concepts/storage.md).
+the hook log in `.git/gitvow-hooks.log`, and the agent's transcript, which no hook and no `gitvow sync` ever
+copies. One command moves them, and only when a person types it: `gitvow sessions export` hands the sessions,
+complete and unredacted, to a store your own organisation runs and has enabled for it
+([guide](guides/sessions.md)). See [What stays out of git](concepts/storage.md).
 
-There is no telemetry and no network call anywhere in gitvow. It has no runtime dependencies.
+There is no telemetry and no network call gitvow makes on its own. `gitvow sync` and `gitvow sessions export`
+speak only to sinks you configured in files that are never committed. It has no runtime dependencies.
 
 ## Threat model for content
 

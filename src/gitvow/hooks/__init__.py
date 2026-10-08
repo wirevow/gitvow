@@ -716,6 +716,9 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
         "last_stated_plan": summ["last_assistant_text"],
         "usage": estimate(summ["usage"], _policy_or_empty(cwd, home)),
         "subagents": summ["subagents"],
+        # where the agent left the transcript, so `gitvow sessions export` finds it later without guessing; a path
+        # on this machine, never the content
+        "transcript_path": h.get("transcript_path") or st.get("transcript_path"),
     }
     with open(os.path.join(led, f"{h.get('session_id') or 'unknown'}.json"), "w") as fh:
         json.dump(rec, fh, indent=1)

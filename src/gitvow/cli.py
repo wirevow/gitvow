@@ -444,6 +444,52 @@ def cmd_export(a: argparse.Namespace) -> int:
     return 0
 
 
+def cmd_sessions(a: argparse.Namespace) -> int:
+    """`gitvow sessions export`: the session itself, complete and unredacted, for a store the customer runs. An
+    explicit command; `gitvow sync` never carries it. --dry-run --why prints what would leave and writes nothing."""
+    from . import sessions as se
+    from . import sync as sy
+
+    cwd = os.getcwd()
+    try:
+        b = se.build(cwd, since=a.since, only=a.session, with_snapshots=not a.no_snapshots)
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    if a.json:
+        print(json.dumps({"manifest": b["manifest"], "attestation": b["attestation"]}, indent=1))
+    elif a.why or a.dry_run or not (a.out or a.to):
+        print(se.render_why(b), end="")
+    if a.dry_run:
+        return 0
+    if not a.out and not a.to:
+        print("nothing written: pass --out DIR to write the bundle, or --to SINK to deliver it", file=sys.stderr)
+        return 0
+    if not b["manifest"]["sessions"]:
+        print("no session to export; nothing written", file=sys.stderr)
+        return 1
+    out = a.out or os.path.join(b["top"], ".gitvow", "out", f"sessions-{b['manifest']['digest'][7:19]}")
+    written = se.write(b, out)
+    print(f"wrote {len(written)} files to {out}  digest {b['manifest']['digest'][:19]}…", file=sys.stderr)
+    if not a.to:
+        return 0
+    try:
+        sinks = [s for s in sy.sinks(cwd) if s["name"] == a.to]
+    except ValueError as e:
+        print(str(e), file=sys.stderr)
+        return 1
+    if not sinks:
+        print(f"no sink named {a.to!r}; see `gitvow sinks`", file=sys.stderr)
+        return 1
+    r = se.deliver(sinks[0], out)
+    print(se.render_delivery(r), end="")
+    if r["status"] in ("delivered", "already held") and not a.out:
+        import shutil
+
+        shutil.rmtree(out, ignore_errors=True)
+    return 0 if r["status"] in ("delivered", "already held") else 1
+
+
 def cmd_claims(a: argparse.Namespace) -> int:
     """Claims: a person's statement about the system, confirmed by them, kept in git. The queue, or a verdict."""
     from . import claims as clm
@@ -1083,6 +1129,24 @@ def main(argv: list[str] | None = None) -> int:
     s.add_argument("--since", default="90d", help="window of history to carry (default 90d)")
     s.add_argument("--dry-run", action="store_true", help="build the bundle and say where it would go; move nothing")
     s.set_defaults(f=cmd_sync)
+    s = sub.add_parser(
+        "sessions",
+        help="the session itself, complete and unredacted, for a store the customer runs: gitvow sessions export",
+    )
+    ss = s.add_subparsers(dest="sub", required=True)
+    se_ = ss.add_parser(
+        "export",
+        help="bundle this repository's sessions (transcripts, ledger, notes, snapshots) as kind sessions-raw",
+    )
+    se_.add_argument("--since", default="90d", help="window of sessions to carry (default 90d)")
+    se_.add_argument("--session", help="one session only, by id or prefix")
+    se_.add_argument("--out", help="write the bundle here (default: .gitvow/out/sessions-<digest>)")
+    se_.add_argument("--to", metavar="SINK", help="deliver to this configured http or dir sink; git sinks refuse")
+    se_.add_argument("--no-snapshots", action="store_true", help="leave the working-tree snapshots out")
+    se_.add_argument("--dry-run", action="store_true", help="say what would leave; write and send nothing")
+    se_.add_argument("--why", action="store_true", help="print what leaves and the attestation's statement")
+    se_.add_argument("--json", action="store_true")
+    se_.set_defaults(f=cmd_sessions)
     s = sub.add_parser(
         "sinks", help="the configured sinks: .gitvow/export.local.json (never committed) and ~/.gitvow/sinks.json"
     )

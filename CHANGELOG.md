@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.36.0 — 2026-10-08
+- **`gitvow sessions export`: the session itself, for a store the customer runs.** The record bundle carries conclusions and refuses the conversation; this is the other artefact. For one repository it gathers each session's transcript as the agent wrote it, the ledger entry, the session notes on this repository's commits and the working-tree snapshots as patches, byte for byte, into a bundle of kind `sessions-raw`. Nothing in it is redacted and the attestation says so: the store that takes it holds it complete under the customer's own retention and redacts on read. A store we host refuses this kind under every configuration; a store the customer runs accepts it only when its operator has enabled it. It is an explicit command by the person on the machine: `gitvow sync` never carries it, the committed consent file cannot turn it on, there is no outbox, and a git sink refuses it because every clone would replicate it. `--dry-run --why` prints what would leave and writes nothing; `--out` writes the bundle; `--to <sink>` delivers it to a configured http or dir sink. A transcript that is not on the machine is named in the attestation as missing, never guessed. The ledger entry now records where the agent left the transcript (a path, never the content) so later exports find it.
+
 ## 0.35.1 — 2026-10-08
 - The digest's intent line counted findings within the intent over every finding in the session state, including observed ones that never reach the card, and read "2 of 1 card finding" on the first dogfood digest. The card event now counts only the findings on that card.
 

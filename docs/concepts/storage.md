@@ -11,7 +11,7 @@ The agent's transcript contains tool output: file contents, query results, envir
 | Ledger: redacted tool calls, commits, plan | `~/.gitvow/ledger/` | no |
 | Hook log: every allow, confirm, deny | `<repo>/.git/gitvow-hooks.log` | no, `.git` is never pushed |
 | Session state | `<repo>/.git/gitvow-session.json` | no |
-| Transcript | wherever your agent keeps it | never touched |
+| Transcript | wherever your agent keeps it | never touched by a hook; `gitvow sessions export`, typed by a person, can hand it to a store your organisation runs ([guide](../guides/sessions.md)) |
 
 ## Choosing where the full session should live
 
