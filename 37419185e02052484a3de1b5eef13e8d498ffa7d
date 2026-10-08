@@ -2,9 +2,9 @@ gitvow-session
 {
  "schema": 9,
  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
- "step": 8,
- "committed_at": "2026-10-08T11:04:49",
- "assistant_turns_so_far": 26405,
+ "step": 9,
+ "committed_at": "2026-10-08T11:16:05",
+ "assistant_turns_so_far": 26428,
  "tool_calls_so_far": 500,
  "tools_used": [
   "Agent",
@@ -19,7 +19,7 @@ gitvow-session
   "ToolSearch",
   "Write"
  ],
- "last_stated_plan": "Green across the board. Committing 0.35.0, alone.",
+ "last_stated_plan": "Four things are waiting on you, each for a different reason.\n\n**1. The three diagnostic sentences.** The smoke test produced three true statements about Amnic's own history: four merges in five carry no approval, reverts cluster in the front-end directories where review is absent, and authorisation files were changed about 260 times with no sampled merge reviewed. They are useful to Wirevow as the shape of what a buyer would read. They are also a judgement about your team's practice, and you are its Head of Engineering. Whether you use them inside Amnic, as a prompt to change review habits, or",
  "files_in_commit": [
   "CHANGELOG.md                   |   3 ++",
   "docs/guides/digest.md          |   2 +-",
@@ -104,10 +104,10 @@ gitvow-session
   ]
  },
  "usage": {
-  "input_tokens": 121476,
-  "output_tokens": 8430312,
-  "cache_read_tokens": 3326578007,
-  "cache_write_tokens": 96554312,
+  "input_tokens": 121680,
+  "output_tokens": 8443183,
+  "cache_read_tokens": 3336607580,
+  "cache_write_tokens": 96572472,
   "reasoning_tokens": 0,
   "models": {
    "claude-opus-4-6": 9228,
@@ -117,7 +117,7 @@ gitvow-session
    "claude-fable-5": 715,
    "claude-opus-4-8": 75,
    "claude-opus-5": 1104,
-   "claude-fable-5-1": 2054
+   "claude-fable-5-1": 2065
   },
   "by_model": {
    "claude-opus-4-6": {
@@ -170,15 +170,15 @@ gitvow-session
     "reasoning": 0
    },
    "claude-fable-5-1": {
-    "input": 50158,
-    "output": 3573288,
-    "cache_read": 1031741778,
-    "cache_write": 27766989,
+    "input": 50362,
+    "output": 3586159,
+    "cache_read": 1041771351,
+    "cache_write": 27785149,
     "reasoning": 0
    }
   },
-  "total_tokens": 3431684107,
-  "estimated_cost_usd": 7314.6681,
+  "total_tokens": 3441744915,
+  "estimated_cost_usd": 7331.0213,
   "pricing": "gitvow defaults 2026-09",
   "unpriced_models": [
    "<synthetic>"
