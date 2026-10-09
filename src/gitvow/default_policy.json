@@ -209,6 +209,13 @@
     "rework_window_days": 7,
     "_doc": "revert_window_days: a decision-bearing commit reverted within this many days of landing is graded as a decision that did not hold; a later revert is recorded and does not change the grade. The public census found agent work that gets reverted is reverted within about a day. gitvow outcomes writes the grades to refs/notes/gitvow/outcomes. rework_window_days: an accepted change whose added lines are rewritten by someone else within this many days of landing is graded reworked, the shape a fix loop takes on an estate where almost nothing is reverted; a revert still outranks it."
   },
+  "sync": {
+    "automatic": false,
+    "on_session_end": true,
+    "on_push": true,
+    "since": "90d",
+    "_doc": "automatic: when true and a sink is configured (gitvow sinks), the record is synced in the background at session end and after the agent's git push; the hook never waits for it, the child logs to ~/.gitvow/sync.log, an unreachable store leaves the bundle in the outbox for the next run. on_session_end / on_push choose the moments. since: the window the automatic sync carries. Off by default: a store is a destination someone chose; this only decides when the chosen one is kept current. Sessions (gitvow sessions export) are never synced automatically."
+  },
   "llm_classifier": {
     "enabled": false,
     "command": "",

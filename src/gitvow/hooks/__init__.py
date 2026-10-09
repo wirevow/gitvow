@@ -485,7 +485,21 @@ def post_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]
             st.pop("pending_push", None)
             save_state(cwd, st)
         _push_notes_after(cwd, inp.get("command", ""))
+        _auto_sync(cwd, home, "push")
     return code, msg
+
+
+def _auto_sync(cwd: str, home: str | None, when: str) -> None:
+    """Policy `sync.automatic`: start the collector in the background, never in the hook's own time."""
+    from .. import sync as sy
+
+    try:
+        started = sy.auto(cwd, home, when, _policy_or_empty(cwd, home))
+    except OSError as e:
+        log_event(cwd, "auto_sync_failed", {"when": when, "error": str(e)[:120]})
+        return
+    if started:
+        log_event(cwd, "auto_sync", {"when": when, "pid": started["pid"], "since": started["since"]})
 
 
 def _post_tool_use(h: dict[str, Any], home: str | None, tool: str, inp: dict[str, Any], cwd: str) -> tuple[int, str]:
@@ -723,6 +737,7 @@ def stop(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
     with open(os.path.join(led, f"{h.get('session_id') or 'unknown'}.json"), "w") as fh:
         json.dump(rec, fh, indent=1)
     log_event(cwd, "session_stop", {"session_id": h.get("session_id"), "tool_calls": len(summ["tool_calls"])})
+    _auto_sync(cwd, home, "session_end")
     return 0, ""
 
 

@@ -422,6 +422,78 @@ def sync(
     return {"sinks": [s["name"] for s in targets], "results": results, "warnings": warnings, "bundle": b["manifest"]}
 
 
+# ---------------------------------------------------------------------------------------------------------------
+# automatic sync: at session end and after an agent's push, detached, never blocking, policy-controlled
+# ---------------------------------------------------------------------------------------------------------------
+
+AUTOMATIC_DEFAULTS: dict[str, Any] = {
+    "automatic": False,
+    "on_session_end": True,
+    "on_push": True,
+    "since": "90d",
+}
+AUTOSYNC_ENV = "GITVOW_AUTOSYNC"
+LOG_NAME = os.path.join(".gitvow", "sync.log")
+
+
+def automatic_settings(pol: dict[str, Any] | None) -> dict[str, Any]:
+    out = dict(AUTOMATIC_DEFAULTS)
+    user = (pol or {}).get("sync") or {}
+    for k in AUTOMATIC_DEFAULTS:
+        if k in user:
+            out[k] = user[k]
+    return out
+
+
+def auto(cwd: str, home: str | None, when: str, pol: dict[str, Any] | None) -> dict[str, Any] | None:
+    """Start `gitvow sync` for this repository in the background when the policy asks for it and a sink is
+    configured. The hook returns at once; the child writes to `~/.gitvow/sync.log` and the outbox covers an
+    unreachable store. Returns what was started, or None with no side effect. `when` is `session_end` or `push`."""
+    if os.environ.get(AUTOSYNC_ENV):
+        return None  # the child's own git commands must never start another
+    cfg = automatic_settings(pol)
+    if not cfg.get("automatic"):
+        return None
+    if when == "session_end" and not cfg.get("on_session_end"):
+        return None
+    if when == "push" and not cfg.get("on_push"):
+        return None
+    try:
+        if not sinks(cwd, home):
+            return None
+    except ValueError:
+        return None
+    import sys
+
+    log_path = os.path.join(_home(home), LOG_NAME)
+    os.makedirs(os.path.dirname(log_path), exist_ok=True)
+    since = str(cfg.get("since") or "90d")
+    argv = [sys.executable, "-m", "gitvow", "sync", "--since", since]
+    env = {**os.environ, AUTOSYNC_ENV: when}
+    if home:
+        env["HOME"] = home
+    pid = _spawn(argv, cwd, env, log_path, when)
+    return {"pid": pid, "when": when, "since": since, "log": log_path}
+
+
+def _spawn(argv: list[str], cwd: str, env: dict[str, str], log_path: str, when: str) -> int:
+    """Start the child detached, its output appended to the log. Separate so tests can stand it in."""
+    with open(log_path, "ab") as log:
+        log.write(f"--- {time.strftime('%Y-%m-%dT%H:%M:%S')} {when} {cwd}\n".encode())
+        log.flush()
+        p = subprocess.Popen(
+            argv,
+            cwd=cwd,
+            env=env,
+            stdin=subprocess.DEVNULL,
+            stdout=log,
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+            close_fds=True,
+        )
+    return p.pid
+
+
 def render(out: dict[str, Any]) -> str:
     lines = []
     for w in out["warnings"]:
