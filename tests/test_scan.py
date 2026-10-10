@@ -229,3 +229,17 @@ def test_the_floor_is_stated_in_both_directions(repo, home):
     text = render_coverage(coverage(str(repo)))
     assert "Coverage is a floor, in two directions." in text
     assert "a trailer written by hand counts as covered" in text
+
+
+def test_diagnostic_half_counts_every_commit_whoever_made_it(repo, home):
+    """0.38: reverts and gated changes are counted over the whole history, not only the agent-signed part, so the
+    page says what the policy in force would have seen at all."""
+    _commit(repo, "core/auth_rules.go", "human edits the gate")
+    _commit(repo, "core/auth_rules.go", 'Revert "human edits the gate"\n\nThis reverts commit 0123456789abcdef.', content="y\n")
+    _commit(repo, "src/x.py", "x\n\nCo-authored-by: Claude <noreply@anthropic.com>")
+    d = build(str(repo))
+    assert d["commits"] == 4 and d["reverts"] == 1 and d["revert_share"] == 0.25
+    assert d["gated_commits_any_author"] == 2 and d["gated_share_any_author"] == 0.5
+    assert d["consequential"] == []  # the agent's commit touched nothing gated; the humans' did
+    text = render(d)
+    assert "reverts" in text and "25.0% of commits" in text and "any author" in text

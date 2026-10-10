@@ -9,6 +9,9 @@ pipx run gitvow scan            # or: pip install gitvow && gitvow scan
 ```
 governance-intelligence · 39 commits in the last 90 days, merges excluded
 
+     0  reverts                 0.0% of commits
+    11  touched a gated file     28.2% of commits, any author, by the rules in the default policy
+
   100%  agent-assisted           39 of 39 · Claude
     11  touched a gated file      Jenkinsfile, +3 more
      0  recorded who agreed
@@ -24,6 +27,8 @@ governance-intelligence · 39 commits in the last 90 days, merges excluded
 ```
 
 ## What each line means
+
+**reverts** and the first **touched a gated file** line are the diagnostic, counted over every commit whoever made it: how often this history undoes itself, and how much of its change the policy in force would have seen at all. On most repositories the second number is small. When it is under one percent of a history of any size, the page says so in words: the default rules are a starting point, never a claim about where this repository's consequence lives. Learning where it does live is a separate, paid run over the whole estate.
 
 **agent-assisted** counts commits whose message carries an agent's own signature: a co-author trailer from Claude Code, Cursor, Copilot, Codex, Gemini, Devin, Aider, Factory or Windsurf, the "Generated with Claude Code" line, or a `Gitvow-Session` trailer from gitvow itself. The agents named are the ones it found.
 

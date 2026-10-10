@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.38.0 — 2026-10-10
+- **`gitvow scan` gains the diagnostic half.** Two lines a buyer reads first, counted over every commit whoever made it: how many were reverts, and how many touched a file the policy in force calls consequential at all. On most estates the second number is small, and the page now says so in words: the default rules are a starting point, never a claim about where a repository's consequence lives. The class-learning run that finds where it does live is `wirevow onboard`, on the paid side; `scan` stays complete, read-only and free. JSON gains `reverts`, `revert_share`, `gated_commits_any_author`, `gated_share_any_author`.
+
 ## 0.37.0 — 2026-10-09
 - **Automatic sync, off by default.** Until now nothing ran `gitvow sync` for anyone: the store was as fresh as the last person who remembered. Policy `sync.automatic` (default `false`) now starts the collector in the background at two moments, when a sink is configured: at session end, from the Stop hook after the ledger entry is written, and after the agent's `git push`, after the notes have travelled. The hook never waits for it; the child logs to `~/.gitvow/sync.log`; an unreachable store leaves the bundle in the outbox for the next run; the child's own git commands cannot start another. `on_session_end` and `on_push` choose the moments, `since` the window. Sessions (`gitvow sessions export`) are never synced automatically; that stays a person's command.
 

@@ -32,6 +32,7 @@ AGENT_MARKS: tuple[tuple[str, str], ...] = (
 )
 COMPILED = tuple((name, re.compile(pat, re.I)) for name, pat in AGENT_MARKS)
 SESSION_RE = re.compile(r"^Gitvow-Session:\s*\S+", re.M)
+REVERT_RE = re.compile(r"This reverts commit [0-9a-f]{7,40}|^Revert \"", re.I | re.M)
 SESSION_ID_RE = re.compile(r"^Gitvow-Session:\s*(\S+)", re.M)
 MAX_COMMITS = 5000
 
@@ -129,6 +130,8 @@ def build(cwd: str, since: str = "90d") -> dict[str, Any]:
         raise ValueError(err or f"not a git repository: {cwd}")
     commits = 0
     agent_commits = 0
+    reverts = 0
+    gated_any = 0
     agents: dict[str, int] = {}
     consequential: list[dict[str, Any]] = []
     decided = opened = 0
@@ -142,6 +145,13 @@ def build(cwd: str, since: str = "90d") -> dict[str, Any]:
             continue
         sha, date, subject, body = parts[0], parts[1], parts[2], parts[3]
         commits += 1
+        # the diagnostic half, over every commit whoever made it: reverts, and how much of the estate's change
+        # the policy in force would have seen at all
+        if REVERT_RE.search(body):
+            reverts += 1
+        all_changed = [ln.strip() for ln in tail.splitlines() if ln.strip()]
+        if any(rx.search(f) for f in all_changed for rx, _ in pats):
+            gated_any += 1
         seen = {name for name, rx in COMPILED if rx.search(body)}
         if SESSION_RE.search(body):
             seen.add("recorded by gitvow")
@@ -187,6 +197,10 @@ def build(cwd: str, since: str = "90d") -> dict[str, Any]:
         "commits": commits,
         "agent_commits": agent_commits,
         "agent_share": round(agent_commits / commits, 2) if commits else None,
+        "reverts": reverts,
+        "revert_share": round(reverts / commits, 4) if commits else None,
+        "gated_commits_any_author": gated_any,
+        "gated_share_any_author": round(gated_any / commits, 4) if commits else None,
         "agents": dict(sorted(agents.items(), key=lambda kv: -kv[1])),
         "consequential": consequential,
         "recorded": decided,
@@ -212,6 +226,18 @@ def render(d: dict[str, Any]) -> str:
     if not d["commits"]:
         lines.append("  no commits in this window. Try a longer one: gitvow scan --since 1y")
         return "\n".join(lines) + "\n"
+    # the diagnostic, whoever made the commits: what this history says about itself before any agent is counted
+    rp = round(100 * d.get("revert_share", 0) or 0, 1)
+    gp = round(100 * d.get("gated_share_any_author", 0) or 0, 1)
+    lines.append(f"  {d.get('reverts', 0):>4}  reverts{'':16}{rp}% of commits")
+    lines.append(
+        f"  {d.get('gated_commits_any_author', 0):>4}  touched a gated file{'':6}{gp}% of commits, any author, by the"
+        f" rules in {d['policy']}"
+    )
+    if d["commits"] >= 50 and gp < 1:
+        lines.append("        The policy in force sees almost none of this history's change. The default rules are a")
+        lines.append("        starting point, never a claim about where this repository's consequence lives.")
+    lines.append("")
     if not d["agent_commits"]:
         lines.append("  no commits carry an agent's signature in this window.")
         lines.append("")
