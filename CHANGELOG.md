@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.38.1 — 2026-10-12
+- **`gitvow install` from a subdirectory installs at the repository's top level.** git resolves a relative `core.hooksPath` against the top level, so hooks written into a subdirectory's `.gitvow/` were hooks git never found, and every commit in that repository ran none, silently. The command now says where it installed and why.
+- **`gitvow status` names another gitvow ahead of this one on PATH.** A stale virtualenv first on PATH carried an older release on the maker's own machine, and the user-scope hooks had been written with its path. The check fails with the path of both copies and the fix.
+
 ## 0.38.0 — 2026-10-10
 - **`gitvow scan` gains the diagnostic half.** Two lines a buyer reads first, counted over every commit whoever made it: how many were reverts, and how many touched a file the policy in force calls consequential at all. On most estates the second number is small, and the page now says so in words: the default rules are a starting point, never a claim about where a repository's consequence lives. The class-learning run that finds where it does live is `wirevow onboard`, on the paid side; `scan` stays complete, read-only and free. JSON gains `reverts`, `revert_share`, `gated_commits_any_author`, `gated_share_any_author`.
 

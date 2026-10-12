@@ -104,9 +104,20 @@ def cmd_install(a: argparse.Namespace) -> int:
     """Without --agent, configure every agent found on this machine: not passing a flag should not
     silently leave an agent ungated."""
     from .install import detect_agents
+    from .state import toplevel
 
     home = os.path.expanduser("~")
     repo = os.path.abspath(a.repo)
+    if not a.user:
+        # git resolves a relative core.hooksPath against the repository's top level, so hooks written into a
+        # subdirectory's .gitvow/ are hooks git never finds, and every commit in the repository runs none.
+        top = toplevel(repo)
+        if top and os.path.realpath(top) != os.path.realpath(repo):
+            print(
+                f"installing at the repository's top level, {top}, not {repo}: git looks for hooks there",
+                file=sys.stderr,
+            )
+            repo = top
     if a.agent:
         agents, detected = [a.agent], False
     else:

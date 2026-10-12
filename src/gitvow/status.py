@@ -246,8 +246,49 @@ def _hook_environment_checks(top: str, home: str) -> list[Check]:
     return out
 
 
+def gitvow_on_path() -> list[str]:
+    """Every `gitvow` executable on PATH, in PATH order."""
+    out: list[str] = []
+    for d in (os.environ.get("PATH") or "").split(os.pathsep):
+        if not d:
+            continue
+        p = os.path.join(d, "gitvow")
+        if (
+            os.path.isfile(p)
+            and os.access(p, os.X_OK)
+            and os.path.realpath(p) not in {os.path.realpath(x) for x in out}
+        ):
+            out.append(p)
+    return out
+
+
+def _path_shadow_checks() -> list[Check]:
+    """Another gitvow ahead of this one on PATH: a person typing `gitvow`, and any repo-scope hook that names the
+    bare command, run that other copy, at whatever version it is. Seen on the founder's machine: a stale virtualenv
+    first on PATH carried an older release, and the hooks had been written with its path."""
+    from .install import executable_command
+
+    mine = executable_command().split()[0]
+    found = gitvow_on_path()
+    if not found or not os.path.isabs(mine):
+        return []
+    first = found[0]
+    if os.path.realpath(first) == os.path.realpath(mine):
+        return []
+    return [
+        (
+            "fail",
+            f"another gitvow is first on PATH: {first}; this one is {mine}. Typing `gitvow`, and any repository "
+            "hook that names the bare command, runs the other copy",
+            f"remove it (pip uninstall gitvow in that environment) or put {os.path.dirname(mine)} first on PATH, "
+            "then run gitvow install --user again",
+        )
+    ]
+
+
 def build(cwd: str, home: str) -> list[Check]:
     checks: list[Check] = []
+    checks += _path_shadow_checks()
     try:
         pol = load_policy(cwd, home)
         n = sum(len(pol.get(k, [])) for k in ("bash_deny", "bash_confirm", "path_confirm"))

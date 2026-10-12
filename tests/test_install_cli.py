@@ -167,3 +167,19 @@ def test_python_m_gitvow_entrypoint():
 
     r = subprocess.run([sys.executable, "-m", "gitvow", "--version"], capture_output=True, text=True)
     assert r.returncode == 0 and r.stdout.startswith("gitvow ")
+
+
+def test_repo_install_from_a_subdirectory_lands_at_the_top_level(repo, home, monkeypatch, capsys):
+    """0.38.1: git resolves a relative core.hooksPath against the top level, so hooks written into a subdirectory's
+    .gitvow/ were hooks git never ran."""
+    import os
+
+    sub = repo / "services" / "api"
+    sub.mkdir(parents=True)
+    monkeypatch.chdir(sub)
+    assert cli.main(["install", "--agent", "claude"]) == 0
+    err = capsys.readouterr().err
+    assert "top level" in err and str(repo) in err
+    assert (repo / ".gitvow" / "git-hooks" / "pre-commit").exists()
+    assert not (sub / ".gitvow").exists()
+    assert os.path.isfile(repo / ".claude" / "settings.json")

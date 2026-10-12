@@ -235,7 +235,12 @@ def test_diagnostic_half_counts_every_commit_whoever_made_it(repo, home):
     """0.38: reverts and gated changes are counted over the whole history, not only the agent-signed part, so the
     page says what the policy in force would have seen at all."""
     _commit(repo, "core/auth_rules.go", "human edits the gate")
-    _commit(repo, "core/auth_rules.go", 'Revert "human edits the gate"\n\nThis reverts commit 0123456789abcdef.', content="y\n")
+    _commit(
+        repo,
+        "core/auth_rules.go",
+        'Revert "human edits the gate"\n\nThis reverts commit 0123456789abcdef.',
+        content="y\n",
+    )
     _commit(repo, "src/x.py", "x\n\nCo-authored-by: Claude <noreply@anthropic.com>")
     d = build(str(repo))
     assert d["commits"] == 4 and d["reverts"] == 1 and d["revert_share"] == 0.25

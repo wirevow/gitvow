@@ -59,3 +59,30 @@ def test_both_scopes_installed_is_noted(repo, home, monkeypatch):
     checks = build(str(repo), str(home))
     c = _first(checks, "user scope and in this repository")
     assert c and c[0] == "note" and "0.28.5" in c[2]
+
+
+def test_another_gitvow_first_on_path_is_a_failure(repo, home, monkeypatch, tmp_path):
+    """0.38.1: a stale copy ahead of this one on PATH is named, with the fix."""
+    import os
+    import stat
+
+    from gitvow import status as st
+
+    other = tmp_path / "stale-venv" / "bin"
+    other.mkdir(parents=True)
+    fake = other / "gitvow"
+    fake.write_text("#!/bin/sh\necho 0.0.1\n")
+    fake.chmod(fake.stat().st_mode | stat.S_IXUSR)
+    mine = tmp_path / "mine" / "bin"
+    mine.mkdir(parents=True)
+    me = mine / "gitvow"
+    me.write_text("#!/bin/sh\necho me\n")
+    me.chmod(me.stat().st_mode | stat.S_IXUSR)
+    monkeypatch.setattr("gitvow.install.executable_command", lambda: str(me))
+    monkeypatch.setenv("PATH", f"{other}{os.pathsep}{mine}{os.pathsep}/usr/bin{os.pathsep}/bin")
+    assert st.gitvow_on_path() == [str(fake), str(me)]
+    c = _first(st._path_shadow_checks(), "another gitvow is first on PATH")
+    assert c and c[0] == "fail" and str(fake) in c[1] and "pip uninstall" in c[2]
+    # mine first: nothing to say
+    monkeypatch.setenv("PATH", f"{mine}{os.pathsep}{other}{os.pathsep}/usr/bin{os.pathsep}/bin")
+    assert st._path_shadow_checks() == []
