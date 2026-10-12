@@ -65,7 +65,8 @@ def findings_from_facts(
         return []
     cfg = settings(pol)
     rel = _rel(path, cwd)
-    out: list[dict[str, Any]] = []
+    silent: list[dict[str, Any]] = []
+    erroring: list[dict[str, Any]] = []
     for f in facts_for_path(cwd, home, rel):
         if f.get("coverage") != "measured":
             continue
@@ -73,41 +74,82 @@ def findings_from_facts(
         if age is not None and cfg["max_age_hours"] and age > float(cfg["max_age_hours"]):
             continue
         facts = f.get("facts") or {}
-        where = f" ({f.get('service')}, {f.get('env')})" if f.get("service") else ""
-        evidence = [f"{f.get('answer')}, as of {f.get('as_of')}{where}", f"observation {f.get('ref')}"]
-        if f.get("reopen"):
-            evidence.append("reopens on: " + "; ".join(f["reopen"]))
-        subject = f.get("subject") or "route"
         if facts.get("requests") == 0 and cfg["silent_route"] != "off":
-            reason = f"route silent over {f.get('window') or 'the window'}"
-            out.append(
-                {
-                    "finding": f"edit {rel} (route {subject} silent over {f.get('window') or 'the window'})",
-                    "kind": "edit",
-                    "subject": rel,
-                    "path": rel,
-                    "reason": reason,
-                    "evidence": evidence,
-                    "observations": [f["ref"]] if f.get("ref") else [],
-                    "tier": cfg["silent_route"],
-                }
-            )
+            silent.append(f)
         rate = facts.get("error_rate_5xx")
         thr = float(cfg["error_rate_confirm"] or 0)
         if rate is not None and thr and float(rate) >= thr and cfg["erroring_route"] != "off":
-            reason = f"route erroring: 5xx {100 * float(rate):.1f}% over {f.get('window') or 'the window'}"
-            out.append(
-                {
-                    "finding": f"edit {rel} (route {subject} erroring, 5xx {100 * float(rate):.1f}%)",
-                    "kind": "edit",
-                    "subject": rel,
-                    "path": rel,
-                    "reason": reason,
-                    "evidence": evidence,
-                    "observations": [f["ref"]] if f.get("ref") else [],
-                    "tier": cfg["erroring_route"],
-                }
-            )
+            erroring.append(f)
+    # one finding per file and kind, never one per route: a controller that carries twenty sleeping routes is one
+    # question, with every route and every ref on it
+    out: list[dict[str, Any]] = []
+    if silent:
+        window = silent[0].get("window") or "the window"
+        head = silent[0]
+        subject = head.get("subject") or "route"
+        text = (
+            f"edit {rel} (route {subject} silent over {window})"
+            if len(silent) == 1
+            else f"edit {rel} ({len(silent)} routes silent over {window})"
+        )
+        out.append(
+            {
+                "finding": text,
+                "kind": "edit",
+                "subject": rel,
+                "path": rel,
+                "reason": f"route silent over {window}"
+                if len(silent) == 1
+                else f"{len(silent)} routes silent over {window}",
+                "evidence": _evidence(silent),
+                "observations": [f["ref"] for f in silent if f.get("ref")],
+                "tier": cfg["silent_route"],
+            }
+        )
+    if erroring:
+        worst = max(erroring, key=lambda f: float((f.get("facts") or {}).get("error_rate_5xx") or 0))
+        rate = float((worst.get("facts") or {}).get("error_rate_5xx") or 0)
+        window = worst.get("window") or "the window"
+        subject = worst.get("subject") or "route"
+        text = (
+            f"edit {rel} (route {subject} erroring, 5xx {100 * rate:.1f}%)"
+            if len(erroring) == 1
+            else f"edit {rel} ({len(erroring)} routes erroring, worst {subject} 5xx {100 * rate:.1f}%)"
+        )
+        out.append(
+            {
+                "finding": text,
+                "kind": "edit",
+                "subject": rel,
+                "path": rel,
+                "reason": f"route erroring: 5xx {100 * rate:.1f}% over {window}"
+                if len(erroring) == 1
+                else f"{len(erroring)} routes erroring over {window}, worst 5xx {100 * rate:.1f}%",
+                "evidence": _evidence(
+                    sorted(erroring, key=lambda f: -float((f.get("facts") or {}).get("error_rate_5xx") or 0))
+                ),
+                "observations": [f["ref"] for f in erroring if f.get("ref")],
+                "tier": cfg["erroring_route"],
+            }
+        )
+    return out
+
+
+def _evidence(fs: list[dict[str, Any]], limit: int = 4) -> list[str]:
+    """One line per route with its numbers, then the refs, then the reopen condition. Capped: the card shows four."""
+    out: list[str] = []
+    for f in fs[:limit]:
+        where = f" ({f.get('service')}, {f.get('env')})" if f.get("service") else ""
+        out.append(f"{f.get('subject')}: {f.get('answer')}, as of {f.get('as_of')}{where}")
+    if len(fs) > limit:
+        out.append(f"and {len(fs) - limit} more route(s) in this file")
+    refs = [f["ref"] for f in fs if f.get("ref")]
+    if refs:
+        out.append(
+            "observation " + ", ".join(refs[:limit]) + (f" and {len(refs) - limit} more" if len(refs) > limit else "")
+        )
+    if fs and fs[0].get("reopen"):
+        out.append("reopens on: " + "; ".join(fs[0]["reopen"]))
     return out
 
 

@@ -183,6 +183,46 @@ def test_findings_from_facts_silent_observe_erroring_commit_with_refs(repo, home
     assert d.blocks and d.when == "immediate"
 
 
+def test_many_routes_in_one_file_are_one_finding_per_kind(repo, home):
+    """0.39.1: a controller carrying twenty sleeping routes is one question with every ref on it, not twenty."""
+    git(repo, "remote", "add", "origin", "git@github.com:acme/orchestrator.git")
+    many = [
+        _fact(f"GET /v1/r{i}", "api/many.py", "0 requests in 7d", {"requests": 0}, "obs_" + f"{i:032x}")
+        for i in range(7)
+    ]
+    many.append(
+        _fact(
+            "GET /v1/bad",
+            "api/many.py",
+            "10 requests in 7d, 5xx 20.0%",
+            {"requests": 10, "error_rate_5xx": 0.2},
+            "obs_" + "f" * 32,
+        )
+    )
+    many.append(
+        _fact(
+            "GET /v1/bad2",
+            "api/many.py",
+            "10 requests in 7d, 5xx 2.0%",
+            {"requests": 10, "error_rate_5xx": 0.02},
+            "obs_" + "9" * 32,
+        )
+    )
+    _brief(home, FACTS + many)
+    f = fx.findings_from_facts(str(repo), str(home), "Edit", {"file_path": str(repo / "api" / "many.py")}, {})
+    assert [x["finding"] for x in f] == [
+        "edit api/many.py (7 routes silent over 7d)",
+        "edit api/many.py (2 routes erroring, worst GET /v1/bad 5xx 20.0%)",
+    ]
+    assert len(f[0]["observations"]) == 7 and f[1]["observations"] == ["obs_" + "f" * 32, "obs_" + "9" * 32]
+    assert (
+        any("and 3 more route(s)" in e for e in f[0]["evidence"])
+        and f[0]["tier"] == "observe"
+        and f[1]["tier"] == "commit"
+    )
+    assert any(e.startswith("observation obs_") and "and 3 more" in e for e in f[0]["evidence"])
+
+
 def test_through_the_hooks_into_state_note_and_export(repo, home, payload):
     git(repo, "remote", "add", "origin", "git@github.com:acme/orchestrator.git")
     _brief(home, FACTS)

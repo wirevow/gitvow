@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.39.1 — 2026-10-12
+- **One runtime finding per file, not one per route.** The first live run put 758 facts on one repository's brief and a controller file carrying twenty sleeping routes raised twenty findings. A file now raises at most two: the silent routes as one finding with every ref on it, and the erroring routes as one with the worst named. The card shows four routes and says how many more.
+
 ## 0.39.0 — 2026-10-12
 - **Runtime facts reach the gate.** The store's brief now carries `facts[]`: observations a runtime facts provider wrote, per route, with requests over a window, latency, error rate, coverage, an `as_of` and a ref (store-protocol §4b). `gitvow brief` and the session-start context show them with their age. The gate reads them from the local cache, never the network, and raises two findings of its own on an edit to a file that carries a route: **silent route** (measured at zero requests over the window; observe tier by default) and **erroring route** (5xx at or above `runtime.error_rate_confirm`, default 1%; commit tier by default). Both carry `observations: [ref]`, which rides into the decision, the note (schema 10) and the export bundle, so the question and the answer cite the same fact. Policy block `runtime`; a fact older than `max_age_hours` is shown, not acted on.
 
