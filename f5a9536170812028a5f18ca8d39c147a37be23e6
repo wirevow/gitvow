@@ -1,0 +1,301 @@
+gitvow-session
+{
+ "schema": 9,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 16,
+ "committed_at": "2026-10-12T14:26:33",
+ "assistant_turns_so_far": 27086,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Two mechanical fixes: the alias rename missed the bare `FX` uses, and two more tests assert the old note schema number.",
+ "files_in_commit": [
+  "CHANGELOG.md                   |   3 +",
+  "docs/guides/runtime.md         |  62 +++++++++++",
+  "docs/reference/policy.md       |   4 +-",
+  "mkdocs.yml                     |   1 +",
+  "pyproject.toml                 |   2 +-",
+  "src/gitvow/decisions.py        |   2 +",
+  "src/gitvow/default_policy.json |   7 ++",
+  "src/gitvow/export.py           |   1 +",
+  "src/gitvow/facts.py            | 130 ++++++++++++++++++++++++",
+  "src/gitvow/hooks/__init__.py   |   6 +-",
+  "src/gitvow/pack.py             |   7 +-",
+  "tests/test_cost.py             |   2 +-",
+  "tests/test_decisions.py        |   2 +-",
+  "tests/test_facts.py            | 226 +++++++++++++++++++++++++++++++++++++++++",
+  "tests/test_hooks.py            |   2 +-",
+  "tests/test_intent.py           |   2 +-",
+  "tests/test_reach.py            |   2 +-",
+  "tests/test_snapshots.py        |   2 +-",
+  "tests/test_tiers.py            |   2 +-"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "docs/guides/runtime.md",
+  "docs/reference/policy.md",
+  "mkdocs.yml",
+  "pyproject.toml",
+  "src/gitvow/decisions.py",
+  "src/gitvow/default_policy.json",
+  "src/gitvow/export.py",
+  "src/gitvow/facts.py",
+  "src/gitvow/hooks/__init__.py",
+  "src/gitvow/pack.py",
+  "tests/test_cost.py",
+  "tests/test_facts.py",
+  "tests/test_intent.py",
+  "tests/test_reach.py",
+  "tests/test_tiers.py"
+ ],
+ "attribution": {
+  "files_in_commit": 19,
+  "touched_by_agent": 16,
+  "lines_added_in_commit": 454,
+  "lines_changed_by_human_after_agent": 119,
+  "agent_share": 0.72,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 3
+   },
+   {
+    "path": "docs/guides/runtime.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 62,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "c89765f44f5a6ae09e1af751eb348801a97d1ab4",
+    "committed_blob": "c89765f44f5a6ae09e1af751eb348801a97d1ab4"
+   },
+   {
+    "path": "docs/reference/policy.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 3
+   },
+   {
+    "path": "mkdocs.yml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "src/gitvow/decisions.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 2
+   },
+   {
+    "path": "src/gitvow/default_policy.json",
+    "agent_wrote": true,
+    "lines_added_in_commit": 7
+   },
+   {
+    "path": "src/gitvow/export.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "src/gitvow/facts.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 130,
+    "human_lines_added": 0,
+    "human_lines_removed": 0,
+    "agent_blob": "080cbd521243c8105b73b0a2b6963c11ca32deb5",
+    "committed_blob": "080cbd521243c8105b73b0a2b6963c11ca32deb5"
+   },
+   {
+    "path": "src/gitvow/hooks/__init__.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 5,
+    "human_lines_added": 5,
+    "human_lines_removed": 1,
+    "agent_blob": "8f71699f882c9a0850242d242dd07e856fa5ab02",
+    "committed_blob": "fdd9e810d3f383e39cd349d00b6d8d4ddb936173"
+   },
+   {
+    "path": "src/gitvow/pack.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 6
+   },
+   {
+    "path": "tests/test_cost.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_decisions.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_facts.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 226,
+    "human_lines_added": 92,
+    "human_lines_removed": 21,
+    "agent_blob": "76b3924d6d97fb0d55eba49cbab90b1d8f12b74e",
+    "committed_blob": "d03fc10d7c05dce48aee745783b0bd7b9629d773"
+   },
+   {
+    "path": "tests/test_hooks.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_intent.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_reach.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_snapshots.py",
+    "agent_wrote": false,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "tests/test_tiers.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 127930,
+  "output_tokens": 8811567,
+  "cache_read_tokens": 3431365533,
+  "cache_write_tokens": 102204529,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 2293
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 56612,
+    "output": 3954543,
+    "cache_read": 1136529304,
+    "cache_write": 33417206,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3542509559,
+  "estimated_cost_usd": 7606.4819,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/34",
+ "decisions": [],
+ "intent": {
+  "text": "can we bootstrap work for most of the orgs we onboard",
+  "by": "13655781+nikhil-bora",
+  "source": "stated",
+  "set_at": "2026-10-08T11:04:45",
+  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+  "step": 8
+ },
+ "edits_outside_repository": {
+  "store": {
+   "count": 7,
+   "paths": [
+    "src/wirevow/loop/documents.py",
+    "src/wirevow/store/backend.py",
+    "src/wirevow/store/observations.py"
+   ]
+  },
+  "wirevow-docs": {
+   "count": 1,
+   "paths": [
+    "docs.json"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
