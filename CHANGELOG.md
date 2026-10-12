@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.39.0 — 2026-10-12
+- **Runtime facts reach the gate.** The store's brief now carries `facts[]`: observations a runtime facts provider wrote, per route, with requests over a window, latency, error rate, coverage, an `as_of` and a ref (store-protocol §4b). `gitvow brief` and the session-start context show them with their age. The gate reads them from the local cache, never the network, and raises two findings of its own on an edit to a file that carries a route: **silent route** (measured at zero requests over the window; observe tier by default) and **erroring route** (5xx at or above `runtime.error_rate_confirm`, default 1%; commit tier by default). Both carry `observations: [ref]`, which rides into the decision, the note (schema 10) and the export bundle, so the question and the answer cite the same fact. Policy block `runtime`; a fact older than `max_age_hours` is shown, not acted on.
+
 ## 0.38.1 — 2026-10-12
 - **`gitvow install` from a subdirectory installs at the repository's top level.** git resolves a relative `core.hooksPath` against the top level, so hooks written into a subdirectory's `.gitvow/` were hooks git never found, and every commit in that repository ran none, silently. The command now says where it installed and why.
 - **`gitvow status` names another gitvow ahead of this one on PATH.** A stale virtualenv first on PATH carried an older release on the maker's own machine, and the user-scope hooks had been written with its path. The check fails with the path of both copies and the fix.

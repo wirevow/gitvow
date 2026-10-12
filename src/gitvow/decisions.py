@@ -125,6 +125,7 @@ def add(cwd: str, findings: list[dict[str, Any]], step: int, tool: str, rules: l
                     "last_tool": tool,
                     "decision": None,
                     "owner": f.get("owner"),
+                    **({"observations": list(f["observations"])} if f.get("observations") else {}),
                     **({"observe": True} if f.get("observe") else {}),
                     **({"immediate": True} if f.get("immediate") else {}),
                 }
@@ -510,6 +511,7 @@ def note_entries(findings: list[dict[str, Any]], card_user_turns: int | None) ->
                 "intent_covered": bool(f.get("intent_covered")),
                 "owner": f.get("owner"),
                 "unowned": bool((f.get("owner") or {}).get("unowned")),
+                "observations": list(f.get("observations") or []),
             }
         )
     return out

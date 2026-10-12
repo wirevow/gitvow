@@ -118,7 +118,7 @@ def test_findings_carry_the_owner_the_card_shows_it_and_refer_defaults_to_it(rep
     assert "Gitvow-Referred: edit core/authz_rules.go by t to=@acme/platform" in body
     post_tool_use(payload("PostToolUse", "Bash", {"command": "git commit -m x"}, transcript), str(home))
     note = json.loads(git(repo, "notes", "--ref=gitvow/sess-1", "show", "HEAD").split("\n", 1)[1])
-    assert note["schema"] == 9
+    assert note["schema"] == 10
     assert note["decisions"][0]["owner"]["owners"] == ["@acme/platform"] and note["decisions"][0]["unowned"] is False
     assert note["decisions"][1]["unowned"] is True
     # report shows the owner and flags the unowned path

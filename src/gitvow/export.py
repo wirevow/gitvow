@@ -172,6 +172,7 @@ def decision_rows(cwd: str, source: str, since: str | None) -> tuple[list[dict],
                     "human_turns_after_card": n.get("human_turns_after_card"),
                     "proposed": n.get("proposed"),
                     "binding": "note" if n else "trivial",
+                    "observations": list(n.get("observations") or []),
                 }
             )
         if note and sid:

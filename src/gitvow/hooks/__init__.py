@@ -12,6 +12,7 @@ import time
 from typing import Any
 
 from .. import decisions as dec
+from .. import facts as facts_mod
 from .. import intent as intent_mod
 from .. import snapshots
 from ..paths import is_credential_path
@@ -23,7 +24,7 @@ from ..transcript import summarize
 
 NOTES_REF_PREFIX = "gitvow"  # refs/notes/gitvow/<session-id>; gitvow 0.1 wrote the single ref refs/notes/sessions
 LEGACY_NOTES_REF = "sessions"
-NOTE_SCHEMA = 9  # 9 (0.32): decisions[] gain `owner` and `unowned`. 8 (0.30): note gains `intent`, decisions[] gain `intent_covered`. 7 (0.18): decisions[].answer may be "observed"; note gains edits_outside_repository. 6 added `to` to decisions[]: a referral may name who the question should have gone to
+NOTE_SCHEMA = 10  # 10 (0.39): decisions[] gain `observations` (refs of the runtime facts a finding rested on). 9 (0.32): decisions[] gain `owner` and `unowned`. 8 (0.30): note gains `intent`, decisions[] gain `intent_covered`. 7 (0.18): decisions[].answer may be "observed"; note gains edits_outside_repository. 6 added `to` to decisions[]: a referral may name who the question should have gone to
 # `git commit`, including the global options that may sit between the two words. `git -c k=v commit` and
 # `git -C dir commit` are the same act and used to slip past a `\bgit\s+commit\b` match entirely, which made
 # the card trivially avoidable by anyone who knew it. Options are enumerated rather than matched loosely so
@@ -236,6 +237,9 @@ def pre_tool_use(h: dict[str, Any], home: str | None = None) -> tuple[int, str]:
             f"BLOCKED: tool policy could not be loaded ({e}); refusing all tool calls until the policy is restored.",
         )
     d = evaluate(pol, tool, inp, cwd)
+    extra = facts_mod.findings_from_facts(cwd, home, tool, inp, pol)
+    if extra:
+        d = facts_mod.merge(d, extra, inp.get("file_path", "") or "")
     rules, warn = _rules_or_none(cwd, home)
     if d.blocks:
         payload: dict[str, Any] = {"tool": tool, "reason": d.reason, "session_id": h.get("session_id")}

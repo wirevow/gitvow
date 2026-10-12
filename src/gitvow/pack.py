@@ -250,6 +250,11 @@ def render_brief(b: dict[str, Any], for_agent: bool = True) -> str:
         lines.append(line)
     if b.get("claims"):
         lines.append(f"- confirmed claims on record elsewhere in the store: {len(b['claims'])}")
+    if b.get("facts"):
+        lines.append(f"- runtime facts on record: {len(b['facts'])}")
+        for f in b["facts"][:8]:
+            age = f" ({f['age_hours']:g} h old)" if f.get("age_hours") is not None else ""
+            lines.append(f"  - {f.get('subject')} in {f.get('path')}: {f.get('answer')}{age} [{f.get('ref')}]")
     if b.get("gaps"):
         lines.append(
             "- gaps: " + "; ".join(f"{g['kind']} {g.get('class') or g.get('path') or ''}".strip() for g in b["gaps"])
@@ -267,6 +272,6 @@ def context(cwd: str, home: str | None, pol: dict[str, Any]) -> str:
     """Pack and brief as SessionStart context. Empty when neither is cached."""
     out = render_pack(pol, for_agent=True) if pol.get("_pack", {}).get("applied") else ""
     b = load_brief(cwd, home)
-    if b and (b.get("classes") or b.get("claims") or b.get("gaps")):
+    if b and (b.get("classes") or b.get("claims") or b.get("gaps") or b.get("facts")):
         out += ("\n" if out else "") + render_brief(b, for_agent=True)
     return out
