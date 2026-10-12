@@ -1,0 +1,211 @@
+gitvow-session
+{
+ "schema": 9,
+ "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+ "step": 15,
+ "committed_at": "2026-10-12T09:31:06",
+ "assistant_turns_so_far": 26987,
+ "tool_calls_so_far": 500,
+ "tools_used": [
+  "Agent",
+  "AskUserQuestion",
+  "Bash",
+  "Edit",
+  "EnterPlanMode",
+  "ExitPlanMode",
+  "Grep",
+  "Read",
+  "TodoWrite",
+  "ToolSearch",
+  "Write"
+ ],
+ "last_stated_plan": "Two real defects surfaced, one in your machine's PATH and one in gitvow itself. Fixing the machine now and reading the code for the gitvow fix.",
+ "files_in_commit": [
+  "CHANGELOG.md                     |  4 ++++",
+  "pyproject.toml                   |  2 +-",
+  "src/gitvow/cli.py                | 11 +++++++++++",
+  "src/gitvow/status.py             | 41 ++++++++++++++++++++++++++++++++++++++++",
+  "tests/test_install_cli.py        | 16 ++++++++++++++++",
+  "tests/test_scan.py               |  7 ++++++-",
+  "tests/test_status_environment.py | 27 ++++++++++++++++++++++++++"
+ ],
+ "files_written_by_agent_this_session": [
+  "CHANGELOG.md",
+  "pyproject.toml",
+  "src/gitvow/cli.py",
+  "src/gitvow/status.py",
+  "tests/test_install_cli.py",
+  "tests/test_scan.py",
+  "tests/test_status_environment.py"
+ ],
+ "attribution": {
+  "files_in_commit": 7,
+  "touched_by_agent": 7,
+  "lines_added_in_commit": 106,
+  "lines_changed_by_human_after_agent": 12,
+  "agent_share": 0.41,
+  "files": [
+   {
+    "path": "CHANGELOG.md",
+    "agent_wrote": true,
+    "lines_added_in_commit": 4
+   },
+   {
+    "path": "pyproject.toml",
+    "agent_wrote": true,
+    "lines_added_in_commit": 1
+   },
+   {
+    "path": "src/gitvow/cli.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 11,
+    "human_lines_added": 4,
+    "human_lines_removed": 2,
+    "agent_blob": "30b239dca4a8f8a016c1939a970b46373204105c",
+    "committed_blob": "9766515654a7b9eb6868a63ab7a15ffae36d0452"
+   },
+   {
+    "path": "src/gitvow/status.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 41,
+    "human_lines_added": 5,
+    "human_lines_removed": 1,
+    "agent_blob": "ea860e49c5fd2380689e4e2b76c6a010d149cf90",
+    "committed_blob": "06c92bf1742abb885049945a7ebee372b3ea3268"
+   },
+   {
+    "path": "tests/test_install_cli.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 16
+   },
+   {
+    "path": "tests/test_scan.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 6
+   },
+   {
+    "path": "tests/test_status_environment.py",
+    "agent_wrote": true,
+    "lines_added_in_commit": 27
+   }
+  ]
+ },
+ "usage": {
+  "input_tokens": 126932,
+  "output_tokens": 8731623,
+  "cache_read_tokens": 3411416182,
+  "cache_write_tokens": 101471995,
+  "reasoning_tokens": 0,
+  "models": {
+   "claude-opus-4-6": 9228,
+   "<synthetic>": 45,
+   "claude-sonnet-4-6": 210,
+   "claude-opus-4-7": 664,
+   "claude-fable-5": 715,
+   "claude-opus-4-8": 75,
+   "claude-opus-5": 1104,
+   "claude-fable-5-1": 2259
+  },
+  "by_model": {
+   "claude-opus-4-6": {
+    "input": 65231,
+    "output": 1308884,
+    "cache_read": 1023114614,
+    "cache_write": 23602253,
+    "reasoning": 0
+   },
+   "<synthetic>": {
+    "input": 0,
+    "output": 0,
+    "cache_read": 0,
+    "cache_write": 0,
+    "reasoning": 0
+   },
+   "claude-sonnet-4-6": {
+    "input": 264,
+    "output": 28786,
+    "cache_read": 18852072,
+    "cache_write": 480976,
+    "reasoning": 0
+   },
+   "claude-opus-4-7": {
+    "input": 1104,
+    "output": 518851,
+    "cache_read": 137598602,
+    "cache_write": 6341924,
+    "reasoning": 0
+   },
+   "claude-fable-5": {
+    "input": 2361,
+    "output": 1057692,
+    "cache_read": 413587838,
+    "cache_write": 15897511,
+    "reasoning": 0
+   },
+   "claude-opus-4-8": {
+    "input": 150,
+    "output": 186602,
+    "cache_read": 59776572,
+    "cache_write": 3870850,
+    "reasoning": 0
+   },
+   "claude-opus-5": {
+    "input": 2208,
+    "output": 1756209,
+    "cache_read": 641906531,
+    "cache_write": 18593809,
+    "reasoning": 0
+   },
+   "claude-fable-5-1": {
+    "input": 55614,
+    "output": 3874599,
+    "cache_read": 1116579953,
+    "cache_write": 32684672,
+    "reasoning": 0
+   }
+  },
+  "total_tokens": 3521746732,
+  "estimated_cost_usd": 7556.8121,
+  "pricing": "gitvow defaults 2026-09",
+  "unpriced_models": [
+   "<synthetic>"
+  ],
+  "inferred_pricing": {
+   "claude-opus-4-6": "claude-opus-4",
+   "claude-sonnet-4-6": "claude-sonnet-4",
+   "claude-opus-4-7": "claude-opus-4",
+   "claude-fable-5": "claude-fable-5-1"
+  }
+ },
+ "subagents": {
+  "count": 0,
+  "tool_calls": 0
+ },
+ "snapshot": "refs/gitvow/snapshots/8f3d5c71-574a-4eec-8903-9425e3a8335b/30",
+ "decisions": [],
+ "intent": {
+  "text": "can we bootstrap work for most of the orgs we onboard",
+  "by": "13655781+nikhil-bora",
+  "source": "stated",
+  "set_at": "2026-10-08T11:04:45",
+  "session_id": "8f3d5c71-574a-4eec-8903-9425e3a8335b",
+  "step": 8
+ },
+ "edits_outside_repository": {
+  "store": {
+   "count": 6,
+   "paths": [
+    "src/wirevow/loop/documents.py",
+    "src/wirevow/store/backend.py"
+   ]
+  },
+  "wirevow-docs": {
+   "count": 1,
+   "paths": [
+    "docs.json"
+   ]
+  }
+ },
+ "transcript": "kept local; see ledger",
+ "redaction": "secrets/PII patterns, high-entropy tokens and custom rules replaced at write time"
+}
