@@ -210,3 +210,23 @@ def test_outside_a_repository_is_an_error(tmp_path, monkeypatch, home):
     except ValueError as e:
         assert "not inside a git repository" in str(e)
     assert subprocess.run(["git", "rev-parse"], cwd=tmp_path, capture_output=True).returncode != 0
+
+
+def test_a_long_transcript_travels_in_parts_cut_at_line_ends(repo, home, payload):
+    tp = _session(repo, home, payload)
+    stop(payload("Stop", transcript=str(tp)), str(home))
+    raw = tp.read_bytes()
+    assert se.split_lines(raw, len(raw)) == [raw]
+    assert b"".join(se.split_lines(raw, 10)) == raw and all(c.endswith(b"\n") for c in se.split_lines(raw, 10))
+    assert se.split_lines(b"one very long line\n", 4) == [b"one very long line\n"]  # a line never splits
+    b = se.build(str(repo), str(home), since=None, part_bytes=max(len(line) for line in raw.splitlines(True)) + 1)
+    names = [p["path"] for p in b["manifest"]["parts"] if p["class"] == "transcript"]
+    assert len(names) > 1 and names[0] == "sess-1.transcript-001.jsonl" and "sess-1.transcript.jsonl" not in names
+    chunks = [p for p in b["manifest"]["parts"] if p["class"] == "transcript"]
+    assert [c["n"] for c in chunks] == list(range(1, len(chunks) + 1)) and all(c["of"] == len(chunks) for c in chunks)
+    assert b"".join(b["parts"][n] for n in names) == raw
+    s = b["manifest"]["sessions"][0]
+    assert s["transcript"] == "included" and s["transcript_parts"] == len(chunks) and s["transcript_bytes"] == len(raw)
+    assert f"in {len(chunks)} parts" in se.render_why(b)
+    one = se.build(str(repo), str(home), since=None)
+    assert one["manifest"]["sessions"][0]["transcript_parts"] == 1 and "sess-1.transcript.jsonl" in one["parts"]

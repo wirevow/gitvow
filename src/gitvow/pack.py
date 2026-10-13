@@ -254,7 +254,13 @@ def render_brief(b: dict[str, Any], for_agent: bool = True) -> str:
         lines.append(f"- runtime facts on record: {len(b['facts'])}")
         for f in b["facts"][:8]:
             age = f" ({f['age_hours']:g} h old)" if f.get("age_hours") is not None else ""
-            lines.append(f"  - {f.get('subject')} in {f.get('path')}: {f.get('answer')}{age} [{f.get('ref')}]")
+            ro = f.get("reopened") or {}
+            fired = (
+                f"; reopened by deploy {str(ro.get('deployed_commit'))[:12]} at {ro.get('at')}, not acted on until re-observed"
+                if ro
+                else ""
+            )
+            lines.append(f"  - {f.get('subject')} in {f.get('path')}: {f.get('answer')}{age}{fired} [{f.get('ref')}]")
     if b.get("gaps"):
         lines.append(
             "- gaps: " + "; ".join(f"{g['kind']} {g.get('class') or g.get('path') or ''}".strip() for g in b["gaps"])

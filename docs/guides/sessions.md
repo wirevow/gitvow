@@ -46,6 +46,7 @@ gitvow sessions export --since 30d --session 8f3d --no-snapshots --to team
 |---|---|
 | `<session>.ledger.json` | the ledger entry: when, which repository, the intent, the plan, usage; for a session still open, the state so far |
 | `<session>.transcript.jsonl` | the agent's transcript file, verbatim, whatever agent wrote it |
+| `<session>.transcript-NNN.jsonl` | the same, when the file is over 32 MB: split at line ends into numbered parts (`n`, `of` in the manifest) that concatenate back to the file byte for byte; each part is served and redacted on its own |
 | `<session>.notes.json` | the session notes on this repository's commits (the same notes `gitvow show` reads) |
 | `<session>.snapshot-NNN.patch` | each working-tree snapshot as a patch against the commit it was taken over |
 

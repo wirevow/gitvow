@@ -135,6 +135,14 @@ def _session_note(cwd: str, sha: str, body: str) -> dict[str, Any]:
 # ---------------------------------------------------------------------------------------------------------------
 
 
+def _intent_row(i: Any) -> dict[str, Any] | None:
+    """The session's intent as the note holds it: the person's words, already redacted and cut when recorded,
+    who stated it and how. Null when the session never stated one; never an empty string dressed as one."""
+    if not isinstance(i, dict) or not i.get("text"):
+        return None
+    return {"text": i.get("text"), "by": i.get("by"), "source": i.get("source")}
+
+
 def decision_rows(cwd: str, source: str, since: str | None) -> tuple[list[dict], list[dict], list[dict]]:
     """(decisions, observed, sessions) drawn from the trailers and the session notes."""
     decisions, observed, sessions = [], [], []
@@ -173,6 +181,7 @@ def decision_rows(cwd: str, source: str, since: str | None) -> tuple[list[dict],
                     "proposed": n.get("proposed"),
                     "binding": "note" if n else "trivial",
                     "observations": list(n.get("observations") or []),
+                    "intent_covered": n.get("intent_covered"),
                 }
             )
         if note and sid:
@@ -201,6 +210,7 @@ def decision_rows(cwd: str, source: str, since: str | None) -> tuple[list[dict],
                         k: {"count": v.get("count", 0)} for k, v in (note.get("edits_outside_repository") or {}).items()
                     },
                     "last_stated_plan": None,  # the `plans` sub-class is off by default; never exported here
+                    "intent": _intent_row(note.get("intent")),
                 }
             )
     return decisions, observed, sessions

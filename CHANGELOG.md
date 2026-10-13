@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.42.0 — 2026-10-13
+- **The reopen condition fires.** The store's projection now compares the deployed commit each observation was made under with the newest one it knows for the service; an observation under an older commit comes to the brief marked `reopened` with the deploy that did it, and the gate does not act on it until the provider observes again. Until now the condition was written on every observation and nothing read it.
+- **Long transcripts travel in parts.** `gitvow sessions export` splits a transcript over 32 MB at line ends into `<session>.transcript-NNN.jsonl` parts, numbered, that concatenate back byte for byte; the store serves and redacts each part on its own and one deletion takes them all. A session was previously refused whole once its transcript passed the store's per-request limit.
+- **The intent travels in the record bundle.** `sessions.jsonl` rows (consented) carry the session's intent as the note holds it, text, by and source; `decisions.jsonl` rows carry `intent_covered` and the observation refs. The ledger said the bundle did not carry the intent line; now it does, under the sessions class, which is off by default.
+
 ## 0.41.0 — 2026-10-13
 - **The pull-request record carries intent, standing and the observations.** Each decision line on the pull request now says which observations the finding rested on (`cites obs_…`) and what this repository's record said about the finding before the commit (`record before this: …`), the card's own sentence. The description block a squash commit inherits gains `Gitvow-Intent` lines, the task in the person's words, and `Gitvow-Cites` lines pairing a finding with its observation refs; neither is a decision trailer, so the trailer grammar never reads them as one. Toolkit step 7, the remainder.
 

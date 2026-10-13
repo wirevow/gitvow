@@ -37,6 +37,7 @@ from .state import git, load_state, toplevel
 SCHEMA = 1
 KIND = "sessions-raw"
 CLASSES = ("ledger", "transcript", "notes", "snapshot")
+PART_BYTES = 32 * 1024 * 1024  # a transcript larger than this travels as transcript-NNN parts, split at line ends
 PART_RE = re.compile(r"^[A-Za-z0-9._-]+\.(json|jsonl|patch)$")
 
 NOT_REDACTED = (
@@ -197,12 +198,30 @@ def _canon(obj: Any) -> bytes:
     return (json.dumps(obj, sort_keys=True, ensure_ascii=False, indent=1) + "\n").encode("utf-8")
 
 
+def split_lines(data: bytes, limit: int) -> list[bytes]:
+    """Chunks of at most `limit` bytes, cut only at line ends; a single line longer than the limit travels alone.
+    Concatenated, the chunks are the original bytes."""
+    if len(data) <= limit:
+        return [data]
+    out: list[bytes] = []
+    buf = bytearray()
+    for line in data.splitlines(keepends=True):
+        if buf and len(buf) + len(line) > limit:
+            out.append(bytes(buf))
+            buf = bytearray()
+        buf.extend(line)
+    if buf:
+        out.append(bytes(buf))
+    return out
+
+
 def build(
     cwd: str,
     home: str | None = None,
     since: str | None = "90d",
     only: str | None = None,
     with_snapshots: bool = True,
+    part_bytes: int = PART_BYTES,
 ) -> dict[str, Any]:
     """Assemble the bundle in memory: parts, manifest, attestation. Nothing is written, nothing is redacted."""
     top = toplevel(cwd)
@@ -241,11 +260,27 @@ def build(
             led["transcript_path"] = s["transcript_path"]
         add(f"{safe}.ledger.json", "ledger", sid, _canon(led), open=s["open"])
         tbytes = 0
+        tparts = 0
         if s["transcript_path"]:
             with open(s["transcript_path"], "rb") as fh:
                 data = fh.read()
             tbytes = len(data)
-            add(f"{safe}.transcript.jsonl", "transcript", sid, data, agent_file=os.path.basename(s["transcript_path"]))
+            agent_file = os.path.basename(s["transcript_path"])
+            chunks = split_lines(data, part_bytes)
+            tparts = len(chunks)
+            if tparts == 1:
+                add(f"{safe}.transcript.jsonl", "transcript", sid, data, agent_file=agent_file)
+            else:
+                for n, chunk in enumerate(chunks, 1):
+                    add(
+                        f"{safe}.transcript-{n:03d}.jsonl",
+                        "transcript",
+                        sid,
+                        chunk,
+                        agent_file=agent_file,
+                        n=n,
+                        of=tparts,
+                    )
         else:
             missing.append({"session_id": sid, "class": "transcript", "reason": "not found on this machine"})
         notes = _notes(top, sid)
@@ -263,6 +298,7 @@ def build(
                 "agent_turns": led.get("assistant_turns"),
                 "transcript": "included" if s["transcript_path"] else "missing",
                 "transcript_bytes": tbytes,
+                "transcript_parts": tparts,
                 "notes": len(notes),
                 "snapshots": len(snaps),
             }
@@ -335,6 +371,7 @@ def render_why(bundle: dict[str, Any]) -> str:
         lines.append(
             f"  {s['session_id'][:12]}  {str(s['started'] or '')[:16]:16s}  transcript {s['transcript']}"
             + (f" ({s['transcript_bytes']} bytes)" if s["transcript_bytes"] else "")
+            + (f" in {s['transcript_parts']} parts" if s.get("transcript_parts", 0) > 1 else "")
             + f", notes on {s['notes']} commit(s), {s['snapshots']} snapshot(s)"
             + ("  [still open]" if s["open"] else "")
         )

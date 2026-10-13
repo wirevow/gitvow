@@ -75,6 +75,8 @@ def findings_from_facts(
         age = f.get("age_hours")
         if age is not None and cfg["max_age_hours"] and age > float(cfg["max_age_hours"]):
             continue
+        if f.get("reopened"):
+            continue  # a deploy landed after this observation: shown in the brief, not acted on until re-observed
         facts = f.get("facts") or {}
         if f.get("subject_type") == "service":
             if facts.get("drift") and cfg["drift"] != "off":

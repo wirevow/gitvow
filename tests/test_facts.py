@@ -100,6 +100,21 @@ FACTS = [
         "obs_" + "e" * 32,
         age=400.0,
     ),
+    {
+        **_fact(
+            "GET /v1/export",
+            "api/export.py",
+            "0 requests in 7d",
+            {"requests": 0, "error_rate_5xx": None},
+            "obs_" + "f" * 32,
+        ),
+        "reopened": {
+            "condition": "deploy of orchestrator in production-in",
+            "deployed_commit": "b2222222222222222222",
+            "at": "2026-10-13T06:00:00Z",
+            "observed_under": "a91c4f2",
+        },
+    },
 ]
 
 
@@ -109,10 +124,11 @@ def test_brief_renders_facts_with_age_and_cli_shows_them(repo, home, monkeypatch
     b = pk.load_brief(str(repo), str(home))
     text = pk.render_brief(b)
     assert (
-        "runtime facts on record: 5" in text
+        "runtime facts on record: 6" in text
         and "GET /v1/orders/{id} in api/orders.py: 1700 requests" in text
         and "(26 h old) [obs_aaaa" in text
     )
+    assert "reopened by deploy b22222222222 at 2026-10-13T06:00:00Z, not acted on until re-observed [obs_ffff" in text
     assert pk.context(str(repo), str(home), {})  # facts alone are enough for session-start context
     monkeypatch.chdir(repo)
     assert cli.main(["brief"]) == 0
@@ -141,6 +157,10 @@ def test_findings_from_facts_silent_observe_erroring_commit_with_refs(repo, home
     )
     assert fx.findings_from_facts(str(repo), str(home), "Edit", {"file_path": str(repo / "api" / "old.py")}, {}) == []
     assert fx.findings_from_facts(str(repo), str(home), "Bash", {"command": "ls"}, {}) == []
+    # a fact a later deploy reopened is shown, never acted on, until the provider observes again
+    assert (
+        fx.findings_from_facts(str(repo), str(home), "Edit", {"file_path": str(repo / "api" / "export.py")}, {}) == []
+    )
     f = fx.findings_from_facts(
         str(repo), str(home), "Edit", {"file_path": str(repo / "api" / "old.py")}, {"runtime": {"max_age_hours": 0}}
     )

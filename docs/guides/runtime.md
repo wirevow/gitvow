@@ -39,7 +39,7 @@ When the agent edits a file that carries a route the store has facts for:
 ```
 
 A fact that is `no_telemetry` or `not_joined` raises nothing: the brief shows the gap, the gate does not guess.
-A fact older than `runtime.max_age_hours` (a week) is shown with its age and not acted on.
+A fact older than `runtime.max_age_hours` (a week) is shown with its age and not acted on. A fact whose reopen condition has fired is treated the same way: when the store learns of a newer deployed commit for the service (from the blueprint, or from a later observation of any route of that service), every observation made under the older commit is marked `reopened` with the deploy that did it; the brief shows the mark and the gate raises nothing from it until the provider observes again.
 
 ## Settings
 

@@ -40,6 +40,14 @@ def _populate(repo, home, tmp_path):
             "usage": {"input_tokens": 100, "output_tokens": 20, "total_tokens": 120, "estimated_cost_usd": 0.01},
             "edits_outside_repository": {"other-repo": {"count": 2, "paths": ["svc/main.go"]}},
             "last_stated_plan": "a plan with a secret ghp_ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789 in it",
+            "intent": {
+                "text": "rotate the authz signing key before the audit",
+                "by": "priya",
+                "source": "stated",
+                "set_at": "2026-10-01T10:00:00",
+                "session_id": "sess-1",
+                "step": 0,
+            },
             "decisions": [
                 {
                     "finding": "edit core/authz_rules.go",
@@ -52,6 +60,7 @@ def _populate(repo, home, tmp_path):
                     "scope": "staging",
                     "human_turns_after_card": 1,
                     "proposed": None,
+                    "intent_covered": True,
                 },
                 {
                     "finding": "edit Dockerfile",
@@ -147,6 +156,14 @@ def test_consent_controls_files_and_sessions_never_carry_plans_or_paths(repo, ho
     assert set(b["parts"]) == {"sessions", "gate_events"}
     s = b["parts"]["sessions"]
     assert len(s) == 1 and s[0]["session_id"] == "sess-1" and s[0]["last_stated_plan"] is None
+    # the intent travels: the person's words, who said them and how; the set_at and step stay in the note
+    assert s[0]["intent"] == {
+        "text": "rotate the authz signing key before the audit",
+        "by": "priya",
+        "source": "stated",
+    }
+    d = next(r for r in ex.build(str(repo), since=None, rules=[])["parts"]["decisions"] if r["by"] == "priya")
+    assert d["intent_covered"] is True
     assert s[0]["edits_outside_repository"] == {"other-repo": {"count": 2}}  # counts, never the paths
     assert s[0]["usage"]["total_tokens"] == 120 and s[0]["attribution"]["agent_share"] == 1.0
     g = b["parts"]["gate_events"]

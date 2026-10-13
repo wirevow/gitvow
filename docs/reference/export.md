@@ -53,7 +53,7 @@ Parts are serialised canonically: rows sorted, keys sorted, no timestamps the ex
 
 ## Rows
 
-Every row carries `source` and `sha` so it is meaningful on its own. `decisions.jsonl` rows carry `finding`, `kind`, `path`, `answer`, `by`, `authority`, `scope`, `to`, `note`, `human_turns_after_card`, `proposed`, `session_id`, `reason` and `binding` (`note` when the session note was present, `trivial` otherwise). `class` is `null` in this version: not computed, never "no class". `sessions.jsonl` rows carry `last_stated_plan: null`; the plan text is a sub-class that is off and not exportable here. Paths of edits made in other checkouts are never exported, only their counts.
+Every row carries `source` and `sha` so it is meaningful on its own. `decisions.jsonl` rows carry `finding`, `kind`, `path`, `answer`, `by`, `authority`, `scope`, `to`, `note`, `human_turns_after_card`, `proposed`, `session_id`, `reason` and `binding` (`note` when the session note was present, `trivial` otherwise). `class` is `null` in this version: not computed, never "no class". `decisions.jsonl` rows also carry `intent_covered` (whether the finding fell inside the stated intent, `null` when no intent was recorded) and `observations` (the refs of the runtime facts the finding rested on). `sessions.jsonl` rows carry `intent` (the session's [intent](../guides/intent.md) as the note holds it: `text`, `by`, `source`; `null` when none was stated) and `last_stated_plan: null`; the plan text is a sub-class that is off and not exportable here. Paths of edits made in other checkouts are never exported, only their counts.
 
 ## Sinks and `gitvow sync`
 
