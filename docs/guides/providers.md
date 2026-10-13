@@ -38,6 +38,9 @@ pip install gitvow-provider-facts
 "providers": [{"name": "topology", "command": "gitvow-provider-facts --store /var/lib/topology/facts.db --service orders"}]
 ```
 
+Since 0.3.0 the same provider reads a code graph exported as NDJSON instead of a fact store: `--graph .graph/export.ndjson`. Any tool that writes nodes and edges with stable ids and `file:line` feeds it; `CALLS` edges into a route's handler are its callers, `HANDLES_ROUTE` edges name the routes a file declares, and a `--graph-fields` map covers a graph that spells its keys differently. A graph records no gate classification, so `route_gate` answers `unknown` with that reason and `gate_bearing` keeps using your gate files. Zero model calls, zero network, the file read once.
+
+
 ## Write your own
 Any language. Read one JSON object from stdin, write one to stdout, exit 0. Answer `unknown` for questions you cannot decide; never guess `no` to be quiet, because `no` is what lets an edit through without a person. Keep evidence strings short and free of secrets: they are shown to the agent and written to the hook log after redaction.
 
