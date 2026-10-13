@@ -82,3 +82,89 @@ def test_pre_push_hook_pushes_notes_with_branch(repo, home, tmp_path):
         os.chdir(cwd)
     assert "refs/notes/gitvow/s2" in git(remote, "for-each-ref", "--format=%(refname)", "refs/notes/gitvow/")
     assert time.time() > 0
+
+
+def test_report_carries_intent_cites_and_standing(repo, home, monkeypatch, capsys):
+    """0.41: decision lines cite the observations the finding rested on and what the record said before; the
+    description block carries the intent and the cites as non-trailer lines."""
+    base = git(repo, "rev-parse", "HEAD")
+    finding = "edit api/reports.py (route GET /v1/reports erroring, 5xx 3.0%)"
+    (repo / "api").mkdir()
+    (repo / "api" / "reports.py").write_text("v1\n")
+    git(repo, "add", "api")
+    git(
+        repo,
+        "commit",
+        "-qm",
+        f"first\n\nGitvow-Session: s1\nGitvow-Step: 1\nGitvow-Intent: fix the reports route by priya\nGitvow-Declined: {finding} by priya: not until the 5xx is understood\n",
+    )
+    note = {
+        "schema": 10,
+        "step": 1,
+        "intent": {"text": "fix the reports route", "by": "priya"},
+        "decisions": [
+            {
+                "finding": finding,
+                "answer": "declined",
+                "by": "priya",
+                "observations": ["obs_" + "c" * 32],
+                "evidence": ["200 requests in 7d, 5xx 3.0%"],
+            }
+        ],
+    }
+    git(repo, "notes", "--ref=gitvow/s1", "add", "-f", "-m", "gitvow-session\n" + json.dumps(note), "HEAD")
+    (repo / "api" / "reports.py").write_text("v2\n")
+    git(
+        repo,
+        "commit",
+        "-qam",
+        f"second\n\nGitvow-Session: s2\nGitvow-Step: 1\nGitvow-Intent: fix the reports route by priya\nGitvow-Accepted: {finding} by priya: fixed the handler\n",
+    )
+    note2 = {
+        "schema": 10,
+        "step": 1,
+        "intent": {"text": "fix the reports route", "by": "priya"},
+        "decisions": [
+            {
+                "finding": finding,
+                "answer": "accepted",
+                "by": "priya",
+                "observations": ["obs_" + "c" * 32, "obs_" + "d" * 32],
+            }
+        ],
+    }
+    git(repo, "notes", "--ref=gitvow/s2", "add", "-f", "-m", "gitvow-session\n" + json.dumps(note2), "HEAD")
+    r = build(str(repo), base, "HEAD")
+    first, second = r["commits"]
+    assert (
+        first["decisions"][0]["observations"] == ["obs_" + "c" * 32]
+        and first["decisions"][0]["standing"] == "no earlier decision."
+    )
+    assert second["decisions"][0]["observations"] == ["obs_" + "c" * 32, "obs_" + "d" * 32]
+    assert (
+        "declined" in second["decisions"][0]["standing"]
+    )  # the first commit's decision is the record before the second
+    md = render_markdown(r)
+    assert (
+        "**Intent:** fix the reports route" in md
+        and "cites obs_cccc" in md
+        and "record before this: no earlier decision." in md
+    )
+    assert "record before this: " in md.split("### ")[2]
+    from gitvow.report import decisions_summary
+
+    block = decisions_summary(r)
+    assert block.splitlines()[1] == "Gitvow-Intent: fix the reports route"
+    assert (
+        f"Gitvow-Cites: {finding} <- obs_{'c' * 32}" in block
+        and f"Gitvow-Cites: {finding} <- obs_{'c' * 32}, obs_{'d' * 32}" in block
+    )
+    # the trailer grammar never reads a cites line as a decision
+    from gitvow.decisions import parse_trailers
+
+    assert (
+        all(t["answer"] in ("accepted", "declined") for t in parse_trailers(block)) and len(parse_trailers(block)) == 2
+    )
+    monkeypatch.chdir(repo)
+    assert cli.main(["report", "--base", base, "--decisions-summary"]) == 0
+    assert "Gitvow-Cites" in capsys.readouterr().out

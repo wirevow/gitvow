@@ -55,6 +55,10 @@ Inputs, all optional:
 | `fail-under` | none | fail when `gitvow coverage` is below this percentage: agent-signed commits in the range that carry no session |
 | `pr-description` | `always` | write the decisions trailer block into the pull request description so a squash commit inherits it; `never` to skip; `auto` writes it only when the workflow token can read the merge settings and the repository is squash-only, which default tokens cannot |
 
+## Intent, standing and the facts, on the pull request
+
+Since 0.41 each decision line carries two more things. `cites obs_…` names the observations the finding rested on, when the gate raised it from a runtime fact or a drift the store holds, so the reviewer sees the fact the question came from. `record before this: …` is the card's own sentence about what this repository's record said about the finding before the commit: no earlier decision, accepted three times by two people, declined last month. It is this repository's record, computed from the branch the check has; the store's standing across repositories is not available to a check. The description block gains `Gitvow-Intent` lines, the task in the person's words, and `Gitvow-Cites` lines pairing a finding with its refs, so a squash commit inherits both.
+
 ## Decisions on the pull request
 
 Each agent commit's report lists the decisions it carries: what was accepted or declined, by whom, with what scope and reason, any `Gitvow-Open` finding nobody decided, and any `Gitvow-Referred` finding that reached the wrong person. Referrals are counted and worded separately from open findings, because a reviewer who reads "3 open" chases the team and a reviewer who reads "3 waiting on security" chases security. When a decision's scope does not cover the branch the pull request targets and that branch is in `decisions.production_branches`, the report reopens it: "accepted for staging; this pull request targets main". The check does not fail on it; the reviewer decides.

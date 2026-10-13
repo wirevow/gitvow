@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.41.0 — 2026-10-13
+- **The pull-request record carries intent, standing and the observations.** Each decision line on the pull request now says which observations the finding rested on (`cites obs_…`) and what this repository's record said about the finding before the commit (`record before this: …`), the card's own sentence. The description block a squash commit inherits gains `Gitvow-Intent` lines, the task in the person's words, and `Gitvow-Cites` lines pairing a finding with its observation refs; neither is a decision trailer, so the trailer grammar never reads them as one. Toolkit step 7, the remainder.
+
 ## 0.40.0 — 2026-10-13
 - **Drift at the gate.** The blueprint (paid side) writes one observation per declared service with what the GitOps repository declares against what the cluster runs. An edit to the manifest that declares a drifting service now raises a commit-tier finding naming the drift, with the observation's ref on it, under `runtime.drift`. Same cache, same rule: the gate never calls a cluster.
 

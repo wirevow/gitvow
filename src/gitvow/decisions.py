@@ -196,7 +196,11 @@ def _note_decisions(cwd: str, sha: str, body: str) -> dict[str, dict[str, Any]]:
 
 
 def history_all(
-    cwd: str, limit: int = HISTORY_COMMITS, finding: str | None = None, pol: dict[str, Any] | None = None
+    cwd: str,
+    limit: int = HISTORY_COMMITS,
+    finding: str | None = None,
+    pol: dict[str, Any] | None = None,
+    ref: str | None = None,
 ) -> list[dict[str, Any]]:
     """Every precedent-bearing decision in this branch's history, newest first, with authority from the note.
 
@@ -205,7 +209,10 @@ def history_all(
     towards a rule. Without a note, authority is 'commit-access' when the trailer names someone: the person
     had commit access.
     """
-    rc, out, _ = git(["log", f"-{limit}", "--format=%H%x00%ad%x00%B%x01", "--date=short"], cwd)
+    args = ["log", f"-{limit}", "--format=%H%x00%ad%x00%B%x01", "--date=short"]
+    if ref:
+        args.append(ref)  # the record as it stood at that commit: its ancestors, never what came after
+    rc, out, _ = git(args, cwd)
     rows: list[dict[str, Any]] = []
     if rc != 0:
         return rows
@@ -242,9 +249,9 @@ def history_all(
     return rows
 
 
-def history(cwd: str, finding: str, limit: int = HISTORY_COMMITS) -> list[dict[str, Any]]:
-    """Earlier decisions on the same finding in this branch's history, newest first."""
-    return history_all(cwd, limit, finding)
+def history(cwd: str, finding: str, limit: int = HISTORY_COMMITS, ref: str | None = None) -> list[dict[str, Any]]:
+    """Earlier decisions on the same finding in this branch's history, newest first; from `ref` when given."""
+    return history_all(cwd, limit, finding, ref=ref)
 
 
 def proposal(hist: list[dict[str, Any]]) -> tuple[str | None, str]:

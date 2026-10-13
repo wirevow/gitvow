@@ -42,14 +42,22 @@ DEFAULT_PRODUCTION = ("main", "master", "production")
 
 
 def _decisions(
-    body: str, note: dict[str, Any] | None, target: str | None, production: tuple[str, ...]
+    body: str,
+    note: dict[str, Any] | None,
+    target: str | None,
+    production: tuple[str, ...],
+    cwd: str | None = None,
+    sha: str | None = None,
 ) -> list[dict[str, Any]]:
-    """Decisions a commit carries: trailers, enriched from the note, with scope reopened at a production branch."""
+    """Decisions a commit carries: trailers, enriched from the note, with scope reopened at a production branch,
+    the observations the finding rested on, and what the record said about the finding before this commit."""
     rows = parse_trailers(body)
     by_finding = {d.get("finding"): d for d in (note or {}).get("decisions") or []}
     tgt = (target or "").split("/")[-1] if target else ""
     for r in rows:
         n = by_finding.get(r["finding"]) or {}
+        r["observations"] = list(n.get("observations") or [])
+        r["standing"] = _standing(cwd, r["finding"], sha) if cwd else None
         r["authority"] = n.get("authority")
         r["to"] = r.get("to") or n.get("to")
         r["owner"] = n.get("owner")
@@ -66,6 +74,20 @@ def _decisions(
             and r["answer"] == "accepted"
         )
     return rows
+
+
+def _standing(cwd: str, finding: str, sha: str | None) -> str | None:
+    """What this repository's record said about the finding before this commit: the card's own sentence, from the
+    decisions earlier in the branch. The store's standing across repositories is not available in a check that has
+    only the repository; the sentence says so by being about this repository."""
+    from .decisions import history, proposal
+
+    try:
+        prior = history(cwd, finding, ref=f"{sha}^") if sha else history(cwd, finding)
+    except Exception:  # a shallow checkout or a root commit must not break the report
+        return None
+    _, sentence = proposal(prior)
+    return sentence
 
 
 def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) -> dict[str, Any]:
@@ -93,7 +115,7 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             carried = _note_for(cwd, sha, None)
             if carried is None:
                 entry["kind"] = "human"
-                entry["decisions"] = _decisions(body, None, target, production)
+                entry["decisions"] = _decisions(body, None, target, production, cwd, sha)
                 commits.append(entry)
                 continue
             entry.update(
@@ -112,7 +134,7 @@ def build(cwd: str, base: str, head: str = "HEAD", target: str | None = None) ->
             entry.update({"kind": "agent", "session_id": sid, "step": int(sm.group(1)) if sm else None})
             note = _note_for(cwd, sha, sid)
         entry["note_found"] = note is not None
-        entry["decisions"] = _decisions(body, note, target, production)
+        entry["decisions"] = _decisions(body, note, target, production, cwd, sha)
         from .outcomes import read as read_outcome
 
         entry["outcome"] = read_outcome(cwd, sha)
@@ -260,10 +282,10 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
     out = []
     for d in ds:
         if d["answer"] == "open":
-            out.append(f"**Open:** {d['finding']} — nobody decided; `gitvow decide` closes it")
+            out.append(_cites(f"**Open:** {d['finding']} — nobody decided; `gitvow decide` closes it", d))
             continue
         if d["answer"] == "observed":
-            out.append(f"**Observed:** {d['finding']} — recorded by an observe-tier rule; nobody was asked")
+            out.append(_cites(f"**Observed:** {d['finding']} — recorded by an observe-tier rule; nobody was asked", d))
             continue
         if d["answer"] == "referred":
             # Not debt and not an answer. Naming the person is the whole remediation, so it leads the line.
@@ -291,13 +313,30 @@ def _decision_lines(ds: list[dict[str, Any]], target: str | None) -> list[str]:
             line += " · **answered without a user message in the transcript**"
         if d.get("reopen"):
             line += f" · **accepted for {d['scope']}; this pull request targets {target}. Accept for {target}?**"
-        out.append(line)
+        out.append(_cites(line, d))
     return out
+
+
+def _cites(line: str, d: dict[str, Any]) -> str:
+    """The observations a finding rested on and what the record said before: so a reviewer sees the fact the question
+    came from and the precedent the answer sits in, on the pull request."""
+    if d.get("observations"):
+        refs = d["observations"]
+        line += " · cites " + ", ".join(refs[:3]) + (f" and {len(refs) - 3} more" if len(refs) > 3 else "")
+    if d.get("standing") and d.get("answer") in ("accepted", "declined", "open"):
+        line += f" · record before this: {d['standing']}"
+    return line
 
 
 def decisions_summary(r: dict[str, Any]) -> str:
     """Trailer block for a pull request description, so a squash commit inherits the decisions."""
     seen: list[str] = []
+    for c in r["commits"]:
+        if c.get("intent"):
+            # the task in the person's words rides onto the squash commit with the decisions it covers
+            line = f"Gitvow-Intent: {c['intent']}"
+            if line not in seen:
+                seen.append(line)
     for c in r["commits"]:
         for d in c.get("decisions") or []:
             key = {
@@ -318,6 +357,11 @@ def decisions_summary(r: dict[str, Any]) -> str:
                     line += f": {d['note']}"
             if line not in seen:
                 seen.append(line)
+            if d.get("observations"):
+                # not a decision trailer, so the trailer grammar never reads it; a reviewer and a later reader can
+                cite = f"Gitvow-Cites: {d['finding']} <- {', '.join(d['observations'])}"
+                if cite not in seen:
+                    seen.append(cite)
     if not seen:
         return ""
     return "<!-- gitvow-decisions -->\n" + "\n".join(seen) + "\n<!-- /gitvow-decisions -->\n"
