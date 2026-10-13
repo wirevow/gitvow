@@ -264,3 +264,52 @@ def test_through_the_hooks_into_state_note_and_export(repo, home, payload):
     assert rows["edit api/reports.py (route GET /v1/reports erroring, 5xx 3.0%)"]["observations"] == ["obs_" + "c" * 32]
     obs = {r["finding"]: r for r in b["parts"]["observed"]}
     assert "edit api/orders.py (route POST /v1/orders silent over 7d)" in obs
+
+
+def test_drift_on_a_manifest_is_one_finding_with_the_ref(repo, home):
+    """0.40: the blueprint's observation on a manifest raises a commit-tier finding naming the drift."""
+    git(repo, "remote", "add", "origin", "git@github.com:acme/orchestrator.git")
+    svc = _fact(
+        "orchestrator",
+        "values/production-in/orchestrator/values.yaml",
+        "drifting: image tag declared c333333-12, running b222222-11",
+        {
+            "declared": {"image_tag": "c333333-12"},
+            "observed": {"image_tags": ["b222222-11"], "ready": 1, "desired": 2},
+            "drift": ["image tag declared c333333-12, running b222222-11", "ready 1 of 2"],
+        },
+        "obs_" + "d" * 32,
+    )
+    svc["subject_type"] = "service"
+    ok = _fact(
+        "ledger",
+        "values/production-in/ledger/values.yaml",
+        "running as declared, 2 of 2 ready",
+        {"declared": {}, "observed": {"ready": 2, "desired": 2}, "drift": []},
+        "obs_" + "e" * 32,
+    )
+    ok["subject_type"] = "service"
+    _brief(home, [svc, ok])
+    path = str(repo / "values" / "production-in" / "orchestrator" / "values.yaml")
+    f = fx.findings_from_facts(str(repo), str(home), "Edit", {"file_path": path}, {})
+    assert len(f) == 1 and f[0]["tier"] == "commit" and f[0]["observations"] == ["obs_" + "d" * 32]
+    assert (
+        f[0]["finding"]
+        == "edit values/production-in/orchestrator/values.yaml (service orchestrator drifting: image tag declared c333333-12, running b222222-11 and 1 more)"
+    )
+    assert f[0]["evidence"][0].startswith("image tag declared") and any(
+        e.startswith("observation obs_dddd") for e in f[0]["evidence"]
+    )
+    assert (
+        fx.findings_from_facts(
+            str(repo),
+            str(home),
+            "Edit",
+            {"file_path": str(repo / "values" / "production-in" / "ledger" / "values.yaml")},
+            {},
+        )
+        == []
+    )
+    assert (
+        fx.findings_from_facts(str(repo), str(home), "Edit", {"file_path": path}, {"runtime": {"drift": "off"}}) == []
+    )

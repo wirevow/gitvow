@@ -217,11 +217,12 @@
     "_doc": "automatic: when true and a sink is configured (gitvow sinks), the record is synced in the background at session end and after the agent's git push; the hook never waits for it, the child logs to ~/.gitvow/sync.log, an unreachable store leaves the bundle in the outbox for the next run. on_session_end / on_push choose the moments. since: the window the automatic sync carries. Off by default: a store is a destination someone chose; this only decides when the chosen one is kept current. Sessions (gitvow sessions export) are never synced automatically."
   },
   "runtime": {
+    "drift": "commit",
     "silent_route": "observe",
     "erroring_route": "commit",
     "error_rate_confirm": 0.01,
     "max_age_hours": 168,
-    "_doc": "Runtime facts from the store's brief (observations the runtime facts provider wrote), read from the local cache at gate time, never the network. silent_route: an edit to a file carrying a route measured at zero requests over the window raises a finding at this tier (observe | commit | immediate | off). erroring_route and error_rate_confirm: an edit to a file whose route's 5xx share is at or above the threshold raises a finding at this tier. max_age_hours: a fact older than this is shown in the brief but not acted on. Every such finding names the observation it rests on, and the decision carries the ref."
+    "_doc": "Runtime facts from the store's brief (observations the runtime facts provider wrote), read from the local cache at gate time, never the network. silent_route: an edit to a file carrying a route measured at zero requests over the window raises a finding at this tier (observe | commit | immediate | off). erroring_route and error_rate_confirm: an edit to a file whose route's 5xx share is at or above the threshold raises a finding at this tier. max_age_hours: a fact older than this is shown in the brief but not acted on. drift: an edit to a manifest that declares a service the cluster is not running as declared (the blueprint's observation) raises a finding at this tier. Every such finding names the observation it rests on, and the decision carries the ref."
   },
   "llm_classifier": {
     "enabled": false,

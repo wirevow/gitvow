@@ -23,6 +23,7 @@ from .pack import load_brief
 from .policy import Decision
 
 DEFAULTS: dict[str, Any] = {
+    "drift": "commit",  # commit | immediate | observe | off: the service a file declares is not running as declared
     "silent_route": "observe",  # observe | commit | immediate | off
     "error_rate_confirm": 0.01,  # 5xx share at or above which an edit to the route's file is asked about
     "erroring_route": "commit",  # commit | immediate | observe | off
@@ -67,6 +68,7 @@ def findings_from_facts(
     rel = _rel(path, cwd)
     silent: list[dict[str, Any]] = []
     erroring: list[dict[str, Any]] = []
+    drifting: list[dict[str, Any]] = []
     for f in facts_for_path(cwd, home, rel):
         if f.get("coverage") != "measured":
             continue
@@ -74,6 +76,10 @@ def findings_from_facts(
         if age is not None and cfg["max_age_hours"] and age > float(cfg["max_age_hours"]):
             continue
         facts = f.get("facts") or {}
+        if f.get("subject_type") == "service":
+            if facts.get("drift") and cfg["drift"] != "off":
+                drifting.append(f)
+            continue
         if facts.get("requests") == 0 and cfg["silent_route"] != "off":
             silent.append(f)
         rate = facts.get("error_rate_5xx")
@@ -130,6 +136,23 @@ def findings_from_facts(
                 ),
                 "observations": [f["ref"] for f in erroring if f.get("ref")],
                 "tier": cfg["erroring_route"],
+            }
+        )
+    for f in drifting:
+        # the blueprint's observation: the file declares a service the cluster is not running as declared
+        reasons = [str(d) for d in (f.get("facts") or {}).get("drift") or []]
+        out.append(
+            {
+                "finding": f"edit {rel} (service {f.get('subject')} drifting: {reasons[0]})"
+                if len(reasons) == 1
+                else f"edit {rel} (service {f.get('subject')} drifting: {reasons[0]} and {len(reasons) - 1} more)",
+                "kind": "edit",
+                "subject": rel,
+                "path": rel,
+                "reason": "the service this file declares is not running as declared",
+                "evidence": [*reasons[:4], *_evidence([f])],
+                "observations": [f["ref"]] if f.get("ref") else [],
+                "tier": cfg["drift"],
             }
         )
     return out

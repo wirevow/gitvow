@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.40.0 — 2026-10-13
+- **Drift at the gate.** The blueprint (paid side) writes one observation per declared service with what the GitOps repository declares against what the cluster runs. An edit to the manifest that declares a drifting service now raises a commit-tier finding naming the drift, with the observation's ref on it, under `runtime.drift`. Same cache, same rule: the gate never calls a cluster.
+
 ## 0.39.1 — 2026-10-12
 - **One runtime finding per file, not one per route.** The first live run put 758 facts on one repository's brief and a controller file carrying twenty sleeping routes raised twenty findings. A file now raises at most two: the silent routes as one finding with every ref on it, and the erroring routes as one with the worst named. The card shows four routes and says how many more.
 
